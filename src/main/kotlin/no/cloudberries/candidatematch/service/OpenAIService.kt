@@ -1,17 +1,18 @@
-package no.cloudberries.candidatematch.integration.openai
+package no.cloudberries.candidatematch.service
 
 import com.cloudberries.candidatematch.templates.MatchPromptTemplate
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import no.cloudberries.candidatematch.domain.CandidateMatchResponse
-import no.cloudberries.candidatematch.integration.AIService
+import no.cloudberries.candidatematch.service.AIService
+import no.cloudberries.candidatematch.integration.openai.OpenAIHttpClient
 import no.cloudberries.candidatematch.templates.MatchParams
 import no.cloudberries.candidatematch.templates.renderTemplate
 import org.springframework.stereotype.Service
 
 @Service
 class OpenAIService(
-    val assistantService: AssistantService
+    val openAIHttpClient: OpenAIHttpClient
 ) : AIService {
 
      private val mapper = jacksonObjectMapper()
@@ -26,10 +27,7 @@ class OpenAIService(
             )
         )
 
-        val response = assistantService.callAssistant("asst_zaLKAGF4OEIxtaJgff5tCmXr", prompt)
+        val response = openAIHttpClient.callAssistant(userMessage = prompt)
         return mapper.readValue<CandidateMatchResponse>(content = response)
     }
 }
-
-
-

@@ -1,3 +1,4 @@
+.env
 .codebuddy/
 candidate-matcher.iml
 .idea/
@@ -18,3 +19,7 @@ buildNumber.properties
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+.DS_Store
+**.DS_Store
+.DS_Store
+.env

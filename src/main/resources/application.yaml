@@ -1,5 +1,11 @@
 flowcase:
-  api_key: 209dc5eb53a4115dea1bb7d1a9eacbd3
+  api_key: ${FLOWCASE_API}
 
 openai:
-  api-key: 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
+  api-key: ${OPENAI_API-KEY}
+  model: gpt-4
+  assistant-id: ${OPENAI_ASSISTANT-ID}
+gemini:
+  api-key: ${GEMINI_API-KEY}
+  model: gemini-2.0-flash
+  

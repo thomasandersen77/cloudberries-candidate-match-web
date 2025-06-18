@@ -1,12 +1,11 @@
-package no.cloudberries.candidatematch.integration.openai
+package no.cloudberries.candidatematch.integration.gemini
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-@ConfigurationProperties(prefix = "openai")
-class OpenAIConfig {
+@ConfigurationProperties(prefix = "gemini")
+class GeminiConfig {
     lateinit var apiKey: String
     lateinit var model: String
-    lateinit var assistantId: String
 }

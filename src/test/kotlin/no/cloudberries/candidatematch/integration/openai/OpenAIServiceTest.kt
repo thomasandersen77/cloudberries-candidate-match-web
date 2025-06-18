@@ -1,5 +1,6 @@
 package no.cloudberries.candidatematch.integration.openai
 
+import no.cloudberries.candidatematch.service.OpenAIService
 import no.cloudberries.candidatematch.utils.PdfUtils
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -12,7 +13,7 @@ class OpenAIServiceTest {
     @Autowired
     lateinit var openAIService: OpenAIService
     @Autowired
-    lateinit var assistantService: AssistantService
+    lateinit var openAIHttpClient: OpenAIHttpClient
 
 
     @Test
@@ -23,19 +24,18 @@ class OpenAIServiceTest {
             consultantName = "Thomas Andersen"
         )
 
-        println(""""
-                        
-            Score:     ${response.totalScore}
-            Summary:   ${response.summary}
+        println(""""          
+        Score:     ${response.totalScore}
+        Summary:   ${response.summary}
+       ${response.requirements.forEach { requirement -> 
+           println("""
+               requirement: ${requirement.name}
+               comment    : ${requirement.comment}
+               score      : ${requirement.score}
+           """.trimIndent())
+        }} 
         """")
     }
 
-    @Test
-    fun matchCandidate() {
-        assistantService.callAssistant(
-            assistantId = "asst",
-            userMessage =  "Thomas Andersen",
-        )
-    }
 
 }

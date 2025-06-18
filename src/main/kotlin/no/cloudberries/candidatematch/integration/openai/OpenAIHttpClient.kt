@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service
 import java.util.concurrent.TimeUnit
 
 @Service
-class AssistantService(
+class OpenAIHttpClient(
     private val config: OpenAIConfig
 ) {
 
@@ -17,7 +17,7 @@ class AssistantService(
         .connectTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    fun callAssistant(assistantId: String, userMessage: String): String {
+    fun callAssistant(userMessage: String): String {
         // 1. Opprett en ny thread
         val threadId = createThread()
 
@@ -25,7 +25,7 @@ class AssistantService(
         postMessage(threadId, userMessage)
 
         // 3. Start run
-        val runId = startRun(threadId, assistantId)
+        val runId = startRun(threadId, config.assistantId)
 
         // 4. Vent til run er ferdig
         waitForRun(threadId, runId)
