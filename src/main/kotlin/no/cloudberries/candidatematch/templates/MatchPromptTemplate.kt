@@ -1,4 +1,4 @@
-package com.cloudberries.candidatematch.templates
+package no.cloudberries.candidatematch.templates
 
 object MatchPromptTemplate {
 

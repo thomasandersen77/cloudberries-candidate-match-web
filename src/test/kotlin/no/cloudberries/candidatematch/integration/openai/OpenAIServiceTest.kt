@@ -12,12 +12,9 @@ import java.io.FileInputStream
 class OpenAIServiceTest {
     @Autowired
     lateinit var openAIService: OpenAIService
-    @Autowired
-    lateinit var openAIHttpClient: OpenAIHttpClient
-
 
     @Test
-    fun matchCandidateLegacyAPI() {
+    fun matchCandidate() {
         val response = openAIService.matchCandidate(
             cv = PdfUtils.extractText(FileInputStream(File("src/test/resources/Thomas-Andersen_CV.pdf"))),
             request = PdfUtils.extractText(FileInputStream(File("src/test/resources/politiet_arkitektur.pdf"))),

@@ -1,7 +1,7 @@
 package no.cloudberries.candidatematch.integration.openai
 
-import okhttp3.*
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.springframework.stereotype.Service
@@ -61,6 +61,10 @@ class OpenAIHttpClient(
             Thread.sleep(1000)
             val resp = get("https://api.openai.com/v1/threads/$threadId/runs/$runId")
             status = mapper.readTree(resp)["status"].asText()
+            println("Status: $status")
+            if(status == "failed") throw RuntimeException(
+                "OpenAI Assistant feilet med melding: ${mapper.readTree(resp)["last_error"]["message"]}"
+            )
         } while (status == "in_progress" || status == "queued")
     }
 
@@ -117,7 +121,7 @@ class OpenAIHttpClient(
             if (!response.isSuccessful) {
                 throw RuntimeException("Feil fra OpenAI API: ${response.code} - ${response.message}")
             }
-            return response.body!!.string()
+            return response.body?.string() ?: throw RuntimeException()
         }
     }
 }

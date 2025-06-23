@@ -1,12 +1,11 @@
 package no.cloudberries.candidatematch.service
 
-import com.cloudberries.candidatematch.templates.MatchPromptTemplate
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import no.cloudberries.candidatematch.domain.CandidateMatchResponse
-import no.cloudberries.candidatematch.service.AIService
 import no.cloudberries.candidatematch.integration.openai.OpenAIHttpClient
 import no.cloudberries.candidatematch.templates.MatchParams
+import no.cloudberries.candidatematch.templates.MatchPromptTemplate
 import no.cloudberries.candidatematch.templates.renderTemplate
 import org.springframework.stereotype.Service
 
