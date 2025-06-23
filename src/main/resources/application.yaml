@@ -1,6 +1,7 @@
-flowcase:
-  api_key: ${FLOWCASE_API}
 
+flowcase:
+  api_key: ${FLOWCASE_API_KEY}
+  base-url: ${FLOWCASE_BASE_URL}
 openai:
   api-key: ${OPENAI_API-KEY}
   model: gpt-4

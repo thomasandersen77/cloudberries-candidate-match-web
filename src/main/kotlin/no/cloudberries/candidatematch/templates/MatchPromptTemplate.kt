@@ -1,4 +1,4 @@
-package com.cloudberries.candidatematch.templates
+package no.cloudberries.candidatematch.templates
 
 object MatchPromptTemplate {
 
@@ -28,6 +28,7 @@ object MatchPromptTemplate {
         - Hvert enkelt krav skal vurderes med begrunnelse
         - Score **1.0-10**
         - Resultatet skal være profesjonelt og kritisk, men konstruktivt
+        - Ignorer krav til sikkerhetsklarering
 
         ---
 

@@ -1,5 +1,5 @@
 package no.cloudberries.candidatematch.domain.customer
 
-class Project {
+class Project(val name: String) {
 
 }

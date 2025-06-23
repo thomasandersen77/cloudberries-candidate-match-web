@@ -9,33 +9,36 @@ import java.io.File
 import java.io.FileInputStream
 
 @SpringBootTest
-class OpenAIServiceTest {
+class OpenAIServiceIntegrationTest {
     @Autowired
     lateinit var openAIService: OpenAIService
-    @Autowired
-    lateinit var openAIHttpClient: OpenAIHttpClient
-
 
     @Test
-    fun matchCandidateLegacyAPI() {
+    fun matchCandidate() {
         val response = openAIService.matchCandidate(
             cv = PdfUtils.extractText(FileInputStream(File("src/test/resources/Thomas-Andersen_CV.pdf"))),
-            request = PdfUtils.extractText(FileInputStream(File("src/test/resources/politiet_arkitektur.pdf"))),
+            request = PdfUtils.extractText(FileInputStream(File("src/test/resources/politiet/forespørsel_fra_polititet.pdf"))),
             consultantName = "Thomas Andersen"
         )
 
-        println(""""          
+        println("--- Candidate Match Response ---")
+        println(
+            """"          
         Score:     ${response.totalScore}
         Summary:   ${response.summary}
-       ${response.requirements.forEach { requirement -> 
-           println("""
+        """.trimIndent()
+        )
+
+        println("--- Matching Details ---")
+        response.requirements.forEach { requirement ->
+
+            println(
+                """
                requirement: ${requirement.name}
                comment    : ${requirement.comment}
                score      : ${requirement.score}
-           """.trimIndent())
-        }} 
-        """")
+            """.trimIndent()
+            )
+        }
     }
-
-
 }
