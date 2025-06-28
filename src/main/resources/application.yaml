@@ -6,6 +6,5 @@ openai:
   model: gpt-4
   assistant-id: ${OPENAI_ASSISTANT-ID}
 gemini:
-  api-key: ${GEMINI_API-KEY}
-  model: gemini-2.0-flash
-  
+    api-key: ${GEMINI_API_KEY}
+    model: gemini-2.5-pro-latest
