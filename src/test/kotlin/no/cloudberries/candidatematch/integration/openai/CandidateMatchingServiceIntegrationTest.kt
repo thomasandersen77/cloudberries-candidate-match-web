@@ -1,30 +1,26 @@
 package no.cloudberries.candidatematch.integration.openai
 
+import BaseIntegrationTest
+import LiquibaseTestConfig
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import mu.KotlinLogging
-import no.cloudberries.candidatematch.integration.AiProvider
+import no.cloudberries.candidatematch.domain.ai.AIProvider
 import no.cloudberries.candidatematch.integration.flowcase.FlowcaseHttpClient
-import no.cloudberries.candidatematch.repositories.ProjectRequestRepository
 import no.cloudberries.candidatematch.service.CandidateMatchingService
 import no.cloudberries.candidatematch.utils.PdfUtils
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
 import java.io.File
 import java.io.FileInputStream
 import kotlin.test.Ignore
 
 @Ignore("Only for manual testing")
-@SpringBootTest(
-    properties = [
-        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration," +
-        "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration"
-    ]
-)
-@MockBean(ProjectRequestRepository::class)
-class CandidateMatchingServiceIntegrationTest {
+@SpringBootTest
+@Import(LiquibaseTestConfig::class)
+class CandidateMatchingServiceIntegrationTest: BaseIntegrationTest() {
     @Autowired
     lateinit var candidateMatchingService: CandidateMatchingService
     @Autowired
@@ -38,7 +34,7 @@ class CandidateMatchingServiceIntegrationTest {
     @Test
     fun matchCandidateOpenAI() {
         val response = candidateMatchingService.matchCandidate(
-            aiProvider = AiProvider.OPENAI,
+            aiProvider = AIProvider.OPENAI,
             cv = PdfUtils.extractText(FileInputStream(File("src/test/resources/Thomas-Andersen_CV.pdf"))),
             request = PdfUtils.extractText(FileInputStream(File("src/test/resources/politiet/forespørsel_fra_polititet.pdf"))),
             consultantName = "Thomas Andersen"
@@ -74,7 +70,7 @@ class CandidateMatchingServiceIntegrationTest {
         val resumeAsJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resumeDTO)
         logger.info { resumeAsJson }
         val response = candidateMatchingService.matchCandidate(
-            aiProvider = AiProvider.GEMINI,
+            aiProvider = AIProvider.GEMINI,
             //cv = resumeAsJson,
             cv = PdfUtils.extractText(FileInputStream(File("src/test/resources/Thomas-Andersen_CV.pdf"))),
             //request = PdfUtils.extractText(FileInputStream(File("src/test/resources/politiet/forespørsel_fra_polititet.pdf"))),
