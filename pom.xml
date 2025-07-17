@@ -242,7 +242,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>no.cloudberries.MainKt</mainClass>
+                    <mainClass>no.cloudberries.candidatematch.MainKt</mainClass>
                 </configuration>
             </plugin>
             <plugin>
