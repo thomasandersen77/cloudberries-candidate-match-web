@@ -8,6 +8,8 @@ import no.cloudberries.candidatematch.repositories.ProjectRequestRepository
 import no.cloudberries.candidatematch.repositories.toProjectRequest
 import org.springframework.stereotype.Service
 import java.time.LocalDate
+import java.util.UUID
+import kotlin.uuid.toKotlinUuid
 
 @Service
 class ProjectRequestService(
@@ -39,7 +41,7 @@ class ProjectRequestService(
             throw IllegalArgumentException("Svarfristen kan ikke være etter prosjektets startdato.")
         }
 
-            val projectRequest = ProjectRequest(
+        val projectRequest = ProjectRequest(
             customerName = customerName,
             requiredSkills = requiredSkills,
             startDate = startDate,

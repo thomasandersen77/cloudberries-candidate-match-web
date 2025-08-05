@@ -17,12 +17,11 @@ class OpenAIHttpClient(
 ): AIContentGenerator {
 
     private val mapper = jacksonObjectMapper()
-    private val client = OkHttpClient().apply {
-        newBuilder().connectTimeout(
-            1500,
-            TimeUnit.SECONDS
-        )
-    }
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .build()
 
     fun analyze(prompt: String): String {
         // 1. Opprett en ny thread
@@ -166,11 +165,9 @@ class OpenAIHttpClient(
     }
 
     override fun generateContent(prompt: String): AIResponse {
-        return analyze(prompt).let {
-            AIResponse(
-                content = it,
-                modelUsed = config.model
-            )
-        }
+        return AIResponse(
+            content = analyze(prompt),
+            modelUsed = config.model
+        )
     }
 }

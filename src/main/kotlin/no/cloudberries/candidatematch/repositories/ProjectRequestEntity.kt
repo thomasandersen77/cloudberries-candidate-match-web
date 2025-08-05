@@ -1,7 +1,9 @@
 package no.cloudberries.candidatematch.repositories
 
 import jakarta.persistence.*
+import no.cloudberries.candidatematch.domain.CustomerId
 import no.cloudberries.candidatematch.domain.ProjectRequest
+import no.cloudberries.candidatematch.domain.ProjectRequestId
 import no.cloudberries.candidatematch.domain.candidate.Skill
 import java.time.LocalDate
 
@@ -10,9 +12,19 @@ import java.time.LocalDate
 data class ProjectRequestEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null,
+    val id: Long? = null,
+    @Column(name = "customer_id", columnDefinition = "bigint")
+    val customerId: Long? = null,
     val customerName: String,
-    val requiredSkills: List<Skill>,
+    @ElementCollection
+    @CollectionTable(
+        schema = "public",
+        name = "project_request_required_skills",
+        joinColumns = [JoinColumn(name = "project_request_id")]
+    )
+    @Column(name = "skill")
+    @Enumerated(EnumType.STRING) // Add this line to store enum as a string
+    val requiredSkills: List<Skill> = listOf(),
     val startDate: LocalDate,
     val endDate: LocalDate,
     val responseDeadline: LocalDate,
@@ -23,7 +35,8 @@ data class ProjectRequestEntity(
 // Extension function to convert Entity to DTO
 fun ProjectRequestEntity.toProjectRequest(): ProjectRequest {
     return ProjectRequest(
-        id = this.id,
+        id = ProjectRequestId(this.id),
+        customerId = CustomerId(this.customerId),
         customerName = this.customerName,
         requiredSkills = this.requiredSkills,
         startDate = this.startDate,
