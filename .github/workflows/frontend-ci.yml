@@ -1,6 +1,6 @@
 # .github/workflows/frontend-ci.yml
 name: Frontend CI
-
+# triggert av push og pull request
 # This workflow runs on pushes to any branch and on pull requests targeting the main branch.
 on:
   push:
