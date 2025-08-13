@@ -4,18 +4,25 @@ import no.cloudberries.candidatematch.domain.AISuggestion
 import no.cloudberries.candidatematch.domain.ProjectRequest
 import no.cloudberries.candidatematch.domain.candidate.Skill
 import no.cloudberries.candidatematch.domain.toEntity
+import no.cloudberries.candidatematch.entities.RequestStatus
 import no.cloudberries.candidatematch.repositories.ProjectRequestRepository
-import no.cloudberries.candidatematch.repositories.toProjectRequest
+import no.cloudberries.candidatematch.entities.toProjectRequest
 import org.springframework.stereotype.Service
 import java.time.LocalDate
-import java.util.UUID
-import kotlin.uuid.toKotlinUuid
+import java.time.LocalDateTime
 
 @Service
 class ProjectRequestService(
     private val projectRequestRepository: ProjectRequestRepository,
     private val aiService: AIService
 ) {
+
+    /**
+     * Henter åpne prosjektforespørsler som har frist innenfor det gitte tidsrommet.
+     */
+    fun findOpenRequestsDueWithin(from: LocalDateTime, to: LocalDateTime): List<ProjectRequest> {
+        return projectRequestRepository.findOpenRequestsWithDeadlineBetween(from, to).map { it.toProjectRequest() }
+    }
 
     /**
      * Oppretter en ny prosjektforespørsel, validerer den og trigger en automatisk
@@ -32,9 +39,12 @@ class ProjectRequestService(
     fun createProjectRequest(
         customerName: String,
         requiredSkills: List<Skill>,
-        startDate: LocalDate,
-        endDate: LocalDate,
-        responseDeadline: LocalDate
+        startDate: LocalDateTime,
+        endDate: LocalDateTime,
+        responseDeadline: LocalDateTime,
+        status: RequestStatus,
+        requestDescription: String,
+        responsibleSalespersonEmail: String,
     ): ProjectRequest {
         // Validering i henhold til akseptansekriterium: frist for svar må være før oppstart
         if (responseDeadline.isAfter(startDate)) {
@@ -46,7 +56,10 @@ class ProjectRequestService(
             requiredSkills = requiredSkills,
             startDate = startDate,
             endDate = endDate,
-            responseDeadline = responseDeadline
+            responseDeadline = responseDeadline,
+            status = status,
+            requestDescription = requestDescription,
+            responsibleSalespersonEmail = responsibleSalespersonEmail,
         )
 
         // Lagre forespørselen (Dette ville vanligvis kalt et repository)
