@@ -5,9 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <!-- ChangeLog for initial database setup -->
     <changeSet id="1" author="liquibase">
-        <!-- Customer table -->
         <createTable tableName="customer">
             <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
@@ -26,7 +24,6 @@
             </column>
         </createTable>
 
-        <!-- Consultant table -->
         <createTable tableName="consultant">
             <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
@@ -45,7 +42,6 @@
             </column>
         </createTable>
 
-        <!-- Consultant Skills table (for @ElementCollection) -->
         <createTable tableName="consultant_skills">
             <column name="consultant_id" type="bigint">
                 <constraints nullable="false"/>
@@ -55,7 +51,6 @@
             </column>
         </createTable>
 
-        <!-- Project Request table -->
         <createTable tableName="project_request">
             <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
@@ -110,27 +105,25 @@
 
 
 
-        <!-- Foreign Key Constraints -->
         <addForeignKeyConstraint baseTableName="project_request"
-                                baseColumnNames="customer_id"
-                                constraintName="fk_project_request_customer"
-                                referencedTableName="customer"
-                                referencedColumnNames="id"/>
-                                
-        <addForeignKeyConstraint baseTableName="consultant_skills"
-                                baseColumnNames="consultant_id"
-                                constraintName="fk_consultant_skills_consultant"
-                                referencedTableName="consultant"
-                                referencedColumnNames="id"/>
+                                 baseColumnNames="customer_id"
+                                 constraintName="fk_project_request_customer"
+                                 referencedTableName="customer"
+                                 referencedColumnNames="id"/>
 
-        <!-- Indexes -->
+        <addForeignKeyConstraint baseTableName="consultant_skills"
+                                 baseColumnNames="consultant_id"
+                                 constraintName="fk_consultant_skills_consultant"
+                                 referencedTableName="consultant"
+                                 referencedColumnNames="id"/>
+
         <createIndex indexName="idx_customer_email"
-                    tableName="customer">
+                     tableName="customer">
             <column name="email"/>
         </createIndex>
 
         <createIndex indexName="idx_consultant_user_id"
-                    tableName="consultant">
+                     tableName="consultant">
             <column name="user_id"/>
         </createIndex>
 
@@ -143,7 +136,6 @@
 
 
     <changeSet id="2" author="system">
-        <!-- Create join table for project required skills -->
         <createTable tableName="project_request_required_skills">
             <column name="project_request_id" type="bigint">
                 <constraints nullable="false"/>
@@ -153,19 +145,47 @@
             </column>
         </createTable>
 
-        <!-- Add foreign key constraint -->
         <addForeignKeyConstraint baseTableName="project_request_required_skills"
                                  baseColumnNames="project_request_id"
                                  constraintName="fk_project_skills_request"
                                  referencedTableName="project_request"
                                  referencedColumnNames="id"/>
 
-        <!-- Add index for better performance -->
         <createIndex indexName="idx_project_skills"
                      tableName="project_request_required_skills">
             <column name="skill"/>
         </createIndex>
     </changeSet>
 
+    <changeSet author="tandersen" id="20250813-add-notification-fields-to-project-request">
+
+        <addColumn tableName="project_request">
+            <column name="status" type="varchar(50)" defaultValue="OPEN">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="project_request">
+            <column name="request_description" type="varchar(2000)"/>
+        </addColumn>
+
+        <addColumn tableName="project_request">
+            <column name="responsible_salesperson_email" type="varchar(255)"/>
+        </addColumn>
+
+        <modifyDataType
+                tableName="project_request"
+                columnName="response_deadline"
+                newDataType="timestamp"/>
+        <modifyDataType
+                tableName="project_request"
+                columnName="end_date"
+                newDataType="timestamp"/>
+        <modifyDataType
+                tableName="project_request"
+                columnName="start_date"
+                newDataType="timestamp"/>
+
+    </changeSet>
 
 </databaseChangeLog>
