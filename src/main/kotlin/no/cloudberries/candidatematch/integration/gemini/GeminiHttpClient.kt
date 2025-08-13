@@ -5,6 +5,7 @@ import mu.KotlinLogging
 import no.cloudberries.candidatematch.domain.ai.AIContentGenerator
 import no.cloudberries.candidatematch.domain.ai.AIGenerationException
 import no.cloudberries.candidatematch.domain.ai.AIResponse
+import okhttp3.Request
 import org.springframework.stereotype.Service
 
 @Service
@@ -17,6 +18,22 @@ class GeminiHttpClient(
             .apiKey(geminiConfig.apiKey)
             .build()
     }
+
+    fun testConnection(): Boolean {
+        if(geminiConfig.apiKey.isBlank()){
+            logger.error { "Gemini API key not configured" }
+            return false // Returner false hvis ikke konfigurert
+        }
+
+        return runCatching { // Bruk runCatching for å håndtere exceptions
+            val response = client.models.generateContent(geminiConfig.model, "are you up? answer yes or no", null)
+            response?.text()?.lowercase()?.contains("yes") ?: false // Håndterer null-respons
+        }.getOrElse {
+            logger.error(it) { "Gemini connection test failed" }
+            false
+        }
+    }
+
 
     override fun generateContent(prompt: String): AIResponse {
         runCatching {
@@ -32,10 +49,16 @@ class GeminiHttpClient(
                 logger.error(e) { errorMessage }
                 // Avoid re-wrapping our specific exception.
                 if (e is AIGenerationException) throw e
-                throw AIGenerationException(errorMessage, e)
+                throw AIGenerationException(
+                    errorMessage,
+                    e
+                )
             }
-        }.getOrElse { e->
-            throw AIGenerationException("Failed to generate content with Gemini", e)
+        }.getOrElse { e ->
+            throw AIGenerationException(
+                "Failed to generate content with Gemini",
+                e
+            )
         }
     }
 
@@ -52,6 +75,9 @@ class GeminiHttpClient(
     }
 
     private fun String.cleanJsonResponse(): String =
-        replace(Regex("```(json)?"), "").trim()
+        replace(
+            Regex("```(json)?"),
+            ""
+        ).trim()
 
 }

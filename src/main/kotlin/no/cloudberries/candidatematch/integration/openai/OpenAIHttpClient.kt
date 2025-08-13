@@ -15,13 +15,33 @@ import kotlin.time.Duration
 class OpenAIHttpClient(
     private val config: OpenAIConfig
 ): AIContentGenerator {
-
+    private val logger = mu.KotlinLogging.logger {}
     private val mapper = jacksonObjectMapper()
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(10, TimeUnit.SECONDS)
         .build()
+
+    fun testConnection(): Boolean {
+        if(config.apiKey.isBlank()){
+            logger.error { "OpenAI API key not configured" }
+            return false
+        }
+        val request = Request.Builder()
+            .url("https://api.openai.com/v1/models")
+            .header("Authorization", "Bearer ${config.apiKey}")
+            .get()
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                return false
+            } else {
+                return true
+            }
+        }
+    }
 
     fun analyze(prompt: String): String {
         // 1. Opprett en ny thread
