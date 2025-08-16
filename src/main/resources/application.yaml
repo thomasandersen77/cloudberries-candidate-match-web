@@ -1,3 +1,12 @@
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 10         # Increase from default 5
+      minimum-idle: 5               # Keep some connections ready
+      connection-timeout: 10000     # 10 seconds
+      idle-timeout: 300000         # 5 minutes
+      max-lifetime: 1200000        # 20 minutes
+      validation-timeout: 5000      # 5 seconds
 flowcase:
   apiKey: ${FLOWCASE_API_KEY}
   baseUrl: ${FLOWCASE_BASE_URL}

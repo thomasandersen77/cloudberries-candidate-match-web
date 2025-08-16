@@ -15,12 +15,13 @@ class HealthService(
     private val logger = LoggerFactory.getLogger(HealthService::class.java)
 
     fun isDatabaseHealthy(): Boolean = runCatching {
-        entityManager.entityManagerFactory
-            .createEntityManager()
+        // Use existing EntityManager instead of creating a new one
+        entityManager
             .createNativeQuery("SELECT 1")
+            .setHint("jakarta.persistence.query.timeout", 5000) // 5 second timeout
             .singleResult != null
-    }.getOrElse {
-        logger.error("Database health check failed.")
+    }.getOrElse { e ->
+        logger.error("Database health check failed: ${e.message}")
         false
     }
 
