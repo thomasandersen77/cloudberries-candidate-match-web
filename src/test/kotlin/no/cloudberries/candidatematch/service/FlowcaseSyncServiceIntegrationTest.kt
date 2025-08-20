@@ -2,8 +2,12 @@ package no.cloudberries.candidatematch.service
 
 import LiquibaseTestConfig
 import com.github.tomakehurst.wiremock.client.WireMock.*
+import no.cloudberries.candidatematch.integration.flowcase.MultiLangText
+import no.cloudberries.candidatematch.integration.flowcase.TechnologySkillDto
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -21,7 +25,7 @@ class FlowcaseSyncServiceIntegrationTest {
     private lateinit var flowcaseSyncService: FlowcaseSyncService
 
     @Test
-    fun `fetchCvForUser skal hente og parse en komplett CV`() {
+    fun `fetchCvForUser skal hente og parse en delvis CV`() {
         // Gitt (Arrange)
         val userId = "user123"
         val cvId = "cv456"
@@ -36,6 +40,25 @@ class FlowcaseSyncServiceIntegrationTest {
         assertEquals(1, cvDto.projectExperiences.size)
         assertEquals(2, cvDto.projectExperiences.first().projectExperienceSkills.size)
         assertEquals("Java", cvDto.projectExperiences.first().projectExperienceSkills.first().tags?.text)
+    }
+
+    @Test
+    fun `fetchCvForUser skal hente og parse en komplett CV`() {
+        // Gitt (Arrange)
+        val userId = "thomas"
+        val cvId = "andersen"
+
+        // Når (Act)
+        val cvDto = flowcaseSyncService.fetchCvForUser(userId, cvId)
+
+        // Da (Assert)
+        assertNotNull(cvDto)
+        assertEquals("thomas andersen",cvDto.name.lowercase())
+        assertEquals("Senior konsulent", cvDto.title?.text)
+        assertEquals(17, cvDto.projectExperiences.size)
+        assertEquals(0, cvDto.projectExperiences.first().projectExperienceSkills.size)
+        assertTrue {  cvDto.projectExperiences.flatMap { it.projectExperienceSkills }.contains(TechnologySkillDto(MultiLangText("Java", "Java"), 0)) }
+        assertTrue {  cvDto.projectExperiences.flatMap { it.projectExperienceSkills }.contains(TechnologySkillDto(MultiLangText("Kotlin", "Kotlin"), 0)) }
     }
 
     @Test
