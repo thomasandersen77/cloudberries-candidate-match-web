@@ -3,6 +3,7 @@ package no.cloudberries.candidatematch.integration.openai
 import LiquibaseTestConfig
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import mu.KotlinLogging
+import no.cloudberries.candidatematch.domain.CandidateMatchResponse
 import no.cloudberries.candidatematch.domain.ai.AIProvider
 import no.cloudberries.candidatematch.integration.flowcase.FlowcaseHttpClient
 import no.cloudberries.candidatematch.service.CandidateMatchingService
@@ -34,32 +35,26 @@ class CandidateMatchingServiceIntegrationTest {
     private val logger = KotlinLogging.logger {}
     @Test
     fun  matchCandidateOpenAI() {
+        val userid = "682c529a17774f004390031f"
+        val cvId = "682c529acf99685aed6fd592"
+
+        val resumeDTO = flowcaseHttpClient.fetchCompleteCv(userid, cvId)
+
+        assertNotNull(resumeDTO)
+        val resumeAsJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resumeDTO)
+
+        val aiProvider = AIProvider.OPENAI
         val response = candidateMatchingService.matchCandidate(
-            aiProvider = AIProvider.OPENAI,
-            cv = PdfUtils.extractText(FileInputStream(File("src/test/resources/Thomas-Andersen_CV.pdf"))),
+            aiProvider = aiProvider,
+            cv = resumeAsJson,
             request = PdfUtils.extractText(FileInputStream(File("src/test/resources/politiet/forespørsel_fra_polititet.pdf"))),
             consultantName = "Thomas Andersen"
         )
 
-        println("--- Candidate Match Response ---")
-        println(
-            """"          
-        Score:     ${response.totalScore}
-        Summary:   ${response.summary}
-        """.trimIndent()
+        printFormattedResponse(
+            aiProvider,
+            response
         )
-
-        println("--- Matching Details ---")
-        response.requirements.forEach { requirement ->
-
-            println(
-                """
-               requirement: ${requirement.name}
-               comment    : ${requirement.comment}
-               score      : ${requirement.score}
-            """.trimIndent()
-            )
-        }
     }
 
     @Test
@@ -72,33 +67,84 @@ class CandidateMatchingServiceIntegrationTest {
         assertNotNull(resumeDTO)
         val resumeAsJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resumeDTO)
         logger.info { resumeAsJson }
+        val aiProvider = AIProvider.GEMINI
         val response = candidateMatchingService.matchCandidate(
-            aiProvider = AIProvider.GEMINI,
+            aiProvider = aiProvider,
             cv = resumeAsJson,
-            //cv = PdfUtils.extractText(FileInputStream(File("src/test/resources/Thomas-Andersen_CV.pdf"))),
-            //request = PdfUtils.extractText(FileInputStream(File("src/test/resources/politiet/forespørsel_fra_polititet.pdf"))),
             request = PdfUtils.extractText(FileInputStream(File("src/test/resources/politiet_arkitektur.pdf"))),
             consultantName = "Thomas Andersen"
         )
 
-        println("--- Candidate Match Response ---")
-        println(
-            """"          
-        Score:     ${response.totalScore}
-        Summary:   ${response.summary}
-        """.trimIndent()
+        printFormattedResponse(
+            aiProvider,
+            response
         )
+    }
 
-        println("--- Matching Details ---")
-        response.requirements.forEach { requirement ->
-
-            println(
-                """
-               requirement: ${requirement.name}
-               comment    : ${requirement.comment}
-               score      : ${requirement.score}
-            """.trimIndent()
+    private fun printFormattedResponse(
+        aiProvider: AIProvider,
+        response: CandidateMatchResponse
+    ) {
+        println("=".repeat(80))
+        println("CANDIDATE MATCH RESPONSE FROM $aiProvider")
+        println("=".repeat(80))
+        println("Score:     ${response.totalScore}")
+        println()
+        println("Summary:")
+        println("-".repeat(40))
+        println(
+            wrapText(
+                response.summary,
+                80
             )
+        )
+        println()
+
+        println("=".repeat(80))
+        println("MATCHING DETAILS")
+        println("=".repeat(80))
+        response.requirements.forEach { requirement ->
+            println()
+            println("Requirement: ${requirement.name}")
+            println("Score:       ${requirement.score}/10")
+            println("Comment:")
+            println("-".repeat(40))
+            println(
+                wrapText(
+                    requirement.comment,
+                    80
+                )
+            )
+            println("-".repeat(80))
         }
+    }
+
+    /**
+     * Wraps text to specified line length for better console readability
+     */
+    private fun wrapText(text: String, lineLength: Int): String {
+        val words = text.split(" ")
+        val result = StringBuilder()
+        var currentLine = StringBuilder()
+        
+        for (word in words) {
+            if (currentLine.length + word.length + 1 > lineLength) {
+                if (currentLine.isNotEmpty()) {
+                    result.appendLine(currentLine.toString())
+                    currentLine = StringBuilder()
+                }
+            }
+            
+            if (currentLine.isNotEmpty()) {
+                currentLine.append(" ")
+            }
+            currentLine.append(word)
+        }
+        
+        if (currentLine.isNotEmpty()) {
+            result.append(currentLine.toString())
+        }
+        
+        return result.toString()
     }
 }
