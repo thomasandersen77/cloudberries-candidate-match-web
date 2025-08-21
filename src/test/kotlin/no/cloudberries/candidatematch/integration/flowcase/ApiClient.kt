@@ -102,10 +102,14 @@ fun main() {
             url = "https://$account.flowcase.com/api/v2/users/search?page=0&size=200",
             apiKey = apiKey
         )
+        var totalCount = 0
         users.forEach { user ->
-            //if (user.name == "Thomas Andersen") {
-                println(message = "${user.userId}, ${user.defaultCvId}")
-            //}
+            totalCount++
+            if (user.name == "Thomas Andersen") {
+                println(message = "$totalCount: ${user.userId}, ${user.defaultCvId}")
+
+            }
+
         }
     } catch (e: Exception) {
         println("Request failed: $e")
