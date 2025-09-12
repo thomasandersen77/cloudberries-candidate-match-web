@@ -4,12 +4,12 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import no.cloudberries.candidatematch.domain.ProjectRequest
 import no.cloudberries.candidatematch.domain.ProjectRequestId
 import no.cloudberries.candidatematch.domain.candidate.Skill
-import no.cloudberries.candidatematch.entities.ProjectRequestEntity
-import no.cloudberries.candidatematch.entities.RequestStatus
-import no.cloudberries.candidatematch.repositories.ProjectRequestRepository
+import no.cloudberries.candidatematch.infrastructure.entities.ProjectRequestEntity
+import no.cloudberries.candidatematch.infrastructure.entities.RequestStatus
+import no.cloudberries.candidatematch.infrastructure.repositories.ProjectRequestRepository
+import no.cloudberries.candidatematch.service.ai.AIService
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -160,9 +160,10 @@ class ProjectRequestServiceTest {
             0
         )
 
-        val savedRequestSlot = slot<ProjectRequestEntity>()
-        every { projectRequestRepository.save(capture(savedRequestSlot)) } answers {
-            savedRequestSlot.captured.copy(id = 1L)
+        every {
+            projectRequestRepository.save(any<ProjectRequestEntity>()) as ProjectRequestEntity
+        } answers {
+            firstArg<ProjectRequestEntity>().copy(id = 1L)
         }
 
         val request = projectRequestService.createProjectRequest(
