@@ -24,3 +24,7 @@ buildNumber.properties
 .DS_Store
 .env
 ngrok_recovery_codes.txt
+
+# Ignore task docs
+/tasks/
+/Tasks/
