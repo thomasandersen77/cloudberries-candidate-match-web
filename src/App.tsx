@@ -1,36 +1,39 @@
-import {Box, createTheme, CssBaseline, ThemeProvider} from '@mui/material';
-import CandidateListPage from './pages/CandidateListPage';
+import { Box } from '@mui/material';
+import { Routes, Route } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import ConsultantsListPage from './pages/Consultants/ConsultantsListPage';
+import ConsultantDetailPage from './pages/Consultants/ConsultantDetailPage';
+import CvViewPage from './pages/CV/CvViewPage';
+import CvScoreListPage from './pages/CvScore/CvScoreListPage';
+import CvScoreDetailPage from './pages/CvScore/CvScoreDetailPage';
+import MatchesPage from './pages/Matches/MatchesPage';
+import EmbeddingsPage from './pages/Embeddings/EmbeddingsPage';
+import ChatAnalyzePage from './pages/Chat/ChatAnalyzePage';
+import HealthPage from './pages/Health/HealthPage';
+import Header from './components/Header';
 
-const theme = createTheme({
-    typography: {
-        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    },
-});
 
 function App() {
-    return (
-        <ThemeProvider theme={theme}>
-            <CssBaseline/>
-            <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                width: '100%',
-                minHeight: '100vh'
-            }}>
-                <Box sx={{
-                    width: '100%',
-                    maxWidth: '1200px',
-                    margin: '0 auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                }}>
-                    <CandidateListPage/>
-                </Box>
-            </Box>
-        </ThemeProvider>
-    );
+  return (
+    <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
+      <Header />
+      <Box sx={{ px: 2, py: 2 }}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/consultants" element={<ConsultantsListPage />} />
+          <Route path="/consultants/:userId" element={<ConsultantDetailPage />} />
+          <Route path="/cv/:userId" element={<CvViewPage />} />
+          <Route path="/cv-score" element={<CvScoreListPage />} />
+          <Route path="/cv-score/:candidateId" element={<CvScoreDetailPage />} />
+          <Route path="/matches" element={<MatchesPage />} />
+          <Route path="/embeddings" element={<EmbeddingsPage />} />
+          <Route path="/chat" element={<ChatAnalyzePage />} />
+          <Route path="/health" element={<HealthPage />} />
+          <Route path="*" element={<div style={{ padding: 24 }}><a href="/">Gå til forsiden</a></div>} />
+        </Routes>
+      </Box>
+    </Box>
+  );
 }
 
 export default App;

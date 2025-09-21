@@ -1,0 +1,49 @@
+{
+  "name": "cloudberries-candidate-match-web",
+  "description": "Warp manifest for common workflows and onboarding",
+  "version": 1,
+  "workflows": [
+    {
+      "name": "install",
+      "command": "npm install",
+      "description": "Install dependencies"
+    },
+    {
+      "name": "dev",
+      "command": "npm run dev",
+      "description": "Start the local dev server"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "description": "Run linters"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "description": "Run unit tests"
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "description": "Production build"
+    },
+    {
+      "name": "docker:build",
+      "command": "docker build -t {{image_tag}} .",
+      "description": "Build a Docker image",
+      "arguments": [
+        { "name": "image_tag", "arg_type": "Text", "description": "Docker image tag", "default_value": "candidate-match-web:dev" }
+      ]
+    },
+    {
+      "name": "azdo:pipelines:run",
+      "command": "az pipelines run --name {{pipeline_name}} --branch {{branch}}",
+      "description": "Run an Azure DevOps pipeline",
+      "arguments": [
+        { "name": "pipeline_name", "arg_type": "Text", "description": "Pipeline name" },
+        { "name": "branch", "arg_type": "Text", "description": "Branch to run", "default_value": "main" }
+      ]
+    }	
+}
+
