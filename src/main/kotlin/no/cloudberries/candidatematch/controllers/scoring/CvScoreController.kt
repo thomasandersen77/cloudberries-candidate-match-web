@@ -4,6 +4,7 @@ import no.cloudberries.candidatematch.domain.candidate.scoring.CandidateCvScorin
 import no.cloudberries.candidatematch.service.ai.AIService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -24,11 +25,11 @@ class CvScoreController(
     @GetMapping("/all")
     fun getAllCandidates(): List<CandidateDTO> = cvScoreAppService.listCandidates()
 
-    @org.springframework.web.bind.annotation.PostMapping("/{candidateId}/run")
+    @PostMapping("/{candidateId}/run")
     fun runScoreForCandidate(@PathVariable("candidateId") candidateId: String): CvScoreDto =
         cvScoreAppService.scoreCandidate(candidateId)
 
-    @org.springframework.web.bind.annotation.PostMapping("/run/all")
+    @PostMapping("/run/all")
     fun runScoreForAll(): CvScoringRunResponse {
         val result = cvScoreAppService.scoreAll()
         return CvScoringRunResponse(processedCount = result.processedCount)

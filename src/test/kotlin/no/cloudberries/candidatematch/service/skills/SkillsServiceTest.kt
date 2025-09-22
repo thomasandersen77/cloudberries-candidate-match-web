@@ -48,7 +48,7 @@ class SkillsServiceTest {
             skills = setOf(no.cloudberries.candidatematch.domain.candidate.Skill.REACT)
         )
 
-        every { consultantRepository.findAll() } returns listOf(e1, e2, e3)
+        every { consultantRepository.findAllWithSkills() } returns listOf(e1, e2, e3)
 
         val result = skillsService.listSkills(null)
 
@@ -81,7 +81,7 @@ class SkillsServiceTest {
                 no.cloudberries.candidatematch.domain.candidate.Skill.KOTLIN,
             )
         )
-        every { consultantRepository.findAll() } returns listOf(e1)
+        every { consultantRepository.findAllWithSkills() } returns listOf(e1)
 
         val result = skillsService.listSkills(listOf("java"))
         assertEquals(1, result.size)

@@ -5,6 +5,7 @@ import no.cloudberries.candidatematch.controllers.consultants.ConsultantSummaryD
 import no.cloudberries.candidatematch.infrastructure.adapters.toDomain
 import no.cloudberries.candidatematch.infrastructure.repositories.ConsultantRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class SkillsService(
@@ -17,10 +18,11 @@ class SkillsService(
         val konsulenter: List<ConsultantSummaryDto>,
     )
 
+    @Transactional(readOnly = true)
     fun listSkills(skillFilters: List<String>?): List<SkillAggregate> {
         val filters = skillFilters?.map { it.trim().uppercase() }?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
 
-        val allConsultants = consultantRepository.findAll().map { it.toDomain() }
+        val allConsultants = consultantRepository.findAllWithSkills().map { it.toDomain() }
 
         // Build a map of consultant summaries upfront
         val summariesByUserId: Map<String, ConsultantSummaryDto> = allConsultants.associate { c ->
