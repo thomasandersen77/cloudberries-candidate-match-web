@@ -30,6 +30,10 @@ class ProjectRequestController(
     @GetMapping("/{id}")
     fun getById(@PathVariable id: Long): ProjectRequestResponseDto? =
         analysisService.getById(id)?.toDto()
+
+    @GetMapping
+    fun listAll(): List<ProjectRequestResponseDto> =
+        analysisService.listAll().map { it.toDto() }
 }
 
 // DTOs and mappers

@@ -81,4 +81,7 @@ class ProjectRequestAnalysisService(
 
     fun getById(id: Long): CustomerProjectRequest? =
         customerProjectRequestRepository.findById(id).orElse(null)?.toDomain()
+
+    fun listAll(): List<CustomerProjectRequest> =
+        customerProjectRequestRepository.findAll().map { it.toDomain() }
 }
