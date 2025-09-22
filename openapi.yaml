@@ -423,6 +423,39 @@ paths:
                 $ref: '#/components/schemas/CvScoreDto'
         default:
           $ref: '#/components/responses/ErrorResponse'
+    post:
+      tags: [ CV Scoring ]
+      summary: Trigger scoring for single candidate
+      description: Runs CV scoring for the specified candidate and stores/returns the latest score.
+      parameters:
+        - in: path
+          name: candidateId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated candidate CV score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvScoreDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/cv-score/run/all:
+    post:
+      tags: [ CV Scoring ]
+      summary: Trigger scoring for all consultants
+      responses:
+        '200':
+          description: Scoring summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvScoringRunResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
 
   /api/cv-score/all:
     get:
@@ -757,6 +790,13 @@ components:
           type: array
           items:
             type: string
+
+    CvScoringRunResponse:
+      type: object
+      required: [ processedCount ]
+      properties:
+        processedCount:
+          type: integer
 
     ProjectRequestResponseDto:
       type: object
