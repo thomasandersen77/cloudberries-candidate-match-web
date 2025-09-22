@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
-  timeout: 15000,
+  timeout: 60000, // increase default timeout to 60s to support long-running operations (e.g., PDF analysis)
   withCredentials: true,
   headers: { Accept: 'application/json' },
 });

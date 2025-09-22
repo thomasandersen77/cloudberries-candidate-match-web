@@ -29,8 +29,8 @@ export default function CvSectionsTable({ cv }: CvSectionsTableProps) {
 
   const keyQualifications = pickArray(anyCv, ['keyQualifications', 'cvKeyQualifications', 'qualifications', 'key_qualifications']);
   const education = pickArray(anyCv, ['education', 'cvEducation', 'educations']);
-  const work = pickArray(anyCv, ['workExperience', 'cvWorkExperience', 'experience', 'experiences']);
-  const projects = pickArray(anyCv, ['projectExperience', 'cvProjectExperience', 'projects']);
+  const work = pickArray(anyCv, ['workExperiences', 'workExperience', 'cvWorkExperiences', 'cvWorkExperience', 'experience', 'experiences']);
+  const projects = pickArray(anyCv, ['projectExperiences', 'projectExperience', 'cvProjectExperiences', 'cvProjectExperience', 'projects']);
   const certifications = pickArray(anyCv, ['certifications', 'cvCertifications', 'certs']);
   const skillCategories = pickArray(anyCv, ['skillCategories', 'skillsByCategory', 'cvSkillCategories']);
 
@@ -42,7 +42,7 @@ export default function CvSectionsTable({ cv }: CvSectionsTableProps) {
           <Typography variant="h6" sx={sectionTitleSx}>Nøkkelkvalifikasjoner</Typography>
           <TableSimple
             headers={[ 'Tekst' ]}
-            rows={keyQualifications.map((q: any) => [stringy(q?.text ?? q?.title ?? q)])}
+            rows={keyQualifications.map((q: any) => [stringy(q?.description ?? q?.text ?? q?.title ?? q)])}
           />
         </SectionPaper>
       )}

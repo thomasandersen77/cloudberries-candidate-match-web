@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "docker:dev": "docker-compose up --build",
-    "gen:api": "openapi-typescript openapi.yaml -o src/api/generated.ts"
+    "gen:api": "openapi-typescript openapi.yaml -o src/api/generated.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -35,7 +37,12 @@
     "openapi-typescript": "^7.5.3",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
-    "vite": "^7.0.4"
+    "vite": "^7.0.4",
+    "vitest": "^2.1.5",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@testing-library/jest-dom": "^6.5.0",
+    "jsdom": "^25.0.1"
   },
   "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
   "main": "eslint.config.js",
@@ -49,5 +56,11 @@
   "bugs": {
     "url": "https://github.com/thomasandersen77/cloudberries-candidate-match-web/issues"
   },
-  "homepage": "https://github.com/thomasandersen77/cloudberries-candidate-match-web#readme"
+  "homepage": "https://github.com/thomasandersen77/cloudberries-candidate-match-web#readme",
+  "vitest": {
+    "environment": "jsdom",
+    "setupFiles": [
+      "src/setupTests.ts"
+    ]
+  }
 }

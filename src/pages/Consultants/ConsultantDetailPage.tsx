@@ -20,14 +20,23 @@ const ConsultantDetailPage: React.FC = () => {
       try {
         const cvData = await getCv(userId);
         setCv(cvData);
-        // Heuristic summary extraction
-        const textParts: string[] = [];
         const anyCv = cvData as any;
         setDisplayName(anyCv?.displayName || anyCv?.name || anyCv?.fullName || userId);
-        if (anyCv.summary) textParts.push(String(anyCv.summary));
-        if (anyCv.profile) textParts.push(String(anyCv.profile));
-        if (anyCv.about) textParts.push(String(anyCv.about));
+
+        // Prefer CV key qualifications descriptions as summary if available
+        const kq: any[] | undefined = Array.isArray(anyCv?.keyQualifications) ? anyCv.keyQualifications : undefined;
+        const kqTexts = kq?.map((q) => q?.description ?? q?.text ?? q?.title ?? q).map(String).filter(Boolean) ?? [];
+
+        const textParts: string[] = [];
+        if (kqTexts.length > 0) {
+          textParts.push(kqTexts.join('\n\n'));
+        } else {
+          if (anyCv.summary) textParts.push(String(anyCv.summary));
+          if (anyCv.profile) textParts.push(String(anyCv.profile));
+          if (anyCv.about) textParts.push(String(anyCv.about));
+        }
         setSummary(textParts.join('\n\n') || 'Ingen oppsummering tilgjengelig.');
+
         const skills = extractSkills(cvData);
         setTopSkills(skills.slice(0, 12));
       } finally {

@@ -1,7 +1,7 @@
 import apiClient from './apiClient';
 
 // Interface for den detaljerte helsestatusen til hver avhengighet
-import type { HealthResponse as HealthStatus } from '../types/api';
+import type {HealthResponse as HealthStatus} from '../types/api';
 
 export interface HealthDetails {
     database?: 'UP' | 'DOWN';
@@ -38,25 +38,15 @@ export const getHealthStatus = async (): Promise<HealthStatus> => {
 
     // Fallback to Spring Boot Actuator
     try {
-        const { data } = await apiClient.get<any>('/actuator/health');
+        const {data} = await apiClient.get<any>('/actuator/health');
         if (data && data.status) {
             const details = data.details ?? data.components ?? {};
-            return { status: data.status, details } as HealthStatus;
+            return {status: data.status, details} as HealthStatus;
         }
     } catch (error) {
         // continue
     }
 
-    // Final fallback
-    try {
-        const { data } = await apiClient.get<any>('/health');
-        if (data && data.status) {
-            const details = data.details ?? data.components ?? {};
-            return { status: data.status, details } as HealthStatus;
-        }
-    } catch (error) {
-        // continue
-    }
 
     return defaultDownStatus;
 };

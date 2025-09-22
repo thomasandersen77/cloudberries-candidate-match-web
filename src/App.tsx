@@ -7,9 +7,11 @@ import CvViewPage from './pages/CV/CvViewPage';
 import CvScoreListPage from './pages/CvScore/CvScoreListPage';
 import CvScoreDetailPage from './pages/CvScore/CvScoreDetailPage';
 import MatchesPage from './pages/Matches/MatchesPage';
+import SkillsOverviewPage from './pages/Skills/SkillsOverviewPage';
 import EmbeddingsPage from './pages/Embeddings/EmbeddingsPage';
 import ChatAnalyzePage from './pages/Chat/ChatAnalyzePage';
 import HealthPage from './pages/Health/HealthPage';
+import ProjectRequestUploadPage from './pages/ProjectRequests/ProjectRequestUploadPage';
 import Header from './components/Header';
 
 
@@ -27,8 +29,10 @@ function App() {
           <Route path="/cv-score/:candidateId" element={<CvScoreDetailPage />} />
           <Route path="/matches" element={<MatchesPage />} />
           <Route path="/embeddings" element={<EmbeddingsPage />} />
+          <Route path="/skills" element={<SkillsOverviewPage />} />
           <Route path="/chat" element={<ChatAnalyzePage />} />
           <Route path="/health" element={<HealthPage />} />
+          <Route path="/project-requests/upload" element={<ProjectRequestUploadPage />} />
           <Route path="*" element={<div style={{ padding: 24 }}><a href="/">Gå til forsiden</a></div>} />
         </Routes>
       </Box>

@@ -1,58 +1,41 @@
-// Types derived from openapi.yaml
+// Re-eksporter typer generert fra OpenAPI for konsistens
+import type { components } from '../api/generated';
 
-export type HealthStatusValue = 'UP' | 'DOWN' | 'OUT_OF_SERVICE' | 'UNKNOWN';
+export type HealthStatusValue = components['schemas']['HealthResponse']['status'];
+export type HealthResponse = components['schemas']['HealthResponse'];
 
-export interface HealthResponse {
-  status: HealthStatusValue;
-  details?: Record<string, string>;
-}
+export type AIAnalysisRequest = components['schemas']['AIAnalysisRequest'];
+export type AIResponseModel = components['schemas']['AIResponseModel'];
 
-export interface AIAnalysisRequest { content: string }
-export interface AIResponseModel { content?: string; modelUsed?: string }
+export type ConsultantSummaryDto = components['schemas']['ConsultantSummaryDto'];
+export type PageConsultantSummaryDto = components['schemas']['PageConsultantSummaryDto'];
 
-export interface ConsultantSummaryDto {
-  userId: string;
-  name: string;
-  email: string;
-  bornYear: number;
-  defaultCvId: string;
-}
+export type CvData = components['schemas']['CvData'];
 
-export interface PageConsultantSummaryDto {
-  content: ConsultantSummaryDto[];
-  number: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  first: boolean;
-  last: boolean;
-  sort?: Record<string, unknown>;
-  pageable?: Record<string, unknown>;
-}
+export type EmbeddingJasonRunResponse = components['schemas']['EmbeddingJasonRunResponse'];
+export type EmbeddingUserCvRunResponse = components['schemas']['EmbeddingUserCvRunResponse'];
+export type EmbeddingRunMissingResponse = components['schemas']['EmbeddingRunMissingResponse'];
 
-export type CvData = Record<string, unknown>;
+export type MatchApiRequest = components['schemas']['MatchApiRequest'];
+export type SkillsRequest = components['schemas']['SkillsRequest'];
 
-export interface EmbeddingJasonRunResponse { processedJason?: boolean }
-export interface EmbeddingUserCvRunResponse { userId: string; cvId: string; processed: boolean }
-export interface EmbeddingRunMissingResponse { processedCount?: number; batchSize?: number }
+export type Requirement = components['schemas']['Requirement'];
+export type CandidateMatchResponse = components['schemas']['CandidateMatchResponse'];
 
-export interface MatchApiRequest { projectRequestText: string }
-export interface SkillsRequest { skills: string[] }
+export type CandidateDTO = components['schemas']['CandidateDTO'];
 
-export interface Requirement { name: string; comment: string; score: string }
-export interface CandidateMatchResponse {
-  totalScore: string;
-  summary: string;
-  matchTimeSeconds?: number;
-  requirements?: Requirement[];
-}
+export type CvScoreDto = components['schemas']['CvScoreDto'];
 
-export interface CandidateDTO { id: string; name: string; birthYear: number }
+// Project Request typer
+export type ProjectRequirementDto = components['schemas']['ProjectRequirementDto'];
+export type ProjectRequestResponseDto = components['schemas']['ProjectRequestResponseDto'];
 
-export interface CvScoreDto {
-  candidateId: string;
-  scorePercent: number;
-  summary: string;
-  strengths: string[];
-  potentialImprovements: string[];
+// Skills aggregate
+export type SkillInCompanyDto = components['schemas']['SkillInCompanyDto'];
+  customerName?: string;
+  title?: string;
+  summary?: string;
+  originalFilename?: string;
+  mustRequirements?: ProjectRequirementDto[];
+  shouldRequirements?: ProjectRequirementDto[];
 }

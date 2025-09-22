@@ -50,7 +50,8 @@ const HealthDetailsTooltip: React.FC<{ details: HealthDetails | null }> = ({deta
 
 // Configuration constants for styling and behavior
 const HEALTH_CHECK_CONFIG = {
-    INTERVAL_MS: 30000,
+    // Poll health once every five minutes
+    INTERVAL_MS: 300000,
     ICON_SIZE: '26px',
     SPINNER_SIZE: 16,
     MARGIN_RIGHT: 2

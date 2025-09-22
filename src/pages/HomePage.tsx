@@ -5,9 +5,11 @@ import { Link as RouterLink } from 'react-router-dom';
 const HomePage: React.FC = () => {
   const links = [
     { to: '/consultants', title: 'Konsulenter', desc: 'Se liste over konsulenter' },
+    { to: '/skills', title: 'Ferdigheter', desc: 'Se ferdigheter i firma og tilhørende konsulenter' },
     { to: '/cv-score', title: 'CV-Score', desc: 'Se kandidater og score' },
     { to: '/matches', title: 'Matcher', desc: 'Finn kandidatmatcher' },
     { to: '/embeddings', title: 'Embeddings', desc: 'Kjør embedding-oppgaver' },
+    { to: '/project-requests/upload', title: 'Last opp kundeforspørsel', desc: 'Last opp PDF, analyser og lagre i databasen' },
     { to: '/chat', title: 'Chat Analyze', desc: 'Analyser tekst med AI' },
     { to: '/health', title: 'Helse', desc: 'Systemstatus' },
   ];
