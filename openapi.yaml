@@ -100,6 +100,53 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /api/consultants/with-cv:
+    get:
+      tags: [ Consultants ]
+      summary: List all consultants with their CVs (normalized entities)
+      parameters:
+        - in: query
+          name: onlyActiveCv
+          description: If true, include only active CVs for each consultant
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Consultants with nested CV structures
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsultantWithCvDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/consultants/with-cv/paged:
+    get:
+      tags: [ Consultants ]
+      summary: List consultants with CVs (paged)
+      parameters:
+        - in: query
+          name: onlyActiveCv
+          schema:
+            type: boolean
+            default: false
+          description: If true, include only active CVs for each consultant
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - $ref: '#/components/parameters/SortParam'
+      responses:
+        '200':
+          description: Paged consultants with CVs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageConsultantWithCvDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /api/consultants/sync/run:
     post:
       tags: [ Consultants ]
@@ -671,6 +718,180 @@ components:
         number:
           type: integer
           description: Page number (0-indexed)
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+        sort:
+          type: object
+          additionalProperties: true
+        pageable:
+          type: object
+          additionalProperties: true
+
+    ConsultantWithCvDto:
+      type: object
+      required: [ userId, name, cvId, skills, cvs ]
+      properties:
+        id:
+          type: integer
+          format: int64
+          nullable: true
+        userId:
+          type: string
+        name:
+          type: string
+        cvId:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        cvs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsultantCvDto'
+
+    ConsultantCvDto:
+      type: object
+      required: [ active ]
+      properties:
+        id:
+          type: integer
+          format: int64
+          nullable: true
+        versionTag:
+          type: string
+          nullable: true
+        qualityScore:
+          type: integer
+          nullable: true
+        active:
+          type: boolean
+        keyQualifications:
+          type: array
+          items: { $ref: '#/components/schemas/KeyQualificationDto' }
+        education:
+          type: array
+          items: { $ref: '#/components/schemas/EducationDto' }
+        workExperience:
+          type: array
+          items: { $ref: '#/components/schemas/WorkExperienceDto' }
+        projectExperience:
+          type: array
+          items: { $ref: '#/components/schemas/ProjectExperienceDto' }
+        certifications:
+          type: array
+          items: { $ref: '#/components/schemas/CertificationDto' }
+        courses:
+          type: array
+          items: { $ref: '#/components/schemas/CourseDto' }
+        languages:
+          type: array
+          items: { $ref: '#/components/schemas/LanguageDto' }
+        skillCategories:
+          type: array
+          items: { $ref: '#/components/schemas/SkillCategoryDto' }
+        attachments:
+          type: array
+          items: { $ref: '#/components/schemas/AttachmentDto' }
+
+    KeyQualificationDto:
+      type: object
+      properties:
+        label: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+
+    EducationDto:
+      type: object
+      properties:
+        degree: { type: string, nullable: true }
+        school: { type: string, nullable: true }
+        fromYearMonth: { type: string, nullable: true }
+        toYearMonth: { type: string, nullable: true }
+
+    WorkExperienceDto:
+      type: object
+      properties:
+        employer: { type: string, nullable: true }
+        fromYearMonth: { type: string, nullable: true }
+        toYearMonth: { type: string, nullable: true }
+
+    ProjectExperienceDto:
+      type: object
+      properties:
+        customer: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        longDescription: { type: string, nullable: true }
+        fromYearMonth: { type: string, nullable: true }
+        toYearMonth: { type: string, nullable: true }
+        roles:
+          type: array
+          items: { $ref: '#/components/schemas/ProjectRoleDto' }
+        skills:
+          type: array
+          items: { type: string }
+
+    ProjectRoleDto:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+
+    CertificationDto:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        year: { type: integer, nullable: true }
+
+    CourseDto:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        organizer: { type: string, nullable: true }
+        year: { type: integer, nullable: true }
+
+    LanguageDto:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        level: { type: string, nullable: true }
+
+    SkillCategoryDto:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        skills:
+          type: array
+          items: { $ref: '#/components/schemas/SkillInCategoryDto' }
+
+    SkillInCategoryDto:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        durationYears: { type: integer, nullable: true }
+
+    AttachmentDto:
+      type: object
+      properties:
+        fileName: { type: string, nullable: true }
+        url: { type: string, nullable: true }
+
+    PageConsultantWithCvDto:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsultantWithCvDto'
+        number:
+          type: integer
         size:
           type: integer
         totalElements:

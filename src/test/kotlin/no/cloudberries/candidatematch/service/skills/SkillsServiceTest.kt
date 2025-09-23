@@ -49,7 +49,7 @@ class SkillsServiceTest {
             skills = mutableSetOf(Skill.REACT)
         )
 
-        every { consultantRepository.findAllWithSkills() } returns listOf(e1, e2, e3)
+every { consultantRepository.findAll() } returns listOf(e1, e2, e3)
 
         val result = skillsService.listSkills(null)
 
@@ -82,7 +82,7 @@ class SkillsServiceTest {
                 Skill.KOTLIN,
             )
         )
-        every { consultantRepository.findAllWithSkills() } returns listOf(e1)
+every { consultantRepository.findAll() } returns listOf(e1)
 
         val result = skillsService.listSkills(listOf("java"))
         assertEquals(1, result.size)

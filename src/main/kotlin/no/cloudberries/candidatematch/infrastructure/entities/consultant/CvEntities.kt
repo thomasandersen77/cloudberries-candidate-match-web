@@ -39,6 +39,7 @@ data class CvKeyQualificationEntity(
     val cvId: Long,
 
     val label: String? = null,
+    @Column(columnDefinition = "text")
     val description: String? = null,
 )
 
@@ -97,8 +98,9 @@ data class CvProjectExperienceEntity(
     val cvId: Long,
 
     val customer: String? = null,
+    @Column(columnDefinition = "text")
     val description: String? = null,
-    @Column(name = "long_description")
+    @Column(name = "long_description", columnDefinition = "text")
     val longDescription: String? = null,
     @Column(name = "from_year_month")
     val fromYearMonth: String? = null,
@@ -120,6 +122,7 @@ data class CvProjectExperienceRoleEntity(
     val projectExperienceId: Long,
 
     val name: String? = null,
+    @Column(columnDefinition = "text")
     val description: String? = null,
 )
 

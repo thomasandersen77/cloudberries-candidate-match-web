@@ -12,5 +12,6 @@
     <include file="db/changelog/db_changelog-4.0-cv-score.xml"/>
     <include file="db/changelog/db_changelog-5.0-project-request.xml"/>
     <include file="db/changelog/db_changelog-6.0-json-to-jsonb.xml"/>
+    <include file="db/changelog/db_changelog-7.0-cv-text-columns.xml"/>
 
 </databaseChangeLog>

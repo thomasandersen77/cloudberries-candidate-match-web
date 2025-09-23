@@ -96,6 +96,11 @@ class FlowcaseHttpClient(
                     return FlowcaseUserResponse.NotFound
                 }
 
+                response.code == 429 -> {
+                    logger.warn { "Rate limit exceeded for fetchUserById($userId). Consider implementing retry logic." }
+                    throw RuntimeException("Error from Flowcase API (fetchUserById($userId)): ${response.code} - Rate limit exceeded")
+                }
+
                 else -> {
                     throw RuntimeException("Error from Flowcase API (fetchUserById($userId)): ${response.code} - ${response.message}")
                 }
@@ -107,16 +112,26 @@ class FlowcaseHttpClient(
         val url = "${config.baseUrl}/v3/cvs/$userId/$cvId"
         val request = buildGetRequest(url)
         client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                logger.warn { "Warning: Could not fetch full resume for userId $userId / cvId $cvId. Status: ${response.code}" }
+            when {
+                response.isSuccessful -> {
+                    return response.body.string().let {
+                        mapper.readValue(
+                            it,
+                            FlowcaseCvDto::class.java
+                        ).also {
+                            logger.info { "Fetched CV for userId $userId / cvId $cvId" }
+                        }
+                    }
+                }
 
-            }
-            return response.body.string().let {
-                mapper.readValue(
-                    it,
-                    FlowcaseCvDto::class.java
-                ).also {
-                    logger.info { "Fetched CV for userId $userId / cvId $cvId" }
+                response.code == 429 -> {
+                    logger.warn { "Rate limit exceeded for fetchCompleteCv($userId, $cvId). Consider implementing retry logic." }
+                    throw RuntimeException("Error from Flowcase API (fetchCompleteCv($userId, $cvId)): ${response.code} - Rate limit exceeded")
+                }
+
+                else -> {
+                    logger.warn { "Warning: Could not fetch full resume for userId $userId / cvId $cvId. Status: ${response.code}" }
+                    throw RuntimeException("Error from Flowcase API (fetchCompleteCv($userId, $cvId)): ${response.code} - ${response.message}")
                 }
             }
         }

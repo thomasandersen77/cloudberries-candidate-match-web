@@ -329,6 +329,18 @@ Tips:
 
 ## API-endepunkter (funksjonell oversikt)
 
+Ekstra: Konsulenter med normaliserte CV-typer
+
+- GET /api/consultants/with-cv
+  - Returnerer alle konsulenter med tilhørende CV-er og normaliserte under-typer (keyQualifications, education, workExperience, projectExperience m/roles og skills, certifications, courses, languages, skillCategories m/skills, attachments)
+  - Valgfri query-parameter: onlyActiveCv=true for å kun inkludere aktive CV-er
+
+Eksempel:
+
+```bash
+curl -s "http://localhost:8080/api/consultants/with-cv?onlyActiveCv=true" | jq '.[:1]'
+```
+
 | Metode | Path                              | Formål (funksjonelt)                                                | Input (kort)                                 | Output (kort) |
 |-------:|-----------------------------------|---------------------------------------------------------------------|----------------------------------------------|---------------|
 | GET    | /api/skills                       | Aggregerer og lister kompetanser i selskapet                       | query: skill[]=KOTLIN,…                      | Aggregater    |
@@ -337,7 +349,8 @@ Tips:
 | POST   | /api/consultants/sync/run         | Kjører synk fra Flowcase                                            | query: batchSize                             | Sammendrag    |
 | POST   | /api/consultants/search           | Relasjonelt søk etter konsulenter                                   | JSON: { name, skillsAll/Any, … } + paging    | Page<Result>  |
 | POST   | /api/consultants/search/semantic  | Semantisk søk (embeddings/pgvector)                                 | JSON: { text, provider?, model?, topK }      | Treffliste    |
-| GET    | /api/cv/{userId}                  | Henter CV-data (JSON) for gitt bruker                               | path: userId                                  | CV JSON       |
+|| GET    | /api/cv/{userId}                  | Henter CV-data (JSON) for gitt bruker                               | path: userId                                  | CV JSON       |
+|| GET    | /api/consultants/with-cv          | Lister alle konsulenter med normaliserte CV-data                    | query: onlyActiveCv?                           | Liste         |
 | POST   | /api/embeddings/run/jason         | Demo: generér embeddings for «Jason»                                | –                                            | Resultat      |
 | POST   | /api/embeddings/run               | Generér embeddings for spesifikk bruker/CV                          | query: userId, cvId                           | Resultat      |
 | POST   | /api/embeddings/run/missing       | Generér embeddings for manglende i batch                            | query: batchSize                              | Resultat      |

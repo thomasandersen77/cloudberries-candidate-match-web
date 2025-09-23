@@ -22,7 +22,7 @@ class SkillsService(
     fun listSkills(skillFilters: List<String>?): List<SkillAggregate> {
         val filters = skillFilters?.map { it.trim().uppercase() }?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
 
-        val allConsultants = consultantRepository.findAllWithSkills().map { it.toDomain() }
+        val allConsultants = consultantRepository.findAll().map { it.toDomain() }
 
         // Build a map of consultant summaries upfront
         val summariesByUserId: Map<String, ConsultantSummaryDto> = allConsultants.associate { c ->
