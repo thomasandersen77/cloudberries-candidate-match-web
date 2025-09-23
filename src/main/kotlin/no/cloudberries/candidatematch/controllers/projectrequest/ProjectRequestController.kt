@@ -1,6 +1,8 @@
 package no.cloudberries.candidatematch.controllers.projectrequest
 
-import no.cloudberries.candidatematch.domain.ProjectRequest
+import no.cloudberries.candidatematch.infrastructure.entities.projectrequest.CustomerProjectRequestEntity
+import no.cloudberries.candidatematch.infrastructure.entities.projectrequest.ProjectRequestRequirementEntity
+import no.cloudberries.candidatematch.infrastructure.entities.projectrequest.RequirementPriority
 import no.cloudberries.candidatematch.service.projectrequest.ProjectRequestAnalysisService
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
@@ -19,11 +21,11 @@ class ProjectRequestController(
     fun uploadAndAnalyze(
         @RequestPart("file") file: MultipartFile
     ): ProjectRequestResponseDto {
-        val projectRequest = analysisService.analyzeAndStore(
+        val agg = analysisService.analyzeAndStore(
             pdfStream = file.inputStream,
             originalFilename = file.originalFilename
         )
-        return projectRequest.toDto()
+        return agg.toDto()
     }
 
     @GetMapping("/{id}")
@@ -40,25 +42,35 @@ class ProjectRequestController(
 data class ProjectRequestResponseDto(
     val id: Long,
     val customerName: String?,
-    val requiredSkills: List<String>,
-    val startDate: String,
-    val endDate: String,
-    val responseDeadline: String,
-    val status: String,
-    val requestDescription: String,
-    val responsibleSalespersonEmail: String,
+    val title: String?,
+    val summary: String?,
+    val mustRequirements: List<ProjectRequirementDto>,
+    val shouldRequirements: List<ProjectRequirementDto>,
+    val originalFilename: String?,
 )
 
-fun ProjectRequest.toDto(): ProjectRequestResponseDto {
+data class ProjectRequirementDto(
+    val name: String,
+    val details: String?
+)
+
+private fun ProjectRequestAnalysisService.Aggregate.toDto(): ProjectRequestResponseDto {
+    val must = this.requirements
+        .filter { it.priority == RequirementPriority.MUST }
+        .map { it.toDto() }
+    val should = this.requirements
+        .filter { it.priority == RequirementPriority.SHOULD }
+        .map { it.toDto() }
     return ProjectRequestResponseDto(
-        id = this.id?.value ?: -1,
-        customerName = this.customerName,
-        requiredSkills = this.requiredSkills.map { it.name },
-        startDate = this.startDate.toString(),
-        endDate = this.endDate.toString(),
-        responseDeadline = this.responseDeadline.toString(),
-        status = this.status.name,
-        requestDescription = this.requestDescription,
-        responsibleSalespersonEmail = this.responsibleSalespersonEmail,
+        id = this.request.id ?: -1,
+        customerName = this.request.customerName,
+        title = this.request.title,
+        summary = this.request.summary,
+        mustRequirements = must,
+        shouldRequirements = should,
+        originalFilename = this.request.originalFilename,
     )
 }
+
+private fun ProjectRequestRequirementEntity.toDto(): ProjectRequirementDto =
+    ProjectRequirementDto(name = this.name, details = this.details)

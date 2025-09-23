@@ -70,7 +70,7 @@ graph TB
 
 ## Prerequisites (macOS, zsh)
 
-- Java 21 (install via SDKMAN)
+- Java 21.0.7 Temurin (install via SDKMAN)
 - Maven (install via SDKMAN) — the project also includes the Maven Wrapper (mvnw)
 - Docker (for running PostgreSQL or Testcontainers-based integration tests)
 
@@ -283,15 +283,22 @@ PostgreSQL, pgvector (opsjon), Testcontainers/Zonky for tester.
   - YAML: `http://localhost:8080/v3/api-docs.yaml`
   - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
-Generere TypeScript-typer til frontend (alternativ 1: openapi-typescript):
+Synkronisere spesifikasjon og generere typer i frontend (cloudberries-candidate-match-web):
 
 ```bash
-# I frontend-prosjektet (juster sti til openapi.yaml og ønsket output)
-npm i -D openapi-typescript
-npx openapi-typescript ../cloudberries-candidate-match/openapi.yaml -o src/api/types.gen.ts
+# Fra backend-repoet
+cp openapi.yaml ../cloudberries-candidate-match-web/openapi.yaml
+npm --prefix ../cloudberries-candidate-match-web run gen:api
 ```
 
-Generere TypeScript-klient (alternativ 2: OpenAPI Generator):
+Alternativt kan frontend hente direkte fra kjørende backend:
+
+```bash
+curl -s http://localhost:8080/v3/api-docs.yaml > ../cloudberries-candidate-match-web/openapi.yaml
+npm --prefix ../cloudberries-candidate-match-web run gen:api
+```
+
+Generere TypeScript-klient (valgfritt, OpenAPI Generator):
 
 ```bash
 # Installer via Homebrew (eller bruk Docker image openapitools/openapi-generator-cli)
@@ -338,6 +345,7 @@ Tips:
 | POST   | /api/matches                      | Finn matcher fra prosjektbeskrivelse (tekst)                        | JSON: { projectRequestText }                 | Matcher       |
 | POST   | /api/matches/upload               | Last opp CV (PDF) og finn matcher                                   | multipart: file, projectRequestText           | Matcher       |
 | POST   | /api/matches/by-skills            | Finn matcher basert på valgte kompetanser                           | JSON: { skills: [ ... ] }                    | Matcher       |
+| GET    | /api/project-requests             | List lagrede kundeforespørsler (kompakt/aggregert)                  | –                                            | Liste         |
 | POST   | /api/project-requests/upload      | Last opp og analyser kundeforespørsel (PDF)                         | multipart: file                               | Forespørsel   |
 | GET    | /api/project-requests/{id}        | Hent lagret kundeforespørsel                                        | path: id                                      | Forespørsel   |
 | GET    | /api/cv-score/{candidateId}       | Hent CV-score for kandidat                                          | path: candidateId                             | Score DTO     |
