@@ -1,14 +1,15 @@
 package no.cloudberries.candidatematch.controllers.consultants
 
 import no.cloudberries.candidatematch.service.consultants.ConsultantReadService
-import no.cloudberries.candidatematch.service.consultants.SyncConsultantService
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
-import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
-// Only read operations from database via service. No create/update.
+// Only read operations from Flowcase via service. No create/update.
 
 data class ConsultantSummaryDto(
     val userId: String,
@@ -22,7 +23,6 @@ data class ConsultantSummaryDto(
 @RequestMapping("/api/consultants")
 class ConsultantController(
     private val consultantReadService: ConsultantReadService,
-    private val syncConsultantService: SyncConsultantService,
 ) {
 
     @GetMapping
@@ -33,27 +33,6 @@ class ConsultantController(
         return consultantReadService.listConsultants(
             name,
             pageable
-        )
-    }
-
-    @PostMapping("/sync/run")
-    fun runSync(
-        @RequestParam(
-            name = "batchSize",
-            defaultValue = "100"
-        ) batchSize: Int,
-    ): ResponseEntity<Map<String, Any>> {
-        val size = batchSize.coerceIn(
-            1,
-            1000
-        )
-        val result = syncConsultantService.syncAll(size)
-        return ResponseEntity.ok(
-            mapOf(
-                "processed" to result.processed,
-                "skipped" to result.skipped,
-                "errors" to result.errors
-            )
         )
     }
 }

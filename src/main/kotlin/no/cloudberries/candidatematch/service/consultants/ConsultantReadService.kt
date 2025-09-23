@@ -1,9 +1,7 @@
 package no.cloudberries.candidatematch.service.consultants
 
-import jakarta.transaction.Transactional
 import no.cloudberries.candidatematch.controllers.consultants.ConsultantSummaryDto
-import no.cloudberries.candidatematch.infrastructure.adapters.toDomain
-import no.cloudberries.candidatematch.infrastructure.repositories.ConsultantRepository
+import no.cloudberries.candidatematch.infrastructure.integration.flowcase.FlowcaseHttpClient
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
@@ -11,40 +9,42 @@ import org.springframework.stereotype.Service
 
 @Service
 class ConsultantReadService(
-    private val consultantRepository: ConsultantRepository,
+    private val flowcaseHttpClient: FlowcaseHttpClient,
 ) {
-    @Transactional
     fun listConsultants(name: String?, pageable: Pageable): Page<ConsultantSummaryDto> {
-
-        val all = consultantRepository.findAll().map { it.toDomain() }
+        val all = flowcaseHttpClient.fetchAllUsers().flowcaseUserDTOs
 
         val filtered = all.filter {
-            name == null || it.personalInfo.name.contains(
+            name == null || it.name.contains(
                 name,
                 ignoreCase = true
             )
         }
 
+        val totalElements = filtered.size.toLong()
+        val pageSize = pageable.pageSize
+        val pageNumber = pageable.pageNumber
+
         val pageOfConsultants = if (filtered.isEmpty()) {
             emptyList()
         } else {
-            filtered.chunked(pageable.pageSize).getOrNull(pageable.pageNumber) ?: emptyList()
+            filtered.chunked(pageSize).getOrNull(pageNumber) ?: emptyList()
         }
 
         val mapped = pageOfConsultants.map {
             ConsultantSummaryDto(
-                userId = it.id,
-                name = it.personalInfo.name,
-                email = it.personalInfo.email,
-                bornYear = it.personalInfo.birthYear?.get(java.time.temporal.ChronoField.YEAR)?.toInt() ?: 0,
-                defaultCvId = it.defaultCvId
+                userId = it.userId,
+                name = it.name,
+                email = it.email,
+                bornYear = it.bornYear,
+                defaultCvId = it.cvId
             )
         }
 
         return PageImpl(
             mapped,
             pageable,
-            pageable.pageNumber.toLong() + 1
+            totalElements
         )
     }
 }

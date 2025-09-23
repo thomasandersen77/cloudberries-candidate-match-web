@@ -41,15 +41,15 @@ sealed interface FlowcaseUserResponse {
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class FlowcaseUserDTO(
-    @param:JsonProperty("user_id")
+    @JsonProperty("user_id")
     val userId: String,
-    @param:JsonProperty("default_cv_id")
+    @JsonProperty("default_cv_id")
     val cvId: String,
-    @param:JsonProperty("born_year")
+    @JsonProperty("born_year")
     val bornYear: Int,
-    @param:JsonProperty("name")
+    @JsonProperty("name")
     val name: String,
-    @param:JsonProperty("email")
+    @JsonProperty("email")
     val email: String
 )
 
@@ -59,25 +59,25 @@ data class FlowcaseUserSearchResponse(
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class FlowcaseCvDto(
-    @param:JsonProperty("_id")
+    @JsonProperty("_id")
     val cvId: String,
-    @param:JsonProperty("user_id")
+    @JsonProperty("user_id")
     val userId: String,
     val name: String,
     val email: String,
     val telefon: String?,
-    @param:JsonProperty("born_year")
+    @JsonProperty("born_year")
     val bornYear: Int?,
     val title: MultiLangText?,
     val nationality: MultiLangText?,
-    @param:JsonProperty("place_of_residence")
+    @JsonProperty("place_of_residence")
     val placeOfResidence: MultiLangText?,
     val technologies: List<TechnologyDto> = emptyList(),
-    @param:JsonProperty("key_qualifications")
+    @JsonProperty("key_qualifications")
     val keyQualifications: List<KeyQualificationDto> = emptyList(),
-    @param:JsonProperty("work_experiences")
+    @JsonProperty("work_experiences")
     val workExperiences: List<WorkExperienceDto> = emptyList(),
-    @param:JsonProperty("project_experiences")
+    @JsonProperty("project_experiences")
     val projectExperiences: List<ProjectExperienceDto> = emptyList(),
     val educations: List<EducationDto> = emptyList(),
     val certifications: List<CertificationDto> = emptyList(),
@@ -88,7 +88,7 @@ data class FlowcaseCvDto(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class TechnologyDto(
     val category: MultiLangText?,
-    @param:JsonProperty("technology_skills")
+    @JsonProperty("technology_skills")
     val technologySkills: List<TechnologySkillDto> = emptyList(),
     val disabled: Boolean = false,
 )
@@ -96,7 +96,7 @@ data class TechnologyDto(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class TechnologySkillDto(
     val tags: MultiLangText?,
-    @param:JsonProperty("total_duration_in_years")
+    @JsonProperty("total_duration_in_years")
     val totalDurationInYears: Int?,
     val disabled: Boolean = false,
 )
@@ -104,7 +104,7 @@ data class TechnologySkillDto(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class KeyQualificationDto(
     val label: MultiLangText?,
-    @param:JsonProperty("long_description")
+    @JsonProperty("long_description")
     val longDescription: MultiLangText?,
     val disabled: Boolean = false,
 )
@@ -112,13 +112,13 @@ data class KeyQualificationDto(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class WorkExperienceDto(
     val employer: MultiLangText?,
-    @param:JsonProperty("month_from")
+    @JsonProperty("month_from")
     val monthFrom: String?,
-    @param:JsonProperty("month_to")
+    @JsonProperty("month_to")
     val monthTo: String?,
-    @param:JsonProperty("year_from")
+    @JsonProperty("year_from")
     val yearFrom: String?,
-    @param:JsonProperty("year_to")
+    @JsonProperty("year_to")
     val yearTo: String?,
     val disabled: Boolean = false,
 )
@@ -127,18 +127,18 @@ data class WorkExperienceDto(
 data class ProjectExperienceDto(
     val customer: MultiLangText?,
     val description: MultiLangText?,
-    @param:JsonProperty("long_description")
+    @JsonProperty("long_description")
     val longDescription: MultiLangText?,
-    @param:JsonProperty("month_from")
+    @JsonProperty("month_from")
     val monthFrom: String?,
-    @param:JsonProperty("month_to")
+    @JsonProperty("month_to")
     val monthTo: String?,
-    @param:JsonProperty("year_from")
+    @JsonProperty("year_from")
     val yearFrom: String?,
-    @param:JsonProperty("year_to")
+    @JsonProperty("year_to")
     val yearTo: String?,
     val roles: List<RoleDto> = emptyList(),
-    @param:JsonProperty("project_experience_skills")
+    @JsonProperty("project_experience_skills")
     val projectExperienceSkills: List<TechnologySkillDto> = emptyList(),
     val disabled: Boolean = false,
 )
@@ -147,7 +147,7 @@ data class ProjectExperienceDto(
 data class RoleDto(
     val name: MultiLangText?,
     val description: MultiLangText?,
-    @param:JsonProperty("long_description")
+    @JsonProperty("long_description")
     val longDescription: MultiLangText?,
     val disabled: Boolean = false,
 )
@@ -156,9 +156,9 @@ data class RoleDto(
 data class EducationDto(
     val degree: MultiLangText?,
     val school: MultiLangText?,
-    @param:JsonProperty("year_from")
+    @JsonProperty("year_from")
     val yearFrom: String?,
-    @param:JsonProperty("year_to")
+    @JsonProperty("year_to")
     val yearTo: String?,
     val disabled: Boolean = false,
 )

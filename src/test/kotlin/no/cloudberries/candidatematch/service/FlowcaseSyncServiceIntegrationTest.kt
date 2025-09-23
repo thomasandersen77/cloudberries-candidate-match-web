@@ -70,7 +70,7 @@ class FlowcaseSyncServiceIntegrationTest {
 
         // Når (Act)
         // Vi kaller hovedmetoden. Siden den har @Scheduled, kaller vi den direkte i testen.
-        syncConsultantService.scheduledSyncAll()
+        syncConsultantService.fetchFullCvForUser()
 
         // Da (Assert)
         // Verifiser at kallene til WireMock ble gjort som forventet.

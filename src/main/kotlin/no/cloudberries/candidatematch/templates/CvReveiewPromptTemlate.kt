@@ -66,7 +66,17 @@ Innhold (vekt: 2.5)
 
 Teknisk Dybde (vekt: 2.5)
 
-Kunnskapsdeling og faglig tynde (2.0)
+Kunnskapsdeling og faglig tynde (2.0
+
+
+
+
+
+
+)
+
+
+
 
 Språk (vekt: 1.5)
 
