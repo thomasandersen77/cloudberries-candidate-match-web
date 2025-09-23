@@ -41,7 +41,7 @@ class ScoreCandidateStartupRunner(
             try {
                 // skip if already scored
                 val existing = cvScoreRepository.findByCandidateUserId(entity.userId)
-                if (existing != null && existing.scorePercent > 0.0) {
+                if (existing != null && existing.scorePercent > 0) {
                     return@forEach
                 }
 

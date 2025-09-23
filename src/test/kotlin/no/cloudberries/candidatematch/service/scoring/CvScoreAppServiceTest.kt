@@ -8,6 +8,7 @@ import no.cloudberries.candidatematch.infrastructure.entities.ConsultantEntity
 import no.cloudberries.candidatematch.infrastructure.entities.scoring.CvScoreEntity
 import no.cloudberries.candidatematch.infrastructure.repositories.ConsultantRepository
 import no.cloudberries.candidatematch.infrastructure.repositories.scoring.CvScoreRepository
+import no.cloudberries.candidatematch.domain.candidate.Skill
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -28,7 +29,7 @@ class CvScoreAppServiceTest {
             name = "Alice",
             cvId = "cv1",
             resumeData = resume,
-            skills = emptySet()
+            skills = mutableSetOf<Skill>()
         )
         every { consultantRepository.findByUserId("u1") } returns consultant
         every { cvScoreRepository.findByCandidateUserId("u1") } returns null
@@ -59,7 +60,7 @@ every { scoreCandidateService.performCvScoring(any(), any(), any()) } returns no
             name = "Alice",
             cvId = "cv1",
             resumeData = resume,
-            skills = emptySet()
+            skills = mutableSetOf<Skill>()
         )
         every { consultantRepository.findAll() } returns listOf(consultant)
         every { consultantRepository.findByUserId("u1") } returns consultant

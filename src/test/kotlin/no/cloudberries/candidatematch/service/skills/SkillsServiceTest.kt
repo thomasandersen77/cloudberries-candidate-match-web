@@ -5,6 +5,7 @@ import io.mockk.every
 import io.mockk.mockk
 import no.cloudberries.candidatematch.infrastructure.entities.ConsultantEntity
 import no.cloudberries.candidatematch.infrastructure.repositories.ConsultantRepository
+import no.cloudberries.candidatematch.domain.candidate.Skill
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -26,9 +27,9 @@ class SkillsServiceTest {
             name = "Alice",
             cvId = "cv1",
             resumeData = resume1,
-            skills = setOf(
-                no.cloudberries.candidatematch.domain.candidate.Skill.JAVA,
-                no.cloudberries.candidatematch.domain.candidate.Skill.KOTLIN,
+            skills = mutableSetOf(
+                Skill.JAVA,
+                Skill.KOTLIN,
             )
         )
         val e2 = ConsultantEntity(
@@ -37,7 +38,7 @@ class SkillsServiceTest {
             name = "Bob",
             cvId = "cv2",
             resumeData = resume2,
-            skills = setOf(no.cloudberries.candidatematch.domain.candidate.Skill.JAVA)
+            skills = mutableSetOf(Skill.JAVA)
         )
         val e3 = ConsultantEntity(
             id = null,
@@ -45,7 +46,7 @@ class SkillsServiceTest {
             name = "Charlie",
             cvId = "cv3",
             resumeData = resume3,
-            skills = setOf(no.cloudberries.candidatematch.domain.candidate.Skill.REACT)
+            skills = mutableSetOf(Skill.REACT)
         )
 
         every { consultantRepository.findAllWithSkills() } returns listOf(e1, e2, e3)
@@ -76,9 +77,9 @@ class SkillsServiceTest {
             name = "Alice",
             cvId = "cv1",
             resumeData = resume1,
-            skills = setOf(
-                no.cloudberries.candidatematch.domain.candidate.Skill.JAVA,
-                no.cloudberries.candidatematch.domain.candidate.Skill.KOTLIN,
+            skills = mutableSetOf(
+                Skill.JAVA,
+                Skill.KOTLIN,
             )
         )
         every { consultantRepository.findAllWithSkills() } returns listOf(e1)
