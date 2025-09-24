@@ -43,9 +43,6 @@ data class ConsultantSkillEntity(
     
     @Column(name = "duration_years")
     val durationYears: Int? = null,
-    
-    @Column(name = "acquired_in_project", length = 500)
-    val acquiredInProject: String? = null
 )
 
 /**

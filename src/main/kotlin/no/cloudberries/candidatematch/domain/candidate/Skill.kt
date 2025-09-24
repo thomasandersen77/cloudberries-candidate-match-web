@@ -10,12 +10,12 @@ import jakarta.persistence.Embeddable
 data class Skill(
     val name: String,
     val durationInYears: Int? = null,
-    val acquiredInProject: String? = null
 ) {
     init {
         require(name.isNotBlank()) { "Skill name cannot be blank" }
-        require(durationInYears == null || durationInYears >= 0) { 
-            "Duration in years must be non-negative" 
+        val dur = durationInYears
+        require(dur == null || dur >= 0) {
+            "Duration in years must be non-negative"
         }
     }
 
@@ -35,7 +35,7 @@ data class Skill(
          * Creates a skill acquired in a specific project
          */
         fun fromProject(name: String, projectName: String, durationInYears: Int? = null): Skill =
-            Skill(name = name.trim(), durationInYears = durationInYears, acquiredInProject = projectName)
+            Skill(name = name.trim(), durationInYears = durationInYears)
     }
 }
 

@@ -53,5 +53,4 @@ data class ConsultantSkillInfo(
     val name: String,
     val cvId: String,
     val durationYears: Int?,
-    val acquiredInProject: String?
 )

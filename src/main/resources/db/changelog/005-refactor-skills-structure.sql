@@ -15,7 +15,6 @@ CREATE TABLE consultant_skill (
     consultant_id BIGINT NOT NULL,
     skill_id BIGINT NOT NULL,
     duration_years INT,
-    acquired_in_project VARCHAR(500),
     FOREIGN KEY (consultant_id) REFERENCES consultant(id) ON DELETE CASCADE,
     FOREIGN KEY (skill_id) REFERENCES skill(id) ON DELETE CASCADE
 );

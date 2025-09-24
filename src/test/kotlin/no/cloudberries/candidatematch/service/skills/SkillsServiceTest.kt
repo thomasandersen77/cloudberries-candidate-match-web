@@ -20,22 +20,22 @@ class SkillsServiceTest {
                 skillName = "JAVA",
                 consultantCount = 2,
                 consultants = listOf(
-                    ConsultantSkillInfo(userId = "u1", name = "Alice", cvId = "cv1", durationYears = null, acquiredInProject = null),
-                    ConsultantSkillInfo(userId = "u2", name = "Bob",   cvId = "cv2", durationYears = null, acquiredInProject = null),
+                    ConsultantSkillInfo(userId = "u1", name = "Alice", cvId = "cv1", durationYears = null),
+                    ConsultantSkillInfo(userId = "u2", name = "Bob",   cvId = "cv2", durationYears = null),
                 )
             ),
             SkillAggregate(
                 skillName = "KOTLIN",
                 consultantCount = 1,
                 consultants = listOf(
-                    ConsultantSkillInfo("u1", "Alice", "cv1", null, null)
+                    ConsultantSkillInfo("u1", "Alice", "cv1", null)
                 )
             ),
             SkillAggregate(
                 skillName = "REACT",
                 consultantCount = 1,
                 consultants = listOf(
-                    ConsultantSkillInfo("u3", "Charlie", "cv3", null, null)
+                    ConsultantSkillInfo("u3", "Charlie", "cv3", null)
                 )
             )
         )
@@ -62,7 +62,7 @@ class SkillsServiceTest {
             SkillAggregate(
                 skillName = "JAVA",
                 consultantCount = 1,
-                consultants = listOf(ConsultantSkillInfo("u1", "Alice", "cv1", null, null))
+                consultants = listOf(ConsultantSkillInfo("u1", "Alice", "cv1", null))
             )
         )
 

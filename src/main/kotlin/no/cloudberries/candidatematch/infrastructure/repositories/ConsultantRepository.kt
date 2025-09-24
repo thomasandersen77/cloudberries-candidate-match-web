@@ -13,6 +13,7 @@ import no.cloudberries.candidatematch.domain.candidate.Skill
 import no.cloudberries.candidatematch.infrastructure.entities.SkillEntity
 import no.cloudberries.candidatematch.infrastructure.entities.ConsultantSkillEntity
 import no.cloudberries.candidatematch.service.skills.ConsultantSkillReader
+import no.cloudberries.candidatematch.service.skills.SkillAggregateRow
 
 @Repository
 interface ConsultantRepository : JpaRepository<ConsultantEntity, Long>, ConsultantSkillReader {
@@ -29,7 +30,7 @@ interface ConsultantRepository : JpaRepository<ConsultantEntity, Long>, Consulta
     )
     fun findAllFlat(pageable: Pageable): Page<ConsultantFlatView>
 
-    // Deprecated: Skills are now in normalized ConsultantSkillEntity table
+    // Deprecated: Skills are now in the normalized ConsultantSkillEntity table
     @Deprecated("Use SkillService.getConsultantSkills instead")
     fun findSkillsByConsultantIds(@Param("ids") ids: Collection<Long>): List<ConsultantSkillRow> = emptyList()
 
@@ -42,7 +43,7 @@ interface ConsultantRepository : JpaRepository<ConsultantEntity, Long>, Consulta
             "JOIN ConsultantSkillEntity cs ON c.id = cs.consultantId " +
             "JOIN SkillEntity sk ON cs.skillId = sk.id"
     )
-    override fun findAllSkillAggregates(): List<no.cloudberries.candidatematch.service.skills.SkillAggregateRow>
+    override fun findAllSkillAggregates(): List<SkillAggregateRow>
 
     @Query(
         "SELECT new no.cloudberries.candidatematch.service.skills.SkillAggregateRow(" +
@@ -54,7 +55,7 @@ interface ConsultantRepository : JpaRepository<ConsultantEntity, Long>, Consulta
     )
     override fun findSkillAggregates(
         @Param("skillNames") skills: Collection<String>?
-    ): List<no.cloudberries.candidatematch.service.skills.SkillAggregateRow>
+    ): List<SkillAggregateRow>
 
     fun existsByUserId(userId: String): Boolean
 }

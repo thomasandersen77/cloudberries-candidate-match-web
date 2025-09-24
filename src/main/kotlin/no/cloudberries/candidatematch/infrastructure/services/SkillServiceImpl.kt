@@ -3,6 +3,7 @@ package no.cloudberries.candidatematch.infrastructure.services
 import no.cloudberries.candidatematch.domain.candidate.*
 import no.cloudberries.candidatematch.infrastructure.entities.*
 import no.cloudberries.candidatematch.infrastructure.repositories.*
+import no.cloudberries.candidatematch.infrastructure.repositories.consultant.CvProjectExperienceSkillRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -12,7 +13,8 @@ class SkillServiceImpl(
     private val skillRepository: SkillRepository,
     private val consultantSkillRepository: ConsultantSkillRepository,
     private val cvProjectSkillRepository: CvProjectSkillRepository,
-    private val consultantRepository: ConsultantRepository
+    private val consultantRepository: ConsultantRepository,
+    private val cvProjectExperienceSkillRepository: CvProjectExperienceSkillRepository,
 ) : SkillService {
 
     override fun ensureSkillExists(skillName: String): Long {
@@ -31,7 +33,6 @@ class SkillServiceImpl(
             Skill(
                 name = skillNameMap[skillEntity.skillId] ?: "Unknown",
                 durationInYears = skillEntity.durationYears,
-                acquiredInProject = skillEntity.acquiredInProject
             )
         }
     }
@@ -48,7 +49,6 @@ class SkillServiceImpl(
                     consultantId = consultantId,
                     skillId = skillId,
                     durationYears = skill.durationInYears,
-                    acquiredInProject = skill.acquiredInProject
                 )
             )
         }
@@ -56,15 +56,28 @@ class SkillServiceImpl(
 
     @Transactional(readOnly = true)
     override fun getProjectSkills(projectExperienceId: Long): List<Skill> {
+        // First try normalized v2 table (cv_project_experience_skill_v2)
         val projectSkillEntities = cvProjectSkillRepository.findByProjectExperienceId(projectExperienceId)
-        val skillIds = projectSkillEntities.map { it.skillId }
-        val skillNameMap = skillRepository.findAllById(skillIds).associate { it.id!! to it.name }
-        
-        return projectSkillEntities.map { projectSkill ->
-            Skill(
-                name = skillNameMap[projectSkill.skillId] ?: "Unknown",
-                durationInYears = projectSkill.durationYears
-            )
+        if (projectSkillEntities.isNotEmpty()) {
+            val skillIds = projectSkillEntities.map { it.skillId }
+            val skillNameMap = skillRepository.findAllById(skillIds).associate { it.id!! to it.name }
+
+            return projectSkillEntities.map { projectSkill ->
+                Skill(
+                    name = skillNameMap[projectSkill.skillId] ?: "Unknown",
+                    durationInYears = projectSkill.durationYears
+                )
+            }
+        }
+
+        // Fallback to legacy string-based table (cv_project_experience_skill)
+        val legacyRows = cvProjectExperienceSkillRepository
+            .findByProjectExperienceIdIn(listOf(projectExperienceId))
+        if (legacyRows.isEmpty()) return emptyList()
+
+        return legacyRows.mapNotNull { legacy ->
+            val raw = legacy.skill?.trim()
+            if (raw.isNullOrBlank()) null else Skill(name = raw, durationInYears = null)
         }
     }
 
@@ -114,7 +127,6 @@ class SkillServiceImpl(
                         name = consultant.name,
                         cvId = consultant.cvId,
                         durationYears = skillEntity.durationYears,
-                        acquiredInProject = skillEntity.acquiredInProject
                     )
                 }
                 

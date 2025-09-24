@@ -13,7 +13,6 @@ class SkillTest {
         
         assertEquals("Kotlin", skill.name)
         assertNull(skill.durationInYears)
-        assertNull(skill.acquiredInProject)
     }
 
     @Test
@@ -22,7 +21,6 @@ class SkillTest {
         
         assertEquals("Java", skill.name)
         assertEquals(5, skill.durationInYears)
-        assertNull(skill.acquiredInProject)
     }
 
     @Test
@@ -31,7 +29,6 @@ class SkillTest {
         
         assertEquals("React", skill.name)
         assertEquals(2, skill.durationInYears)
-        assertEquals("E-commerce Platform", skill.acquiredInProject)
     }
 
     @Test
@@ -63,16 +60,5 @@ class SkillTest {
     fun `should allow zero duration`() {
         val skill = Skill("TypeScript", 0)
         assertEquals(0, skill.durationInYears)
-    }
-
-    @Test
-    fun `legacy enum should convert to new skill`() {
-        @Suppress("DEPRECATION")
-        val legacySkill = LegacySkill.KOTLIN
-        val newSkill = legacySkill.toSkill()
-        
-        assertEquals("Kotlin", newSkill.name)
-        assertNull(newSkill.durationInYears)
-        assertNull(newSkill.acquiredInProject)
     }
 }

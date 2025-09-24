@@ -79,7 +79,7 @@ class CvEmbeddingService(
 
     fun processMissingEmbeddings(batchSize: Int = 50): Int {
         if (!embeddingProvider.isEnabled()) {
-            logger.debug { "Embedding disabled; skipping scheduled processing." }
+            logger.info { "Embedding disabled; skipping scheduled processing." }
             return 0
         }
         val users = flowcaseHttpClient.fetchAllUsers().flowcaseUserDTOs.take(batchSize)

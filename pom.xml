@@ -381,6 +381,10 @@
                         <option>no-arg:annotation=jakarta.persistence.Entity</option>
                         <option>no-arg:annotation=jakarta.persistence.MappedSuperclass</option>
                         <option>no-arg:annotation=jakarta.persistence.Embeddable</option>
+                        <!-- Ensure JPA entities are open for proxying -->
+                        <option>all-open:annotation=jakarta.persistence.Entity</option>
+                        <option>all-open:annotation=jakarta.persistence.MappedSuperclass</option>
+                        <option>all-open:annotation=jakarta.persistence.Embeddable</option>
                     </pluginOptions>
                     <args>
                         <arg>-Xannotation-default-target=param-property</arg>

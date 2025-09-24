@@ -23,32 +23,54 @@ class SkillsService(
         val normalizedFilters = skillFilters
             ?.map { it.trim() }
             ?.filter { it.isNotBlank() }
-        
-        // Use domain service for skill aggregation
+
+        // 1) Aggregates from consultant-level skills via domain service
         val domainAggregates = skillService.aggregateSkillsAcrossConsultants(normalizedFilters)
-        
-        // Convert domain aggregates to service DTOs
-        val aggregates = domainAggregates.map { domainAggregate ->
-            val consultants = domainAggregate.consultants.map { consultantSkillInfo ->
-                ConsultantSummaryDto(
-                    userId = consultantSkillInfo.userId,
-                    name = consultantSkillInfo.name,
-                    email = "", // Not available in skill aggregate
-                    bornYear = 0, // Not available in skill aggregate
-                    defaultCvId = consultantSkillInfo.cvId
-                )
-            }.distinctBy { it.userId }
+        val domainBySkillUpper: Map<String, List<ConsultantSummaryDto>> = domainAggregates
+            .associate { domainAggregate ->
+                val consultants = domainAggregate.consultants.map { consultantSkillInfo ->
+                    ConsultantSummaryDto(
+                        userId = consultantSkillInfo.userId,
+                        name = consultantSkillInfo.name,
+                        email = "", // Not available in skill aggregate
+                        bornYear = 0, // Not available in skill aggregate
+                        defaultCvId = consultantSkillInfo.cvId
+                    )
+                }.distinctBy { it.userId }
+                    .sortedBy { it.name.lowercase() }
+                domainAggregate.skillName.uppercase() to consultants
+            }
+
+        // 2) Aggregates from project-level skills via fetcher (legacy table)
+        val upperFilters: Set<String> = normalizedFilters?.map { it.uppercase() }?.toSet() ?: emptySet()
+        val projectRows = projectSkillFetcher.fetch(upperFilters)
+        val projectBySkillUpper: Map<String, List<ConsultantSummaryDto>> = projectRows
+            .groupBy { it.skillName.uppercase() }
+            .mapValues { (_, rows) ->
+                rows.map { row ->
+                    ConsultantSummaryDto(
+                        userId = row.userId,
+                        name = row.name,
+                        email = "",
+                        bornYear = 0,
+                        defaultCvId = row.defaultCvId
+                    )
+                }.distinctBy { it.userId }
+                    .sortedBy { it.name.lowercase() }
+            }
+
+        // 3) Merge consultant-level and project-level aggregates
+        val allSkillKeys = (domainBySkillUpper.keys + projectBySkillUpper.keys).toSortedSet()
+        val merged = allSkillKeys.map { key ->
+            val consultants = ((domainBySkillUpper[key] ?: emptyList()) + (projectBySkillUpper[key] ?: emptyList()))
+                .distinctBy { it.userId }
                 .sortedBy { it.name.lowercase() }
-            
-            SkillAggregate(
-                name = domainAggregate.skillName,
-                konsulenter = consultants
-            )
+            SkillAggregate(name = key, konsulenter = consultants)
         }
-        
+
         val filterCount = normalizedFilters?.size ?: 0
-        logger.info { "Computed ${aggregates.size} skill aggregates using ${filterCount} filters" }
-        return aggregates
+        logger.info { "Computed ${merged.size} skill aggregates using $filterCount filters (merged consultant + project skills)" }
+        return merged
     }
 }
 

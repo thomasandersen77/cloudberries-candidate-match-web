@@ -1,11 +1,10 @@
 package no.cloudberries.candidatematch.service.skills
 
+import LiquibaseTestConfig
 import com.fasterxml.jackson.databind.ObjectMapper
-import no.cloudberries.candidatematch.controllers.consultants.*
+import mu.KotlinLogging.logger
+import no.cloudberries.candidatematch.domain.candidate.SkillService
 import no.cloudberries.candidatematch.domain.consultant.*
-import no.cloudberries.candidatematch.infrastructure.adapters.toEntity
-import no.cloudberries.candidatematch.infrastructure.entities.ConsultantEntity
-import no.cloudberries.candidatematch.infrastructure.entities.consultant.CvKeyQualificationEntity
 import no.cloudberries.candidatematch.infrastructure.repositories.ConsultantRepository
 import no.cloudberries.candidatematch.service.consultants.ConsultantPersistenceService
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -21,7 +20,10 @@ class SkillsServiceIntegrationTest @Autowired constructor(
     private val consultantRepo: ConsultantRepository,
     private val persistService: ConsultantPersistenceService,
     private val skillsService: SkillsService,
+    private val skillService: SkillService
 ) {
+    private val logger = logger {}
+
     @Test
     fun `project skills should appear in skills aggregation`() {
         // Persist a minimal consultant with a CV having a project skill not in enum
@@ -37,7 +39,7 @@ class SkillsServiceIntegrationTest @Autowired constructor(
                     period = TimePeriod(null, null),
                     roles = emptyList(),
                     skillsUsed = listOf(
-                        no.cloudberries.candidatematch.domain.consultant.Skill(name = "Azure Pipelines", durationInYears = 2)
+                        Skill(name = "Azure Pipelines", durationInYears = 2)
                     )
                 )
             ),
@@ -56,6 +58,14 @@ class SkillsServiceIntegrationTest @Autowired constructor(
             .build()
 
         persistService.persistConsultantWithCv(consultant)
+
+        val saved = consultantRepo.findByUserId(consultant.id)
+        assertTrue { saved?.userId == consultant.id }
+        val consultantSkills = skillService.getConsultantSkills(saved!!.id!!)
+        assertTrue(consultantSkills.isEmpty())
+        consultantSkills.forEach {
+            logger.info { "Found: " + it.name + "" + it.durationInYears }
+        }
 
         val result = skillsService.listSkills(listOf("Azure Pipelines"))
         assertTrue(result.any { it.name == "AZURE PIPELINES" && it.konsulenter.any { c -> c.name == "Alice" } })
