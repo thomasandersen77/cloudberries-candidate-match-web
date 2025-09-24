@@ -11,6 +11,9 @@ import type { ConsultantWithCvDto } from '../../types/api';
 import SyncButton from '../../components/Sync/SyncButton';
 import SyncNotificationPanel from '../../components/Sync/SyncNotificationPanel';
 import type { SyncNotification } from '../../components/Sync/SyncNotificationPanel';
+import ScoringOverlay from '../../components/ScoringOverlay';
+import { getSkillsDisplay } from '../../utils/skillUtils';
+import { sortConsultantsByLastName } from '../../utils/nameUtils';
 
 // Mobile consultant card component
 const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetailsClick: () => void; onCvClick: () => void }> = ({ 
@@ -18,6 +21,7 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
 }) => {
   const activeCv = consultant.cvs?.find(cv => cv.active);
   const quality = activeCv?.qualityScore ?? 0;
+  const { displaySkills, remainingCount } = getSkillsDisplay(consultant, 3);
 
   return (
     <Card sx={{ mb: 2 }}>
@@ -32,26 +36,31 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
               ID: {consultant.userId}
             </Typography>
           </Box>
-          <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-            <CircularProgress variant="determinate" value={quality} size={32} sx={{ color: '#f4856f' }} />
-            <Box sx={{
-              top: 0, left: 0, bottom: 0, right: 0,
-              position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.65rem' }}>{quality}%</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Box sx={{ position: 'relative', display: 'inline-flex', mb: 0.5 }}>
+              <CircularProgress variant="determinate" value={quality} size={32} sx={{ color: '#f4856f' }} />
+              <Box sx={{
+                top: 0, left: 0, bottom: 0, right: 0,
+                position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.65rem' }}>{quality}%</Typography>
+              </Box>
             </Box>
+            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary', textAlign: 'center' }}>
+              CV-skår
+            </Typography>
           </Box>
         </Box>
         
-        {/* Skills */}
+        {/* Top Skills */}
         <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Ferdigheter:</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Topp ferdigheter:</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {consultant.skills.slice(0, 3).map((s, idx) => (
-              <Chip key={idx} label={s} size="small" variant="outlined" color="primary" />
+            {displaySkills.map((skill, idx) => (
+              <Chip key={idx} label={skill} size="small" variant="outlined" color="primary" />
             ))}
-            {consultant.skills.length > 3 && (
-              <Chip label={`+${consultant.skills.length - 3}`} size="small" variant="outlined" />
+            {remainingCount > 0 && (
+              <Chip label={`+${remainingCount}`} size="small" variant="outlined" />
             )}
           </Box>
         </Box>
@@ -164,7 +173,9 @@ const ConsultantsListPage: React.FC = () => {
   // Data and UI states
   const [consultants, setConsultants] = useState<ConsultantWithCvDto[]>([]);
   const [loading, setLoading] = useState(true); // Start with loading true
+  const [showLoadingAnimation, setShowLoadingAnimation] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
+  const [showScoringOverlay, setShowScoringOverlay] = useState(false);
   const [notification, setNotification] = useState<SyncNotification | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -183,9 +194,16 @@ const ConsultantsListPage: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    
+    // Show loading animation if data fetching takes longer than 0.5 seconds
+    const loadingTimer = setTimeout(() => {
+      setShowLoadingAnimation(true);
+    }, 500);
+    
     try {
       const res = await listConsultantsWithCv(true); // Only active CVs
-      setConsultants(res);
+      const sortedConsultants = sortConsultantsByLastName(res);
+      setConsultants(sortedConsultants);
     } catch (error) {
       console.error('Failed to fetch consultants:', error);
       setNotification({
@@ -194,7 +212,9 @@ const ConsultantsListPage: React.FC = () => {
         message: 'Kunne ikke hente konsulentdata. Prøv igjen senere.'
       });
     } finally {
+      clearTimeout(loadingTimer);
       setLoading(false);
+      setShowLoadingAnimation(false);
     }
   };
 
@@ -214,18 +234,14 @@ const ConsultantsListPage: React.FC = () => {
 
   const handleSyncAll = async () => {
     setSyncLoading(true);
-    setNotification({
-      type: 'progress',
-      title: 'Henter CV-er fra Flowcase',
-      message: 'Dette kan ta litt tid...'
-    });
-
+    setShowScoringOverlay(true);
+    
     try {
       const result = await runConsultantSync();
       setNotification({
         type: 'success',
         title: 'CV-synkronisering fullført',
-        message: 'Alle CV-er er oppdatert fra Flowcase',
+        message: 'Alle CV-er er oppdatert og scoret fra Flowcase',
         details: {
           total: result.total || 0,
           succeeded: result.succeeded || 0,
@@ -243,6 +259,7 @@ const ConsultantsListPage: React.FC = () => {
       });
     } finally {
       setSyncLoading(false);
+      setShowScoringOverlay(false);
     }
   };
 
@@ -382,64 +399,75 @@ const ConsultantsListPage: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {pagedConsultants.map((c) => {
-                        const activeCv = c.cvs?.find(cv => cv.active);
-                        const quality = activeCv?.qualityScore ?? 0;
-                        return (
-                          <TableRow key={c.userId} hover sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                    {pagedConsultants.map((c) => {
+                      const activeCv = c.cvs?.find(cv => cv.active);
+                      const quality = activeCv?.qualityScore ?? 0;
+                      const { displaySkills: topSkills, remainingCount } = getSkillsDisplay(c, 3);
+                      const { displaySkills: tabletSkills, remainingCount: tabletRemaining } = getSkillsDisplay(c, 2);
+                      
+                      return (
+                        <TableRow key={c.userId} hover sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                          <TableCell>
+                            <Avatar sx={{ width: isTablet ? 32 : 40, height: isTablet ? 32 : 40 }}>
+                              {c.name.charAt(0)}
+                            </Avatar>
+                          </TableCell>
+                          <TableCell>
+                            <Box>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                                {c.name}
+                              </Typography>
+                              {isTablet && (
+                                <Box sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.25 }}>
+                                  {tabletSkills.map((s, idx) => (
+                                    <Chip key={idx} label={s} size="small" variant="outlined" color="primary" sx={{ fontSize: '0.7rem' }} />
+                                  ))}
+                                  {tabletRemaining > 0 && (
+                                    <Chip label={`+${tabletRemaining}`} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                                  )}
+                                </Box>
+                              )}
+                            </Box>
+                          </TableCell>
+                          {!isTablet && (
                             <TableCell>
-                              <Avatar sx={{ width: isTablet ? 32 : 40, height: isTablet ? 32 : 40 }}>
-                                {c.name.charAt(0)}
-                              </Avatar>
-                            </TableCell>
-                            <TableCell>
-                              <Box>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                                  {c.name}
-                                </Typography>
-                                {isTablet && (
-                                  <Box sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.25 }}>
-                                    {c.skills.slice(0, 2).map((s, idx) => (
-                                      <Chip key={idx} label={s} size="small" variant="outlined" color="primary" sx={{ fontSize: '0.7rem' }} />
-                                    ))}
-                                    {c.skills.length > 2 && (
-                                      <Chip label={`+${c.skills.length - 2}`} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
-                                    )}
-                                  </Box>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {topSkills.map((s, idx) => (
+                                  <Chip key={idx} label={s} size="small" variant="outlined" color="primary" />
+                                ))}
+                                {remainingCount > 0 && (
+                                  <Chip label={`+${remainingCount}`} size="small" variant="outlined" />
                                 )}
                               </Box>
                             </TableCell>
-                            {!isTablet && (
-                              <TableCell>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                  {c.skills.slice(0, 3).map((s, idx) => (
-                                    <Chip key={idx} label={s} size="small" variant="outlined" color="primary" />
-                                  ))}
-                                  {c.skills.length > 3 && (
-                                    <Chip label={`+${c.skills.length - 3}`} size="small" variant="outlined" />
-                                  )}
-                                </Box>
-                              </TableCell>
-                            )}
+                          )}
                             <TableCell align="center">
-                              <Box sx={{position: 'relative', display: 'inline-flex'}}>
-                                <CircularProgress 
-                                  variant="determinate" 
-                                  value={quality} 
-                                  size={isTablet ? 28 : 36} 
-                                  sx={{ color: '#f4856f' }} 
-                                />
-                                <Box sx={{
-                                  top: 0, left: 0, bottom: 0, right: 0,
-                                  position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                }}>
-                                  <Typography 
-                                    variant="caption" 
-                                    sx={{ fontWeight: 'bold', fontSize: isTablet ? '0.65rem' : '0.75rem' }}
-                                  >
-                                    {quality}%
-                                  </Typography>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <Box sx={{position: 'relative', display: 'inline-flex', mb: 0.5}}>
+                                  <CircularProgress 
+                                    variant="determinate" 
+                                    value={quality} 
+                                    size={isTablet ? 28 : 36} 
+                                    sx={{ color: '#f4856f' }} 
+                                  />
+                                  <Box sx={{
+                                    top: 0, left: 0, bottom: 0, right: 0,
+                                    position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                  }}>
+                                    <Typography 
+                                      variant="caption" 
+                                      sx={{ fontWeight: 'bold', fontSize: isTablet ? '0.65rem' : '0.75rem' }}
+                                    >
+                                      {quality}%
+                                    </Typography>
+                                  </Box>
                                 </Box>
+                                <Typography 
+                                  variant="caption" 
+                                  sx={{ fontSize: isTablet ? '0.6rem' : '0.65rem', color: 'text.secondary', textAlign: 'center' }}
+                                >
+                                  CV-skår
+                                </Typography>
                               </Box>
                             </TableCell>
                             <TableCell align="right">
@@ -512,6 +540,14 @@ const ConsultantsListPage: React.FC = () => {
           )}
         </>
       )}
+      
+      {/* AI Scoring Overlay */}
+      <ScoringOverlay 
+        open={showScoringOverlay}
+        title="Scorer alle konsulenter via AI"
+        message="AI analyserer og scorer alle CV-er for kvalitet. Dette kan ta litt tid."
+        estimatedTime="2-5 minutter"
+      />
     </Container>
   );
 };

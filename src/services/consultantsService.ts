@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient, { aiScoringClient } from './apiClient';
 import type {
     PageConsultantSummaryDto,
     ConsultantWithCvDto,
@@ -55,7 +55,7 @@ export interface ConsultantSyncResponse {
 }
 
 export async function runConsultantSync(batchSize = 120): Promise<ConsultantSyncResponse> {
-    const {data} = await apiClient.post<ConsultantSyncResponse>('/api/consultants/sync/run', null, {params: {batchSize}});
+    const {data} = await aiScoringClient.post<ConsultantSyncResponse>('/api/consultants/sync/run', null, {params: {batchSize}});
     return data;
 }
 
@@ -112,7 +112,7 @@ export async function syncSingleConsultant(
     userId: string, 
     cvId: string
 ): Promise<ConsultantSyncSingleResponse> {
-    const {data} = await apiClient.post<ConsultantSyncSingleResponse>(
+    const {data} = await aiScoringClient.post<ConsultantSyncSingleResponse>(
         `/api/consultants/sync/${userId}/${cvId}`
     );
     return data;
