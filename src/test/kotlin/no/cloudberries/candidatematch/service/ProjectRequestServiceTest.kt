@@ -40,7 +40,7 @@ class ProjectRequestServiceTest {
         // Når createProjectRequest kalles
         val request = projectRequestService.createProjectRequest(
             customerName = "Testkunde AS",
-            requiredSkills = listOf(Skill.KOTLIN, Skill.BACKEND),
+            requiredSkills = listOf(Skill.of("Kotlin"), Skill.of("Backend")),
             startDate = startDate,
             endDate = endDate,
             responseDeadline = responseDeadline,
@@ -70,7 +70,7 @@ class ProjectRequestServiceTest {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             projectRequestService.createProjectRequest(
                 customerName = "Testkunde AS",
-                requiredSkills = listOf(Skill.KOTLIN),
+                requiredSkills = listOf(Skill.of("Kotlin")),
                 startDate = startDate,
                 endDate = endDate,
                 responseDeadline = responseDeadline,
@@ -116,7 +116,7 @@ class ProjectRequestServiceTest {
 
         val request = projectRequestService.createProjectRequest(
             customerName = "Testkunde AS",
-            requiredSkills = listOf(Skill.KOTLIN),
+            requiredSkills = listOf(Skill.of("Kotlin")),
             startDate = startDate,
             endDate = endDate,
             responseDeadline = responseDeadline,
@@ -168,7 +168,7 @@ class ProjectRequestServiceTest {
 
         val request = projectRequestService.createProjectRequest(
             customerName = "Testkunde AS",
-            requiredSkills = listOf(Skill.KOTLIN),
+            requiredSkills = listOf(Skill.of("Kotlin")),
             startDate = startDate,
             endDate = endDate,
             responseDeadline = responseDeadline,
@@ -198,7 +198,7 @@ class ProjectRequestServiceTest {
             requestDescription = "Trenger en utvikler",
             status = RequestStatus.OPEN,
             responsibleSalespersonEmail = "selger@cloudberries.no",
-            requiredSkills = listOf(Skill.KOTLIN, Skill.BACKEND),
+            requiredSkills = listOf(Skill.of("Kotlin"), Skill.of("Backend")),
             startDate = LocalDate.now().atStartOfDay(),
             endDate = LocalDate.now().plusDays(10).atStartOfDay(),
             responseDeadline = deadlineIn47Hours,

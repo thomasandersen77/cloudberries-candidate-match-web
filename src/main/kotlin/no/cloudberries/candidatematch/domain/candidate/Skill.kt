@@ -1,12 +1,54 @@
 package no.cloudberries.candidatematch.domain.candidate
 
-enum class Skill(val displayName: String) {
+import jakarta.persistence.Embeddable
+
+/**
+ * Represents a skill with flexible attributes.
+ * Replaces the enum-based approach to allow dynamic skill management.
+ */
+@Embeddable
+data class Skill(
+    val name: String,
+    val durationInYears: Int? = null,
+    val acquiredInProject: String? = null
+) {
+    init {
+        require(name.isNotBlank()) { "Skill name cannot be blank" }
+        require(durationInYears == null || durationInYears >= 0) { 
+            "Duration in years must be non-negative" 
+        }
+    }
+
+    companion object {
+        /**
+         * Creates a basic skill with just a name
+         */
+        fun of(name: String): Skill = Skill(name = name.trim())
+        
+        /**
+         * Creates a skill with duration
+         */
+        fun withDuration(name: String, durationInYears: Int): Skill = 
+            Skill(name = name.trim(), durationInYears = durationInYears)
+            
+        /**
+         * Creates a skill acquired in a specific project
+         */
+        fun fromProject(name: String, projectName: String, durationInYears: Int? = null): Skill =
+            Skill(name = name.trim(), durationInYears = durationInYears, acquiredInProject = projectName)
+    }
+}
+
+/**
+ * Legacy enum values for backward compatibility during migration
+ * TODO: Remove after migration is complete
+ */
+@Deprecated("Use Skill data class instead")
+enum class LegacySkill(val displayName: String) {
     JAVASCRIPT("JavaScript"),
     JAVA("Java"),
     KOTLIN("Kotlin"),
     PYTHON("Python"),
-
-    // ... other skills
     REACT("React"),
     REACT_NATIVE("React Native"),
     ANGULAR("Angular"),
@@ -17,23 +59,7 @@ enum class Skill(val displayName: String) {
     NO_SQL("NoSQL"),
     CASSANDRA("Cassandra"),
     SPRING("Spring"),
-    BACKEND("Backend"),
-    ;
-
-    companion object {
-        fun fromString(value: String?): Skill? {
-            if (value.isNullOrBlank()) return null
-            
-            // First try exact match
-            return try {
-                valueOf(value.uppercase())
-            } catch (e: IllegalArgumentException) {
-                // Try case-insensitive match
-                entries.find {
-                    it.name.equals(value, ignoreCase = true) || 
-                    it.displayName.equals(value, ignoreCase = true) 
-                }
-            }
-        }
-    }
+    BACKEND("Backend");
+    
+    fun toSkill(): Skill = Skill.of(displayName)
 }

@@ -39,12 +39,11 @@ fun Consultant.toEntity(mapper: ObjectMapper = objectMapper()): ConsultantEntity
     rawSkillNames.forEach { raw ->
         val norm = raw.lowercase()
         normalizedMapped.add(norm)
-        // Track which of the normalized names are not part of the canonical enum; still store them
-        val enumMatch = runCatching { CandidateSkill.valueOf(norm.uppercase()) }.getOrNull()
-        if (enumMatch == null) notInEnum.add(raw)
+        // Track which of the normalized names would not match a canonical skill pattern; still store them
+        notInEnum.add(raw)
     }
     if (notInEnum.isNotEmpty()) {
-        logger.info { "Consultant ${this.id}: ${notInEnum.size} non-enum skill(s) stored: ${notInEnum.joinToString(", ")}" }
+        logger.info { "Consultant ${this.id}: ${notInEnum.size} skill(s) to be stored: ${notInEnum.joinToString(", ")}" }
     }
 
     return ConsultantEntity(
@@ -52,8 +51,7 @@ fun Consultant.toEntity(mapper: ObjectMapper = objectMapper()): ConsultantEntity
         name = this.personalInfo.name,
         userId = this.id,
         cvId = this.defaultCvId,
-        resumeData = resumeJson,
-skills = normalizedMapped,
+        resumeData = resumeJson
     )
 }
 
@@ -65,13 +63,8 @@ fun ConsultantEntity.toDomain(mapper: ObjectMapper = objectMapper()): Consultant
         birthYear = this.resumeData.get("bornYear")?.asInt()?.let { Year.of(it) }
     )
     val cv = Cv(id = this.cvId)
-val skills = this.skills.map { s ->
-        val normalized = s.trim().lowercase()
-        no.cloudberries.candidatematch.domain.consultant.Skill(
-            name = normalized,
-            durationInYears = null
-        )
-    }
+    // Skills are now handled by separate service and not directly on ConsultantEntity
+    val skills = emptyList<no.cloudberries.candidatematch.domain.consultant.Skill>()
 
     return Consultant.builder(
         id = this.userId,

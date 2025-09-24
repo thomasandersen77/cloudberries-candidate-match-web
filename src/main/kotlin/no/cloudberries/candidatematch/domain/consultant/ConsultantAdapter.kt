@@ -7,4 +7,6 @@ interface ConsultantAdapter {
     fun fetchCompleteCv(userId: String, cvId: String): Cv
     fun fetchConsultant(userId: String): Consultant
     suspend fun fetchConsultantsWithCv(): List<Consultant>
+
+    fun exists(userId: String): Boolean
 }

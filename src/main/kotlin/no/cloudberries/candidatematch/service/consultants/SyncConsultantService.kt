@@ -55,9 +55,17 @@ class SyncConsultantService(
             batch.forEach { u ->
                 try {
                     val consultant = consultantAdapter.fetchConsultant(u.userId)
-                    persistenceService.persistConsultantWithCv(consultant)
+                    if (equals(u.userId)) {
+                        persistenceService.persistConsultantWithCv(consultant)
+                        success++
+                        logger.info { "Successfully synced consultant ${u.userId}" }
+                    } else {
+                        logger.info { "User ${u.userId} already exists in database, skipping" }
+                        // todo: implement upsert logic
+                        logger.info { "Should only update CV data for existing users, not create new ones" }
+
+                    }
                     success++
-                    logger.debug { "Successfully synced consultant ${u.userId}" }
                 } catch (e: Exception) {
                     when {
                         e.message?.contains("429") == true -> {

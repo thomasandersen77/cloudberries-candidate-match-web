@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository
 import jakarta.persistence.QueryHint
 import org.springframework.data.repository.query.Param
 import no.cloudberries.candidatematch.domain.candidate.Skill
+import no.cloudberries.candidatematch.infrastructure.entities.SkillEntity
+import no.cloudberries.candidatematch.infrastructure.entities.ConsultantSkillEntity
 import no.cloudberries.candidatematch.service.skills.ConsultantSkillReader
 
 @Repository
@@ -27,26 +29,34 @@ interface ConsultantRepository : JpaRepository<ConsultantEntity, Long>, Consulta
     )
     fun findAllFlat(pageable: Pageable): Page<ConsultantFlatView>
 
-    @Query("select c.id as consultantId, s as skill from ConsultantEntity c left join c.skills s where c.id in :ids")
-    fun findSkillsByConsultantIds(@Param("ids") ids: Collection<Long>): List<ConsultantSkillRow>
+    // Deprecated: Skills are now in normalized ConsultantSkillEntity table
+    @Deprecated("Use SkillService.getConsultantSkills instead")
+    fun findSkillsByConsultantIds(@Param("ids") ids: Collection<Long>): List<ConsultantSkillRow> = emptyList()
 
     // --- ConsultantSkillReader implementation ---
+    // Note: These methods now use the SkillService for aggregation
     @Query(
-        "select new no.cloudberries.candidatematch.service.skills.SkillAggregateRow(" +
-            " cast(s as string), c.userId, c.name, c.cvId) " +
-            "from ConsultantEntity c join c.skills s"
+        "SELECT new no.cloudberries.candidatematch.service.skills.SkillAggregateRow(" +
+            "sk.name, c.userId, c.name, c.cvId) " +
+            "FROM ConsultantEntity c " +
+            "JOIN ConsultantSkillEntity cs ON c.id = cs.consultantId " +
+            "JOIN SkillEntity sk ON cs.skillId = sk.id"
     )
     override fun findAllSkillAggregates(): List<no.cloudberries.candidatematch.service.skills.SkillAggregateRow>
 
     @Query(
-        "select new no.cloudberries.candidatematch.service.skills.SkillAggregateRow(" +
-            " cast(s as string), c.userId, c.name, c.cvId) " +
-            "from ConsultantEntity c join c.skills s " +
-            "where (:skills is null or s in :skills)"
+        "SELECT new no.cloudberries.candidatematch.service.skills.SkillAggregateRow(" +
+            "sk.name, c.userId, c.name, c.cvId) " +
+            "FROM ConsultantEntity c " +
+            "JOIN ConsultantSkillEntity cs ON c.id = cs.consultantId " +
+            "JOIN SkillEntity sk ON cs.skillId = sk.id " +
+            "WHERE (:skillNames is null or sk.name in :skillNames)"
     )
     override fun findSkillAggregates(
-        @Param("skills") skills: Collection<no.cloudberries.candidatematch.domain.candidate.Skill>?
+        @Param("skillNames") skills: Collection<String>?
     ): List<no.cloudberries.candidatematch.service.skills.SkillAggregateRow>
+
+    fun existsByUserId(userId: String): Boolean
 }
 
 // Projection types

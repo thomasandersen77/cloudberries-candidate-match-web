@@ -98,15 +98,11 @@ fun Cv.toFlatText(): String {
  */
 fun Consultant.skillMatchScore(required: Set<no.cloudberries.candidatematch.domain.candidate.Skill>): Int {
     if (required.isEmpty()) return 0
-    val consultantSkillsAsEnum: Set<no.cloudberries.candidatematch.domain.candidate.Skill> =
-        this.skills.mapNotNull { s ->
-            runCatching {
-                no.cloudberries.candidatematch.domain.candidate.Skill.valueOf(
-                    s.name.trim().uppercase()
-                )
-            }.getOrNull()
+    val consultantSkillsAsSkills: Set<no.cloudberries.candidatematch.domain.candidate.Skill> =
+        this.skills.map { s ->
+            no.cloudberries.candidatematch.domain.candidate.Skill.of(s.name.trim())
         }.toSet()
-    val matched = consultantSkillsAsEnum.intersect(required)
+    val matched = consultantSkillsAsSkills.intersect(required)
     val ratio = matched.size.toDouble() / required.size.toDouble()
     return (ratio * 100).toInt()
 }

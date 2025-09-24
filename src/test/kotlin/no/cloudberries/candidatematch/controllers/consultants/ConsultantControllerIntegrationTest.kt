@@ -43,8 +43,7 @@ class ConsultantControllerIntegrationTest {
                 name = name,
                 userId = userId,
                 cvId = cvId,
-                resumeData = resumeJson,
-                skills = mutableSetOf()
+                resumeData = resumeJson
             )
         )
     }

@@ -1,6 +1,6 @@
 package no.cloudberries.candidatematch.domain.consultant
 
-import no.cloudberries.candidatematch.domain.candidate.Skill
+import no.cloudberries.candidatematch.domain.candidate.Skill as CandidateSkill
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.Year
@@ -55,7 +55,7 @@ class CvExtensionsTest {
                         )
                     ),
                     skillsUsed = listOf(
-                        Skill(
+                        no.cloudberries.candidatematch.domain.consultant.Skill(
                             "KOTLIN",
                             3
                         )
@@ -157,9 +157,9 @@ class CvExtensionsTest {
             .build()
 
         val required = setOf(
-            Skill.KOTLIN,
-            Skill.JAVA,
-            Skill.REACT
+            CandidateSkill.of("KOTLIN"),
+            CandidateSkill.of("JAVA"),
+            CandidateSkill.of("REACT")
         )
         val score = consultant.skillMatchScore(required)
         assertEquals(

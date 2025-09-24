@@ -44,8 +44,7 @@ class ConsultantCvQueryControllerIntegrationTest {
                 name = name,
                 userId = userId,
                 cvId = "cv-$userId",
-                resumeData = resumeJson,
-                skills = mutableSetOf()
+                resumeData = resumeJson
             )
         )
         val cv = consultantCvRepository.save(

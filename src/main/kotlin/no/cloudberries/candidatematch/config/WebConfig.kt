@@ -6,13 +6,12 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
-@Profile("local, test")
 class WebConfig : WebMvcConfigurer {
 
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/**")
-            .allowedOriginPatterns("*") // Allow all origins (development only!)
-            .allowedMethods("*")
+            .allowedOriginPatterns("*") // Use allowedOriginPatterns instead of allowedOrigins
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH")
             .allowedHeaders("*")
             .allowCredentials(true)
             .maxAge(3600)

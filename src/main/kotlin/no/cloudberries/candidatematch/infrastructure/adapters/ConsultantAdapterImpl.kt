@@ -8,11 +8,13 @@ import no.cloudberries.candidatematch.infrastructure.integration.flowcase.Flowca
 import no.cloudberries.candidatematch.infrastructure.integration.flowcase.FlowcaseUserResponse
 import no.cloudberries.candidatematch.infrastructure.integration.flowcase.toDomain
 import no.cloudberries.candidatematch.infrastructure.integration.flowcase.toYear
+import no.cloudberries.candidatematch.infrastructure.repositories.ConsultantRepository
 import org.springframework.stereotype.Component
 
 @Component
 class ConsultantAdapterImpl(
     private val flowcaseHttpClient: FlowcaseHttpClient,
+    private val consultantRepository: ConsultantRepository,
 ) : ConsultantAdapter {
     private val logger = mu.KotlinLogging.logger { }
     private val mapper = jacksonObjectMapper()
@@ -42,6 +44,7 @@ class ConsultantAdapterImpl(
         if (response is FlowcaseUserResponse.NotFound) {
             throw RuntimeException("User with userId $userId not found in Flowcase API")
         }
+
         val user = (response as FlowcaseUserResponse.Found).userDTO
         val completeCv = fetchCompleteCv(
             userId = user.userId,
@@ -84,5 +87,15 @@ class ConsultantAdapterImpl(
         }
 
         return consultantsList.filterNotNull().toList()
+    }
+
+    override fun exists(userId: String): Boolean {
+        val userExists = consultantRepository.existsByUserId(userId)
+        return if (userExists) {
+            logger.info { "User with userId $userId already exists in database" }
+            true
+        } else {
+            false
+        }
     }
 }

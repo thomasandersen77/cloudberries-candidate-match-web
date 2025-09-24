@@ -2,22 +2,42 @@ package no.cloudberries.candidatematch.service.skills
 
 import io.mockk.every
 import io.mockk.mockk
-import no.cloudberries.candidatematch.domain.candidate.Skill
+import no.cloudberries.candidatematch.domain.candidate.ConsultantSkillInfo
+import no.cloudberries.candidatematch.domain.candidate.SkillAggregate
+import no.cloudberries.candidatematch.domain.candidate.SkillService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class SkillsServiceTest {
 
-    private val reader: ConsultantSkillReader = mockk()
-    private val skillsService = SkillsService(reader)
+    private val domainSkillService: SkillService = mockk()
+    private val skillsService = SkillsService(skillService = domainSkillService)
 
     @Test
     fun `aggregates consultants per skill and sorts names`() {
-        every { reader.findAllSkillAggregates() } returns listOf(
-            SkillAggregateRow("JAVA", "u1", "Alice", "cv1"),
-            SkillAggregateRow("JAVA", "u2", "Bob", "cv2"),
-            SkillAggregateRow("KOTLIN", "u1", "Alice", "cv1"),
-            SkillAggregateRow("REACT", "u3", "Charlie", "cv3"),
+        every { domainSkillService.aggregateSkillsAcrossConsultants(null) } returns listOf(
+            SkillAggregate(
+                skillName = "JAVA",
+                consultantCount = 2,
+                consultants = listOf(
+                    ConsultantSkillInfo(userId = "u1", name = "Alice", cvId = "cv1", durationYears = null, acquiredInProject = null),
+                    ConsultantSkillInfo(userId = "u2", name = "Bob",   cvId = "cv2", durationYears = null, acquiredInProject = null),
+                )
+            ),
+            SkillAggregate(
+                skillName = "KOTLIN",
+                consultantCount = 1,
+                consultants = listOf(
+                    ConsultantSkillInfo("u1", "Alice", "cv1", null, null)
+                )
+            ),
+            SkillAggregate(
+                skillName = "REACT",
+                consultantCount = 1,
+                consultants = listOf(
+                    ConsultantSkillInfo("u3", "Charlie", "cv3", null, null)
+                )
+            )
         )
 
         val result = skillsService.listSkills(null)
@@ -38,8 +58,12 @@ class SkillsServiceTest {
 
     @Test
     fun `filters by provided skills`() {
-        every { reader.findSkillAggregates(listOf(Skill.JAVA)) } returns listOf(
-            SkillAggregateRow("JAVA", "u1", "Alice", "cv1")
+        every { domainSkillService.aggregateSkillsAcrossConsultants(listOf("java")) } returns listOf(
+            SkillAggregate(
+                skillName = "JAVA",
+                consultantCount = 1,
+                consultants = listOf(ConsultantSkillInfo("u1", "Alice", "cv1", null, null))
+            )
         )
 
         val result = skillsService.listSkills(listOf("java"))

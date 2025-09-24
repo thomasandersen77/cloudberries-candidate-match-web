@@ -71,7 +71,7 @@ class GoogleGeminiEmbeddingProvider(
         val client = httpClient
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                logger.error { "Gemini embedContent failed: HTTP ${'$'}{response.code} - ${'$'}{response.message}" }
+                logger.error { "Gemini embedContent failed: HTTP ${response.code}  ${response.message}" }
                 return DoubleArray(0)
             }
             val bodyStr = response.body.string()

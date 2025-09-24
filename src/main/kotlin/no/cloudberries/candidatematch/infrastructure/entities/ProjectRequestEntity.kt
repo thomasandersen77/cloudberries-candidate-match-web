@@ -22,7 +22,6 @@ data class ProjectRequestEntity(
         joinColumns = [JoinColumn(name = "project_request_id")]
     )
     @Column(name = "skill")
-    @Enumerated(EnumType.STRING) // Add this line to store enum as a string
     val requiredSkills: List<Skill> = listOf(),
     val startDate: LocalDateTime,
     val endDate: LocalDateTime,

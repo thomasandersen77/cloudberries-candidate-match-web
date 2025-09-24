@@ -28,13 +28,8 @@ class ConsultantEntity(
     @Type(JsonType::class)
     val resumeData: JsonNode,
 
-    @ElementCollection
-    @CollectionTable(
-        name = "consultant_skills",
-        joinColumns = [JoinColumn(name = "consultant_id")]
-    )
-    @Column(name = "skill")
-    val skills: MutableSet<String> = mutableSetOf(),
+    // Skills are now stored in normalized ConsultantSkillEntity table
+    // Access via ConsultantSkillRepository
 
     @CreationTimestamp
     @Column(name = "created_at")

@@ -28,8 +28,7 @@ class CvScoreAppServiceTest {
             userId = "u1",
             name = "Alice",
             cvId = "cv1",
-            resumeData = resume,
-            skills = mutableSetOf<String>()
+            resumeData = resume
         )
         every { consultantRepository.findByUserId("u1") } returns consultant
         every { cvScoreRepository.findByCandidateUserId("u1") } returns null
@@ -59,8 +58,7 @@ every { scoreCandidateService.performCvScoring(any(), any(), any()) } returns no
             userId = "u1",
             name = "Alice",
             cvId = "cv1",
-            resumeData = resume,
-            skills = mutableSetOf<String>()
+            resumeData = resume
         )
         every { consultantRepository.findAll() } returns listOf(consultant)
         every { consultantRepository.findByUserId("u1") } returns consultant

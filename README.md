@@ -343,27 +343,24 @@ Eksempel:
 curl -s "http://localhost:8080/api/consultants/with-cv?onlyActiveCv=true" | jq '.[:1]'
 ```
 
-| Metode | Path                              | Formål (funksjonelt)                                                | Input (kort)                                 | Output (kort) |
-|-------:|-----------------------------------|---------------------------------------------------------------------|----------------------------------------------|---------------|
-| GET    | /api/skills                       | Aggregerer og lister kompetanser i selskapet                       | query: skill[]=KOTLIN,…                      | Aggregater    |
-| POST   | /api/chatbot/analyze              | Analyserer tekst med AI                                             | JSON: { content }                            | AI-respons    |
-| GET    | /api/consultants                  | Lister konsulenter (paginert, filtrerbart på navn)                 | query: name, page/size/sort                  | Page<Consultant> |
-| POST   | /api/consultants/sync/run         | Kjører synk fra Flowcase                                            | query: batchSize                             | Sammendrag    |
-| POST   | /api/consultants/search           | Relasjonelt søk etter konsulenter                                   | JSON: { name, skillsAll/Any, … } + paging    | Page<Result>  |
-| POST   | /api/consultants/search/semantic  | Semantisk søk (embeddings/pgvector)                                 | JSON: { text, provider?, model?, topK }      | Treffliste    |
-|| GET    | /api/cv/{userId}                  | Henter CV-data (JSON) for gitt bruker                               | path: userId                                  | CV JSON       |
-|| GET    | /api/consultants/with-cv          | Lister alle konsulenter med normaliserte CV-data                    | query: onlyActiveCv?                           | Liste         |
-| POST   | /api/embeddings/run/jason         | Demo: generér embeddings for «Jason»                                | –                                            | Resultat      |
-| POST   | /api/embeddings/run               | Generér embeddings for spesifikk bruker/CV                          | query: userId, cvId                           | Resultat      |
-| POST   | /api/embeddings/run/missing       | Generér embeddings for manglende i batch                            | query: batchSize                              | Resultat      |
-| GET    | /api/health                       | Helse-sjekk (aggregert)                                              | –                                            | Status        |
-| POST   | /api/matches                      | Finn matcher fra prosjektbeskrivelse (tekst)                        | JSON: { projectRequestText }                 | Matcher       |
-| POST   | /api/matches/upload               | Last opp CV (PDF) og finn matcher                                   | multipart: file, projectRequestText           | Matcher       |
-| POST   | /api/matches/by-skills            | Finn matcher basert på valgte kompetanser                           | JSON: { skills: [ ... ] }                    | Matcher       |
-| GET    | /api/project-requests             | List lagrede kundeforespørsler (kompakt/aggregert)                  | –                                            | Liste         |
-| POST   | /api/project-requests/upload      | Last opp og analyser kundeforespørsel (PDF)                         | multipart: file                               | Forespørsel   |
-| GET    | /api/project-requests/{id}        | Hent lagret kundeforespørsel                                        | path: id                                      | Forespørsel   |
-| GET    | /api/cv-score/{candidateId}       | Hent CV-score for kandidat                                          | path: candidateId                             | Score DTO     |
-| POST   | /api/cv-score/{candidateId}/run   | Kjør CV-score for kandidat                                          | path: candidateId                             | Score DTO     |
-| POST   | /api/cv-score/run/all             | Kjør CV-score for alle                                              | –                                            | Sammendrag    |
-| GET    | /api/cv-score/all                 | List alle kandidater (oversikt)                                     | –                                            | Liste         |
+| Metode | Path                              | Controller                      | Method                         | Input (kort)                                 | Output (kort) | Formål (funksjonelt)                                                |
+|-------:|-----------------------------------|--------------------------------|--------------------------------|----------------------------------------------|---------------|---------------------------------------------------------------------|
+| GET    | /api/skills                       | SkillsController               | listSkills                     | query: skill[]=KOTLIN,…                      | Aggregater    | Aggregerer og lister kompetanser i selskapet                       |
+| POST   | /api/chatbot/analyze              | AIController                   | analyzeContent                 | JSON: { content }                            | AI-respons    | Analyserer tekst med AI                                             |
+| GET    | /api/consultants                  | ConsultantController           | list                           | query: name, page/size/sort                  | Page<Consultant> | Lister konsulenter (paginert, filtrerbart på navn)                 |
+| GET    | /api/consultants/with-cv          | ConsultantCvQueryController    | getAllWithCv                   | query: onlyActiveCv?                           | Liste         | Lister alle konsulenter med normaliserte CV-data                    |
+| POST   | /api/consultants/sync/run         | ConsultantSyncController       | syncAll                        | –                                            | Sammendrag    | Kjører synk fra Flowcase                                            |
+| GET    | /api/cv/{userId}                  | CvController                   | getCv                          | path: userId                                  | CV JSON       | Henter CV-data (JSON) for gitt bruker                               |
+| POST   | /api/embeddings/run/jason         | EmbeddingController            | runJason                       | –                                            | Resultat      | Demo: generér embeddings for «Jason»                                |
+| POST   | /api/embeddings/run               | EmbeddingController            | runForUserCv                   | query: userId, cvId                           | Resultat      | Generér embeddings for spesifikk bruker/CV                          |
+| POST   | /api/embeddings/run/missing       | EmbeddingController            | runMissing                     | query: batchSize                              | Resultat      | Generér embeddings for manglende i batch                            |
+| GET    | /api/health                       | HealthController               | healthCheck                    | –                                            | Status        | Helse-sjekk (aggregert)                                              |
+| POST   | /api/matches                      | MatchingController             | findMatches                    | JSON: { projectRequestText }                 | Matcher       | Finn matcher fra prosjektbeskrivelse (tekst)                        |
+| POST   | /api/matches/upload               | MatchingController             | findMatchesFromPdf             | multipart: file, projectRequestText           | Matcher       | Last opp CV (PDF) og finn matcher                                   |
+| GET    | /api/project-requests             | ProjectRequestController       | listAll                        | –                                            | Liste         | List lagrede kundeforespørsler (kompakt/aggregert)                  |
+| POST   | /api/project-requests/upload      | ProjectRequestController       | uploadAndAnalyze               | multipart: file                               | Forespørsel   | Last opp og analyser kundeforespørsel (PDF)                         |
+| GET    | /api/project-requests/{id}        | ProjectRequestController       | getById                        | path: id                                      | Forespørsel   | Hent lagret kundeforespørsel                                        |
+| GET    | /api/cv-score/{candidateId}       | CvScoreController              | getCvScoreForCandidate         | path: candidateId                             | Score DTO     | Hent CV-score for kandidat                                          |
+| POST   | /api/cv-score/{candidateId}/run   | CvScoreController              | runScoreForCandidate           | path: candidateId                             | Score DTO     | Kjør CV-score for kandidat                                          |
+| POST   | /api/cv-score/run/all             | CvScoreController              | runScoreForAll                 | –                                            | Sammendrag    | Kjør CV-score for alle                                              |
+| GET    | /api/cv-score/all                 | CvScoreController              | getAllCandidates               | –                                            | Liste         | List alle kandidater (oversikt)                                     |
