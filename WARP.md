@@ -24,11 +24,17 @@ sdk install maven
 # Path: backend
 cd /Users/tandersen/git/cloudberries-candidate-match
 
-# Build (unit tests only)
-mvn -q -DskipITs=true -Dtest='*Test' verify
+# Unit tests only (fast - Surefire plugin)
+mvn -q -DskipITs=true clean test
 
-# Full tests (requires Docker/Testcontainers)
-mvn -q -DskipITs=false verify
+# Integration tests only (requires Docker/Testcontainers - Failsafe plugin)
+mvn -q -DskipTests=true -DskipITs=false clean verify
+
+# All tests (unit + integration)
+mvn -q -DskipITs=false clean verify
+
+# Build without tests
+mvn -q -DskipTests=true -DskipITs=true clean package
 
 # Run locally
 mvn -q spring-boot:run -Dspring-boot.run.profiles=local
@@ -72,7 +78,25 @@ npm --prefix /Users/tandersen/git/cloudberries-candidate-match-web run gen:api
 - Skills
   - GET /api/skills?skill=JAVA&skill=KOTLIN
 
+## Maven Test Structure
+The project uses separate Maven plugins for different test types:
+
+**Unit Tests (Surefire)**:
+- Pattern: `*Test.kt` (e.g., `UserServiceTest.kt`)
+- Location: `src/test/kotlin`
+- Plugin: `maven-surefire-plugin`
+- Fast execution, no external dependencies
+- Reports: `target/surefire-reports/`
+
+**Integration Tests (Failsafe)**:
+- Pattern: `*IntegrationTest.kt` or `*IT.kt`
+- Location: `src/test/kotlin` 
+- Plugin: `maven-failsafe-plugin`
+- Uses Testcontainers, embedded databases, WireMock
+- Reports: `target/failsafe-reports/`
+
 ## Notes
 - Embedded Postgres used in tests may require Rosetta 2 on Apple Silicon.
 - Health check errors in test logs are expected in isolation.
 - Ensure Java 21.0.7 Temurin is active.
+- Maven plugins use `useModulePath=false` to avoid classpath issues.

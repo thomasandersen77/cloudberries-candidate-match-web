@@ -326,12 +326,22 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
+                    <useModulePath>false</useModulePath>
                     <includes>
                         <include>**/*Test.java</include>
                         <include>**/*Test.kt</include>
                         <include>**/*Tests.java</include>
                         <include>**/*Tests.kt</include>
                     </includes>
+                    <excludes>
+                        <!-- Exclude integration tests from unit test phase -->
+                        <exclude>**/*IT.java</exclude>
+                        <exclude>**/*IT.kt</exclude>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                        <exclude>**/*IntegrationTest.kt</exclude>
+                        <exclude>**/*ITCase.java</exclude>
+                        <exclude>**/*ITCase.kt</exclude>
+                    </excludes>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -340,13 +350,6 @@
                         <version>5.10.0</version>
                     </dependency>
                 </dependencies>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -409,14 +412,29 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
+                    <useModulePath>false</useModulePath>
                     <includes>
                         <include>**/*IntegrationTest.java</include>
                         <include>**/*IntegrationTest.kt</include>
                         <include>**/*IT.java</include>
                         <include>**/*IT.kt</include>
+                        <include>**/*ITCase.java</include>
+                        <include>**/*ITCase.kt</include>
                     </includes>
                     <skipITs>${skipITs}</skipITs>
+                    <!-- Explicitly add classpath elements to ensure main classes are available -->
+                    <additionalClasspathElements>
+                        <additionalClasspathElement>${project.build.outputDirectory}</additionalClasspathElement>
+                        <additionalClasspathElement>${project.build.testOutputDirectory}</additionalClasspathElement>
+                    </additionalClasspathElements>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.jupiter</groupId>
+                        <artifactId>junit-jupiter-engine</artifactId>
+                        <version>5.10.0</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <goals>
