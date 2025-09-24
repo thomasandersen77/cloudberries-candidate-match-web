@@ -198,7 +198,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PageConsultantSearchResultDto'
+                $ref: '#/components/schemas/PageConsultantWithCvDto'
+        '400':
+          description: Invalid search criteria
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -208,6 +210,10 @@ paths:
       summary: Semantic (vector) search for consultants
       operationId: searchConsultantsSemantic
       description: Embeds the provided text using the configured EmbeddingProvider and performs pgvector similarity search.
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - $ref: '#/components/parameters/SortParam'
       requestBody:
         required: true
         content:
@@ -219,17 +225,34 @@ paths:
               provider: "GOOGLE_GEMINI"
               model: "text-embedding-004"
               topK: 5
+              minQualityScore: 80
+              onlyActiveCv: true
       responses:
         '200':
           description: Top-K semantically similar consultants
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ConsultantSearchResultDto'
+                $ref: '#/components/schemas/PageConsultantWithCvDto'
         '400':
+          description: Invalid search criteria
+        '503':
           description: Embedding provider disabled or not configured
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/consultants/search/embedding-info:
+    get:
+      tags: [ Consultants ]
+      summary: Get embedding provider information
+      description: Returns information about the available embedding provider for semantic search
+      responses:
+        '200':
+          description: Embedding provider information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbeddingProviderInfo'
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -580,19 +603,26 @@ components:
       properties:
         name:
           type: string
+          description: Name filter (contains match)
         skillsAll:
           type: array
           items:
-            $ref: '#/components/schemas/Skill'
+            type: string
+          description: Skills that must ALL be present (AND condition)
         skillsAny:
           type: array
           items:
-            $ref: '#/components/schemas/Skill'
+            type: string
+          description: Skills where ANY can be present (OR condition)
         minQualityScore:
           type: integer
+          minimum: 0
+          maximum: 100
+          description: Minimum CV quality score
         onlyActiveCv:
           type: boolean
           default: false
+          description: Only include active CVs
 
     SemanticSearchRequest:
       type: object
@@ -600,64 +630,47 @@ components:
       properties:
         text:
           type: string
+          description: Natural language search text
         provider:
           type: string
-          description: Embedding provider (defaults to server config)
+          default: "GOOGLE_GEMINI"
+          description: Embedding provider (must match server configuration)
         model:
           type: string
-          description: Embedding model (defaults to server config)
+          default: "text-embedding-004"
+          description: Embedding model (must match server configuration)
         topK:
           type: integer
+          minimum: 1
+          maximum: 100
           default: 10
-
-    ConsultantSearchResultDto:
-      type: object
-      required: [ userId, name, cvId ]
-      properties:
-        id:
+          description: Maximum number of results to return
+        minQualityScore:
           type: integer
-          format: int64
-          nullable: true
-        userId:
-          type: string
-        name:
-          type: string
-        cvId:
-          type: string
-        skills:
-          type: array
-          items:
-            $ref: '#/components/schemas/Skill'
-        similarity:
-          type: number
-          format: double
-          nullable: true
-
-    PageConsultantSearchResultDto:
-      type: object
-      properties:
-        content:
-          type: array
-          items:
-            $ref: '#/components/schemas/ConsultantSearchResultDto'
-        number:
-          type: integer
-        size:
-          type: integer
-        totalElements:
-          type: integer
-        totalPages:
-          type: integer
-        first:
+          minimum: 0
+          maximum: 100
+          description: Minimum CV quality score
+        onlyActiveCv:
           type: boolean
-        last:
+          default: false
+          description: Only include active CVs
+
+    EmbeddingProviderInfo:
+      type: object
+      required: [ enabled, provider, model, dimension ]
+      properties:
+        enabled:
           type: boolean
-        sort:
-          type: object
-          additionalProperties: true
-        pageable:
-          type: object
-          additionalProperties: true
+          description: Whether semantic search is available
+        provider:
+          type: string
+          description: Name of the embedding provider
+        model:
+          type: string
+          description: Name of the embedding model
+        dimension:
+          type: integer
+          description: Vector dimension of the embeddings
 
     Skill:
       type: string
