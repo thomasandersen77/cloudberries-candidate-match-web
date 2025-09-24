@@ -1,5 +1,13 @@
 import apiClient from './apiClient';
-import type {PageConsultantSummaryDto} from '../types/api';
+import type {
+    PageConsultantSummaryDto,
+    ConsultantWithCvDto,
+    PageConsultantWithCvDto,
+    RelationalSearchRequest,
+    SemanticSearchRequest,
+    PageConsultantSearchResultDto,
+    ConsultantSearchResultDto
+} from '../types/api';
 
 function normalizePageDto(data: any): PageConsultantSummaryDto {
     // Supports both legacy top-level page fields and Spring Data Web VIA_DTO format (page: { ... })
@@ -40,10 +48,72 @@ export async function listConsultants(params: {
 }
 
 export interface ConsultantSyncResponse {
-    [key: string]: unknown
+    total?: number;
+    succeeded?: number;
+    failed?: number;
+    [key: string]: unknown;
 }
 
 export async function runConsultantSync(batchSize = 120): Promise<ConsultantSyncResponse> {
     const {data} = await apiClient.post<ConsultantSyncResponse>('/api/consultants/sync/run', null, {params: {batchSize}});
+    return data;
+}
+
+// New CV-related endpoints
+export async function listConsultantsWithCv(onlyActiveCv = false): Promise<ConsultantWithCvDto[]> {
+    const {data} = await apiClient.get('/api/consultants/with-cv', {
+        params: {onlyActiveCv}
+    });
+    return data;
+}
+
+export async function listConsultantsWithCvPaged(params: {
+    onlyActiveCv?: boolean;
+    page?: number;
+    size?: number;
+    sort?: string[]
+} = {}): Promise<PageConsultantWithCvDto> {
+    const {onlyActiveCv = false, page = 0, size = 20, sort} = params;
+    const {data} = await apiClient.get('/api/consultants/with-cv/paged', {
+        params: {onlyActiveCv, page, size, sort}
+    });
+    return data;
+}
+
+export interface ConsultantSyncSingleResponse {
+    userId: string;
+    cvId: string;
+    processed: boolean;
+    message?: string;
+}
+
+// Search endpoints
+export async function searchConsultantsRelational(params: {
+    request: RelationalSearchRequest;
+    page?: number;
+    size?: number;
+    sort?: string[]
+} = { request: {} as RelationalSearchRequest }): Promise<PageConsultantSearchResultDto> {
+    const { request, page = 0, size = 20, sort } = params;
+    const { data } = await apiClient.post('/api/consultants/search', request, {
+        params: { page, size, sort }
+    });
+    return data;
+}
+
+export async function searchConsultantsSemantic(request: SemanticSearchRequest): Promise<ConsultantSearchResultDto[]> {
+    const { data } = await apiClient.post('/api/consultants/search/semantic', request);
+    return data;
+}
+
+// Note: Single consultant sync endpoint may not exist in OpenAPI spec
+// This function may need to be removed or the endpoint added to backend
+export async function syncSingleConsultant(
+    userId: string, 
+    cvId: string
+): Promise<ConsultantSyncSingleResponse> {
+    const {data} = await apiClient.post<ConsultantSyncSingleResponse>(
+        `/api/consultants/sync/${userId}/${cvId}`
+    );
     return data;
 }

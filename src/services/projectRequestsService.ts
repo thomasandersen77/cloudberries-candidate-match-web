@@ -16,3 +16,8 @@ export async function getProjectRequestById(id: number): Promise<ProjectRequestR
   const { data } = await apiClient.get<ProjectRequestResponseDto | null>(`/api/project-requests/${id}`);
   return data;
 }
+
+export async function listProjectRequests(): Promise<ProjectRequestResponseDto[]> {
+  const { data } = await apiClient.get<ProjectRequestResponseDto[]>(`/api/project-requests`);
+  return data;
+}

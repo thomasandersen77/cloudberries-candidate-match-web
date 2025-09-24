@@ -32,10 +32,28 @@ export type ProjectRequestResponseDto = components['schemas']['ProjectRequestRes
 
 // Skills aggregate
 export type SkillInCompanyDto = components['schemas']['SkillInCompanyDto'];
-  customerName?: string;
-  title?: string;
-  summary?: string;
-  originalFilename?: string;
-  mustRequirements?: ProjectRequirementDto[];
-  shouldRequirements?: ProjectRequirementDto[];
-}
+
+// CV with consultants
+export type ConsultantWithCvDto = components['schemas']['ConsultantWithCvDto'];
+export type PageConsultantWithCvDto = components['schemas']['PageConsultantWithCvDto'];
+export type ConsultantCvDto = components['schemas']['ConsultantCvDto'];
+
+// CV structure types
+export type KeyQualificationDto = components['schemas']['KeyQualificationDto'];
+export type EducationDto = components['schemas']['EducationDto'];
+export type WorkExperienceDto = components['schemas']['WorkExperienceDto'];
+export type ProjectExperienceDto = components['schemas']['ProjectExperienceDto'];
+export type ProjectRoleDto = components['schemas']['ProjectRoleDto'];
+export type CertificationDto = components['schemas']['CertificationDto'];
+export type CourseDto = components['schemas']['CourseDto'];
+export type LanguageDto = components['schemas']['LanguageDto'];
+export type SkillCategoryDto = components['schemas']['SkillCategoryDto'];
+export type SkillInCategoryDto = components['schemas']['SkillInCategoryDto'];
+export type AttachmentDto = components['schemas']['AttachmentDto'];
+
+// Search types
+export type RelationalSearchRequest = components['schemas']['RelationalSearchRequest'];
+export type SemanticSearchRequest = components['schemas']['SemanticSearchRequest'];
+export type ConsultantSearchResultDto = components['schemas']['ConsultantSearchResultDto'];
+export type PageConsultantSearchResultDto = components['schemas']['PageConsultantSearchResultDto'];
+export type Skill = components['schemas']['Skill'];

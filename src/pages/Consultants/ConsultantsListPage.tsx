@@ -1,109 +1,517 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Container, Typography, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Stack, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
+import { 
+  Box, Container, Typography, TextField, Paper, Stack, Button, Chip,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination,
+  Avatar, CircularProgress, Card, CardContent, Skeleton, useTheme, useMediaQuery,
+  Grid, Divider
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { listConsultants } from '../../services/consultantsService';
-import type { ConsultantSummaryDto, PageConsultantSummaryDto } from '../../types/api';
+import { listConsultantsWithCv, runConsultantSync } from '../../services/consultantsService';
+import type { ConsultantWithCvDto } from '../../types/api';
+import SyncButton from '../../components/Sync/SyncButton';
+import SyncNotificationPanel from '../../components/Sync/SyncNotificationPanel';
+import type { SyncNotification } from '../../components/Sync/SyncNotificationPanel';
+
+// Mobile consultant card component
+const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetailsClick: () => void; onCvClick: () => void }> = ({ 
+  consultant, onDetailsClick, onCvClick 
+}) => {
+  const activeCv = consultant.cvs?.find(cv => cv.active);
+  const quality = activeCv?.qualityScore ?? 0;
+
+  return (
+    <Card sx={{ mb: 2 }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+          <Avatar sx={{ mr: 2, width: 48, height: 48 }}>{consultant.name.charAt(0)}</Avatar>
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+              {consultant.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              ID: {consultant.userId}
+            </Typography>
+          </Box>
+          <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+            <CircularProgress variant="determinate" value={quality} size={32} sx={{ color: '#f4856f' }} />
+            <Box sx={{
+              top: 0, left: 0, bottom: 0, right: 0,
+              position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.65rem' }}>{quality}%</Typography>
+            </Box>
+          </Box>
+        </Box>
+        
+        {/* Skills */}
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Ferdigheter:</Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {consultant.skills.slice(0, 3).map((s, idx) => (
+              <Chip key={idx} label={s} size="small" variant="outlined" color="primary" />
+            ))}
+            {consultant.skills.length > 3 && (
+              <Chip label={`+${consultant.skills.length - 3}`} size="small" variant="outlined" />
+            )}
+          </Box>
+        </Box>
+
+        <Divider sx={{ my: 2 }} />
+        
+        {/* Actions */}
+        <Stack direction="row" spacing={1}>
+          <Button 
+            variant="contained" 
+            size="small"
+            onClick={onDetailsClick}
+            sx={{
+              backgroundColor: '#f4856f',
+              '&:hover': {backgroundColor: '#f26a52'},
+              borderRadius: '20px', textTransform: 'none', fontWeight: 'bold',
+              flex: 1
+            }}
+          >Se detaljer</Button>
+          <Button 
+            variant="outlined" 
+            size="small"
+            onClick={onCvClick}
+            sx={{ borderRadius: '20px', textTransform: 'none', fontWeight: 'bold', flex: 1 }}
+          >Se hele CV</Button>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Skeleton loaders
+const TableSkeleton: React.FC<{ rows?: number }> = ({ rows = 5 }) => (
+  <TableContainer>
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          <TableCell width={64}></TableCell>
+          <TableCell>Navn</TableCell>
+          <TableCell>Ferdigheter</TableCell>
+          <TableCell align="center">Kvalitet</TableCell>
+          <TableCell align="right">Handlinger</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {Array.from({ length: rows }).map((_, index) => (
+          <TableRow key={index}>
+            <TableCell><Skeleton variant="circular" width={40} height={40} /></TableCell>
+            <TableCell><Skeleton width="80%" /></TableCell>
+            <TableCell>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                <Skeleton variant="rounded" width={60} height={24} />
+                <Skeleton variant="rounded" width={50} height={24} />
+                <Skeleton variant="rounded" width={40} height={24} />
+              </Box>
+            </TableCell>
+            <TableCell align="center"><Skeleton variant="circular" width={36} height={36} /></TableCell>
+            <TableCell align="right">
+              <Stack direction="row" spacing={1} justifyContent="flex-end">
+                <Skeleton variant="rounded" width={80} height={32} />
+                <Skeleton variant="rounded" width={80} height={32} />
+              </Stack>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </TableContainer>
+);
+
+const MobileSkeleton: React.FC<{ cards?: number }> = ({ cards = 5 }) => (
+  <Box>
+    {Array.from({ length: cards }).map((_, index) => (
+      <Card key={index} sx={{ mb: 2 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+            <Skeleton variant="circular" width={48} height={48} sx={{ mr: 2 }} />
+            <Box sx={{ flexGrow: 1 }}>
+              <Skeleton width="60%" height={24} sx={{ mb: 0.5 }} />
+              <Skeleton width="40%" height={16} />
+            </Box>
+            <Skeleton variant="circular" width={32} height={32} />
+          </Box>
+          <Skeleton width="100%" height={16} sx={{ mb: 1 }} />
+          <Box sx={{ display: 'flex', gap: 0.5, mb: 2 }}>
+            <Skeleton variant="rounded" width={60} height={24} />
+            <Skeleton variant="rounded" width={50} height={24} />
+            <Skeleton variant="rounded" width={40} height={24} />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Skeleton variant="rounded" width="50%" height={32} />
+            <Skeleton variant="rounded" width="50%" height={32} />
+          </Box>
+        </CardContent>
+      </Card>
+    ))}
+  </Box>
+);
 
 const ConsultantsListPage: React.FC = () => {
-  const [name, setName] = useState('');
-  const [page, setPage] = useState(1); // UI 1-indexed
-  const [size, setSize] = useState<number>(10);
-  const [data, setData] = useState<PageConsultantSummaryDto | null>(null);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
+
+  // Search UI states
+  const [searchInput, setSearchInput] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
+
+  // Data and UI states
+  const [consultants, setConsultants] = useState<ConsultantWithCvDto[]>([]);
+  const [loading, setLoading] = useState(true); // Start with loading true
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [notification, setNotification] = useState<SyncNotification | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Derived filtered list
+  const filteredConsultants = useMemo(() => {
+    const q = nameFilter.trim().toLowerCase();
+    if (!q) return consultants;
+    return consultants.filter(c => c.name.toLowerCase().includes(q));
+  }, [consultants, nameFilter]);
+
+  const pagedConsultants = useMemo(() => {
+    const start = page * rowsPerPage;
+    return filteredConsultants.slice(start, start + rowsPerPage);
+  }, [filteredConsultants, page, rowsPerPage]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Over-fetch by one to detect if a next page exists even if backend totals are unreliable
-      const effectiveSize = Math.min(size + 1, 100);
-      const res = await listConsultants({ name, page: page - 1, size: effectiveSize });
-      setData(res);
+      const res = await listConsultantsWithCv(true); // Only active CVs
+      setConsultants(res);
+    } catch (error) {
+      console.error('Failed to fetch consultants:', error);
+      setNotification({
+        type: 'error',
+        title: 'Feil ved henting av konsulenter',
+        message: 'Kunne ikke hente konsulentdata. Prøv igjen senere.'
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); /* eslint-disable-next-line */ }, [page, size]);
+  useEffect(() => { fetchData(); /* eslint-disable-next-line */ }, []);
 
-  const handleSearch = () => {
-    // Reset to first page and fetch. If already on page 1, fetch immediately.
-    if (page !== 1) {
-      setPage(1);
-    } else {
-      fetchData();
+  // Actions
+  const performSearch = () => {
+    setNameFilter(searchInput);
+    setPage(0);
+  };
+
+  const handleEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      performSearch();
     }
   };
 
-  const content: ConsultantSummaryDto[] = data?.content ?? [];
-  const displayContent: ConsultantSummaryDto[] = content.slice(0, size);
-  const canPrev = page > 1;
-  const canNext = content.length > size; // we over-fetched by one
+  const handleSyncAll = async () => {
+    setSyncLoading(true);
+    setNotification({
+      type: 'progress',
+      title: 'Henter CV-er fra Flowcase',
+      message: 'Dette kan ta litt tid...'
+    });
+
+    try {
+      const result = await runConsultantSync();
+      setNotification({
+        type: 'success',
+        title: 'CV-synkronisering fullført',
+        message: 'Alle CV-er er oppdatert fra Flowcase',
+        details: {
+          total: result.total || 0,
+          succeeded: result.succeeded || 0,
+          failed: result.failed || 0
+        }
+      });
+      // Refresh data after sync
+      await fetchData();
+    } catch (error) {
+      console.error('Sync failed:', error);
+      setNotification({
+        type: 'error',
+        title: 'Synkronisering feilet',
+        message: 'Kunne ikke oppdatere CV-er fra Flowcase. Prøv igjen senere.'
+      });
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  const handleDismissNotification = () => {
+    setNotification(null);
+  };
+
+  const handleChangePage = (_: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(e.target.value, 10));
+    setPage(0);
+  };
+
+  const gotoDetails = (userId: string) => navigate(`/consultants/${userId}`);
+  const gotoCv = (userId: string) => navigate(`/cv/${userId}`);
 
   return (
-    <Container sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>Konsulenter</Typography>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2, alignItems: 'center' }}>
-        <TextField label="Navn inneholder" value={name} onChange={(e) => setName(e.target.value)} size="small" />
-        <Button onClick={handleSearch} variant="contained" disabled={loading}>Søk</Button>
+    <Container sx={{ py: isMobile ? 2 : 4, px: isMobile ? 1 : 2 }} maxWidth="lg">
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between', 
+        alignItems: isMobile ? 'stretch' : 'center', 
+        mb: 3,
+        gap: isMobile ? 2 : 0
+      }}>
+        <Typography variant={isMobile ? "h5" : "h4"} sx={{ textAlign: isMobile ? 'center' : 'left' }}>
+          Konsulenter
+        </Typography>
+        <SyncButton
+          variant="all"
+          loading={syncLoading}
+          disabled={loading}
+          onClick={handleSyncAll}
+          sx={{ alignSelf: isMobile ? 'center' : 'flex-end' }}
+        />
+      </Box>
+
+      <SyncNotificationPanel 
+        notification={notification} 
+        onDismiss={handleDismissNotification} 
+      />
+
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
+        <TextField 
+          label="Søk på navn" 
+          value={searchInput} 
+          onChange={(e) => setSearchInput(e.target.value)} 
+          onKeyDown={handleEnterKey}
+          size="small"
+          placeholder={isMobile ? "Søk konsulent..." : "Skriv navn og trykk Enter eller Søk"}
+          sx={{ flexGrow: 1 }}
+          fullWidth={isMobile}
+        />
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={performSearch}
+          sx={{ minWidth: isMobile ? 'auto' : 100 }}
+          fullWidth={isMobile}
+        >
+          Søk
+        </Button>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            alignSelf: isMobile ? 'flex-start' : 'center', 
+            color: 'text.secondary',
+            textAlign: isMobile ? 'center' : 'left',
+            fontSize: isMobile ? '0.8rem' : '0.875rem'
+          }}
+        >
+          {filteredConsultants.length} av {consultants.length} konsulenter
+        </Typography>
       </Stack>
 
-      <TableContainer component={Paper}>
-        <Table size="small" stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell>Navn</TableCell>
-              <TableCell>E-post</TableCell>
-              <TableCell>Fødselsår</TableCell>
-              <TableCell>Default CV ID</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {displayContent.map((c) => (
-              <TableRow key={c.userId} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/consultants/${encodeURIComponent(c.userId)}`)}>
-                <TableCell>{c.name}</TableCell>
-                <TableCell>{c.email}</TableCell>
-                <TableCell>{c.bornYear}</TableCell>
-                <TableCell>{c.defaultCvId}</TableCell>
-              </TableRow>
-            ))}
-            {!loading && displayContent.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4}>Ingen konsulenter funnet.</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 10, pointerEvents: 'auto' }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <Button variant="outlined" onClick={() => canPrev && setPage((p) => Math.max(1, p - 1))} disabled={!canPrev}>
-            Forrige
-          </Button>
-          <Button variant="outlined" onClick={() => canNext && setPage((p) => p + 1)} disabled={!canNext}>
-            Neste
-          </Button>
-          <Typography variant="body2" sx={{ ml: 1 }}>
-            Side {page}
-          </Typography>
-        </Stack>
-
-        <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel id="rows-per-page-label">Rader per side</InputLabel>
-          <Select
-            labelId="rows-per-page-label"
-            id="rows-per-page"
-            value={size}
-            label="Rader per side"
-            onChange={(e) => { const newSize = Number(e.target.value); setSize(newSize); setPage(1); }}
-          >
-            {[10, 25, 50, 100].map((s) => (
-              <MenuItem key={s} value={s}>{s}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+      {loading ? (
+        <Paper>
+          {isMobile ? <MobileSkeleton cards={rowsPerPage} /> : <TableSkeleton rows={rowsPerPage} />}
+          {/* Keep pagination stable during loading */}
+          <TablePagination
+            component="div"
+            rowsPerPageOptions={[5,10,20,50]}
+            count={0}
+            rowsPerPage={rowsPerPage}
+            page={0}
+            onPageChange={() => {}}
+            onRowsPerPageChange={() => {}}
+            sx={{ opacity: 0.5, pointerEvents: 'none' }}
+          />
+        </Paper>
+      ) : (
+        <>
+          {filteredConsultants.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                {nameFilter ? 'Ingen konsulenter funnet' : 'Ingen konsulenter tilgjengelig'}
+              </Typography>
+              {nameFilter && (
+                <Typography variant="body2" color="text.secondary">
+                  Prøv å søke på et annet navn eller tøm søkefeltet.
+                </Typography>
+              )}
+            </Paper>
+          ) : (
+            <Paper>
+              {/* Mobile Card Layout */}
+              {isMobile ? (
+                <Box sx={{ p: 2 }}>
+                  {pagedConsultants.map((c) => (
+                    <ConsultantMobileCard
+                      key={c.userId}
+                      consultant={c}
+                      onDetailsClick={() => gotoDetails(c.userId)}
+                      onCvClick={() => gotoCv(c.userId)}
+                    />
+                  ))}
+                </Box>
+              ) : (
+                /* Desktop/Tablet Table Layout */
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                  <Table 
+                    size={isTablet ? "small" : "medium"} 
+                    sx={{ minWidth: isTablet ? 600 : 800 }}
+                    stickyHeader
+                  >
+                    <TableHead>
+                      <TableRow>
+                        <TableCell width={isTablet ? 48 : 64}></TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Navn</TableCell>
+                        {!isTablet && <TableCell sx={{ fontWeight: 'bold' }}>Ferdigheter</TableCell>}
+                        <TableCell align="center" sx={{ fontWeight: 'bold' }}>Kvalitet</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>Handlinger</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {pagedConsultants.map((c) => {
+                        const activeCv = c.cvs?.find(cv => cv.active);
+                        const quality = activeCv?.qualityScore ?? 0;
+                        return (
+                          <TableRow key={c.userId} hover sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                            <TableCell>
+                              <Avatar sx={{ width: isTablet ? 32 : 40, height: isTablet ? 32 : 40 }}>
+                                {c.name.charAt(0)}
+                              </Avatar>
+                            </TableCell>
+                            <TableCell>
+                              <Box>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                                  {c.name}
+                                </Typography>
+                                {isTablet && (
+                                  <Box sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.25 }}>
+                                    {c.skills.slice(0, 2).map((s, idx) => (
+                                      <Chip key={idx} label={s} size="small" variant="outlined" color="primary" sx={{ fontSize: '0.7rem' }} />
+                                    ))}
+                                    {c.skills.length > 2 && (
+                                      <Chip label={`+${c.skills.length - 2}`} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                                    )}
+                                  </Box>
+                                )}
+                              </Box>
+                            </TableCell>
+                            {!isTablet && (
+                              <TableCell>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                  {c.skills.slice(0, 3).map((s, idx) => (
+                                    <Chip key={idx} label={s} size="small" variant="outlined" color="primary" />
+                                  ))}
+                                  {c.skills.length > 3 && (
+                                    <Chip label={`+${c.skills.length - 3}`} size="small" variant="outlined" />
+                                  )}
+                                </Box>
+                              </TableCell>
+                            )}
+                            <TableCell align="center">
+                              <Box sx={{position: 'relative', display: 'inline-flex'}}>
+                                <CircularProgress 
+                                  variant="determinate" 
+                                  value={quality} 
+                                  size={isTablet ? 28 : 36} 
+                                  sx={{ color: '#f4856f' }} 
+                                />
+                                <Box sx={{
+                                  top: 0, left: 0, bottom: 0, right: 0,
+                                  position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                }}>
+                                  <Typography 
+                                    variant="caption" 
+                                    sx={{ fontWeight: 'bold', fontSize: isTablet ? '0.65rem' : '0.75rem' }}
+                                  >
+                                    {quality}%
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Stack 
+                                direction={isTablet ? "column" : "row"} 
+                                spacing={isTablet ? 0.5 : 1} 
+                                justifyContent="flex-end"
+                                sx={{ minWidth: isTablet ? 80 : 'auto' }}
+                              >
+                                <Button 
+                                  variant="contained" 
+                                  size="small"
+                                  onClick={() => gotoDetails(c.userId)}
+                                  sx={{
+                                    backgroundColor: '#f4856f',
+                                    '&:hover': {backgroundColor: '#f26a52'},
+                                    borderRadius: '20px', 
+                                    textTransform: 'none', 
+                                    fontWeight: 'bold',
+                                    fontSize: isTablet ? '0.7rem' : '0.75rem',
+                                    px: isTablet ? 1 : 1.5,
+                                    py: isTablet ? 0.25 : 0.5
+                                  }}
+                                >Se detaljer</Button>
+                                <Button 
+                                  variant="outlined" 
+                                  size="small"
+                                  onClick={() => gotoCv(c.userId)}
+                                  sx={{ 
+                                    borderRadius: '20px', 
+                                    textTransform: 'none', 
+                                    fontWeight: 'bold',
+                                    fontSize: isTablet ? '0.7rem' : '0.75rem',
+                                    px: isTablet ? 1 : 1.5,
+                                    py: isTablet ? 0.25 : 0.5
+                                  }}
+                                >Se hele CV</Button>
+                              </Stack>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+              
+              {/* Pagination */}
+              <TablePagination
+                component="div"
+                rowsPerPageOptions={isMobile ? [5,10,20] : [5,10,20,50]}
+                count={filteredConsultants.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                labelRowsPerPage={isMobile ? "Per side:" : "Rader per side:"}
+                labelDisplayedRows={({ from, to, count }) => 
+                  isMobile ? `${from}-${to} av ${count}` : `${from}-${to} av ${count !== -1 ? count : `mer enn ${to}`}`
+                }
+                sx={{
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                  '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                    fontSize: isMobile ? '0.8rem' : '0.875rem'
+                  }
+                }}
+              />
+            </Paper>
+          )}
+        </>
+      )}
     </Container>
   );
 };

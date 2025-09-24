@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/api/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List skills across consultants */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Optional skill filter (repeat to filter by multiple) */
+                    skill?: string[];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Skill aggregates */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SkillInCompanyDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chatbot/analyze": {
         parameters: {
             query?: never;
@@ -78,6 +118,92 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["PageConsultantSummaryDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/consultants/with-cv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all consultants with their CVs (normalized entities) */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description If true, include only active CVs for each consultant */
+                    onlyActiveCv?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Consultants with nested CV structures */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConsultantWithCvDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/consultants/with-cv/paged": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List consultants with CVs (paged) */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description If true, include only active CVs for each consultant */
+                    onlyActiveCv?: boolean;
+                    /** @description Page number (0-indexed) */
+                    page?: components["parameters"]["PageParam"];
+                    /** @description Page size */
+                    size?: components["parameters"]["SizeParam"];
+                    /** @description Sort field(s), e.g. `name,asc`. Repeat for multi-sort. */
+                    sort?: components["parameters"]["SortParam"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Paged consultants with CVs */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PageConsultantWithCvDto"];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -499,6 +625,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/project-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List stored customer project requests (compact) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Project requests */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectRequestResponseDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/project-requests/upload": {
         parameters: {
             query?: never;
@@ -621,7 +784,70 @@ export interface paths {
             };
         };
         put?: never;
-        post?: never;
+        /**
+         * Trigger scoring for single candidate
+         * @description Runs CV scoring for the specified candidate and stores/returns the latest score.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    candidateId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Updated candidate CV score */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CvScoreDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cv-score/run/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger scoring for all consultants */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Scoring summary */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CvScoringRunResponse"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -713,6 +939,17 @@ export interface components {
         };
         /** @enum {string} */
         Skill: "BACKEND" | "FRONTEND" | "JAVA" | "KOTLIN" | "REACT" | "TYPESCRIPT" | "ARCHITECTURE";
+        SkillInCompanyDto: {
+            name: string;
+            /** @description Number of consultants with this skill (preferred) */
+            consultantCount?: number;
+            /**
+             * @deprecated
+             * @description Number of consultants with this skill (deprecated)
+             */
+            konsulenterMedSkill: number;
+            konsulenter: components["schemas"]["ConsultantSummaryDto"][];
+        };
         AIAnalysisRequest: {
             /** @description Content to analyze */
             content: string;
@@ -732,6 +969,99 @@ export interface components {
         PageConsultantSummaryDto: {
             content?: components["schemas"]["ConsultantSummaryDto"][];
             /** @description Page number (0-indexed) */
+            number?: number;
+            size?: number;
+            totalElements?: number;
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
+            sort?: {
+                [key: string]: unknown;
+            };
+            pageable?: {
+                [key: string]: unknown;
+            };
+        };
+        ConsultantWithCvDto: {
+            /** Format: int64 */
+            id?: number | null;
+            userId: string;
+            name: string;
+            cvId: string;
+            skills: string[];
+            cvs: components["schemas"]["ConsultantCvDto"][];
+        };
+        ConsultantCvDto: {
+            /** Format: int64 */
+            id?: number | null;
+            versionTag?: string | null;
+            qualityScore?: number | null;
+            active: boolean;
+            keyQualifications?: components["schemas"]["KeyQualificationDto"][];
+            education?: components["schemas"]["EducationDto"][];
+            workExperience?: components["schemas"]["WorkExperienceDto"][];
+            projectExperience?: components["schemas"]["ProjectExperienceDto"][];
+            certifications?: components["schemas"]["CertificationDto"][];
+            courses?: components["schemas"]["CourseDto"][];
+            languages?: components["schemas"]["LanguageDto"][];
+            skillCategories?: components["schemas"]["SkillCategoryDto"][];
+            attachments?: components["schemas"]["AttachmentDto"][];
+        };
+        KeyQualificationDto: {
+            label?: string | null;
+            description?: string | null;
+        };
+        EducationDto: {
+            degree?: string | null;
+            school?: string | null;
+            fromYearMonth?: string | null;
+            toYearMonth?: string | null;
+        };
+        WorkExperienceDto: {
+            employer?: string | null;
+            fromYearMonth?: string | null;
+            toYearMonth?: string | null;
+        };
+        ProjectExperienceDto: {
+            customer?: string | null;
+            description?: string | null;
+            longDescription?: string | null;
+            fromYearMonth?: string | null;
+            toYearMonth?: string | null;
+            roles?: components["schemas"]["ProjectRoleDto"][];
+            skills?: string[];
+        };
+        ProjectRoleDto: {
+            name?: string | null;
+            description?: string | null;
+        };
+        CertificationDto: {
+            name?: string | null;
+            year?: number | null;
+        };
+        CourseDto: {
+            name?: string | null;
+            organizer?: string | null;
+            year?: number | null;
+        };
+        LanguageDto: {
+            name?: string | null;
+            level?: string | null;
+        };
+        SkillCategoryDto: {
+            name?: string | null;
+            skills?: components["schemas"]["SkillInCategoryDto"][];
+        };
+        SkillInCategoryDto: {
+            name?: string | null;
+            durationYears?: number | null;
+        };
+        AttachmentDto: {
+            fileName?: string | null;
+            url?: string | null;
+        };
+        PageConsultantWithCvDto: {
+            content?: components["schemas"]["ConsultantWithCvDto"][];
             number?: number;
             size?: number;
             totalElements?: number;
@@ -801,6 +1131,9 @@ export interface components {
             summary: string;
             strengths: string[];
             potentialImprovements: string[];
+        };
+        CvScoringRunResponse: {
+            processedCount: number;
         };
         ProjectRequestResponseDto: {
             /** Format: int64 */

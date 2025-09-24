@@ -1,23 +1,55 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Container, Typography, Paper, Divider, Box, Stack, Chip } from '@mui/material';
-import { getCv } from '../../services/cvService';
-import { extractSkills } from '../../utils/skills';
-import WordCloud from '../../components/WordCloud';
-import CvSectionsTable from '../../components/CvSectionsTable';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Container, Typography, Paper, Box, Stack, Chip, Alert, Button } from '@mui/material';
+import { listConsultantsWithCv, syncSingleConsultant } from '../../services/consultantsService';
+import type { ConsultantWithCvDto, ConsultantCvDto } from '../../types/api';
+import CvSummary from '../../components/CV/CvSummary';
+import SkillsSection from '../../components/CV/SkillsSection';
+import WorkHistoryTable from '../../components/CV/WorkHistoryTable';
+import ProjectExperienceTable from '../../components/CV/ProjectExperienceTable';
+import SyncButton from '../../components/Sync/SyncButton';
+import SyncNotificationPanel from '../../components/Sync/SyncNotificationPanel';
+import type { SyncNotification } from '../../components/Sync/SyncNotificationPanel';
 
 const CvViewPage: React.FC = () => {
   const { userId } = useParams();
-  const [cv, setCv] = useState<any>(null);
+  const navigate = useNavigate();
+  const [consultant, setConsultant] = useState<ConsultantWithCvDto | null>(null);
+  const [activeCv, setActiveCv] = useState<ConsultantCvDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [notification, setNotification] = useState<SyncNotification | null>(null);
 
   useEffect(() => {
     const load = async () => {
       if (!userId) return;
       setLoading(true);
       try {
-        const data = await getCv(userId);
-        setCv(data);
+        const consultants = await listConsultantsWithCv(false); // Get all CVs, not just active
+        const foundConsultant = consultants.find(c => c.userId === userId);
+        
+        if (!foundConsultant) {
+          setNotification({
+            type: 'error',
+            title: 'Konsulent ikke funnet',
+            message: `Kunne ikke finne konsulent med ID: ${userId}`
+          });
+          return;
+        }
+
+        setConsultant(foundConsultant);
+        
+        // Find active CV or fallback to first CV
+        const activeCV = foundConsultant.cvs?.find(cv => cv.active) || foundConsultant.cvs?.[0];
+        setActiveCv(activeCV || null);
+        
+      } catch (error) {
+        console.error('Failed to load consultant CV:', error);
+        setNotification({
+          type: 'error',
+          title: 'Feil ved lasting',
+          message: 'Kunne ikke laste CV-data. Prøv igjen senere.'
+        });
       } finally {
         setLoading(false);
       }
@@ -25,115 +57,194 @@ const CvViewPage: React.FC = () => {
     load();
   }, [userId]);
 
-  // basic extraction for header/summary
-  const anyCv = (cv ?? {}) as any;
-  const displayName = anyCv.displayName || anyCv.name || anyCv.fullName || userId;
-  const summaryFromKQ = Array.isArray(anyCv.keyQualifications) ? anyCv.keyQualifications.map((q: any) => q?.description ?? q?.text ?? q?.title ?? q).filter(Boolean).join('\n\n') : '';
-  const summary = summaryFromKQ || anyCv.summary || anyCv.profile || anyCv.about || '';
-  const skills = extractSkills(cv);
+  const handleSyncCv = async () => {
+    if (!consultant || !activeCv) return;
+    
+    setSyncLoading(true);
+    setNotification({
+      type: 'progress',
+      title: 'Oppdaterer CV',
+      message: 'Henter nyeste versjon fra Flowcase...'
+    });
 
-  const work = Array.isArray(anyCv.workExperiences) ? anyCv.workExperiences : (Array.isArray(anyCv.workExperience) ? anyCv.workExperience : []);
-  const projects = Array.isArray(anyCv.projectExperiences) ? anyCv.projectExperiences : (Array.isArray(anyCv.projectExperience) ? anyCv.projectExperience : []);
+    try {
+      const result = await syncSingleConsultant(consultant.userId, consultant.cvId);
+      setNotification({
+        type: 'success',
+        title: 'CV oppdatert',
+        message: 'CV-en er hentet fra Flowcase',
+        details: { processed: result.processed }
+      });
+      
+      // Refresh consultant data
+      const consultants = await listConsultantsWithCv(false);
+      const updatedConsultant = consultants.find(c => c.userId === userId);
+      if (updatedConsultant) {
+        setConsultant(updatedConsultant);
+        const activeCV = updatedConsultant.cvs?.find(cv => cv.active) || updatedConsultant.cvs?.[0];
+        setActiveCv(activeCV || null);
+      }
+    } catch (error) {
+      console.error('Sync failed:', error);
+      setNotification({
+        type: 'error',
+        title: 'Oppdatering feilet',
+        message: 'Kunne ikke oppdatere CV fra Flowcase. Prøv igjen senere.'
+      });
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  const handleDismissNotification = () => {
+    setNotification(null);
+  };
+
+  if (loading) {
+    return (
+      <Container sx={{ py: 4 }}>
+        <Typography>Laster CV-data...</Typography>
+      </Container>
+    );
+  }
+
+  if (!consultant) {
+    return (
+      <Container sx={{ py: 4 }}>
+        <Alert severity="error">
+          Konsulent ikke funnet. <Button onClick={() => navigate('/consultants')}>Gå tilbake til liste</Button>
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>CV</Typography>
-      <Paper sx={{ p: 3, mb: 2 }}>
-        {loading ? (
-          <Typography>Laster...</Typography>
-        ) : (
-          <>
-            <Typography variant="h5" gutterBottom sx={{ color: 'primary.main' }}>{displayName}</Typography>
-            {summary && (
-              <Box sx={{ mb: 2 }}>
-                {String(summary)
-                  .split(/\n{2,}|(?<=[.!?])\s{2,}/)
-                  .filter(Boolean)
-                  .map((p: string, i: number) => (
-                    <Typography key={i} paragraph>{p.trim()}</Typography>
-                  ))}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" gutterBottom>CV - {consultant.name}</Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Bruker-ID: {consultant.userId}
+          </Typography>
+          {activeCv?.versionTag && (
+            <Typography variant="body2" color="text.secondary">
+              Versjon: {activeCv.versionTag}
+            </Typography>
+          )}
+        </Box>
+        <SyncButton
+          variant="single"
+          loading={syncLoading}
+          onClick={handleSyncCv}
+          disabled={!activeCv}
+        />
+      </Box>
+
+      <SyncNotificationPanel 
+        notification={notification} 
+        onDismiss={handleDismissNotification} 
+      />
+
+      {activeCv ? (
+        <Box>
+          {/* CV Quality Score */}
+          {activeCv.qualityScore && (
+            <Paper sx={{ p: 2, mb: 3, bgcolor: 'success.50' }}>
+              <Typography variant="h6">CV-kvalitet: {activeCv.qualityScore}%</Typography>
+            </Paper>
+          )}
+          
+          {/* CV Summary */}
+          <CvSummary keyQualifications={activeCv.keyQualifications || []} />
+          
+          {/* Skills Section */}
+          <SkillsSection 
+            skillCategories={activeCv.skillCategories || []} 
+            skills={consultant.skills}
+          />
+          
+          {/* Work History Table */}
+          <WorkHistoryTable workExperience={activeCv.workExperience || []} />
+          
+          {/* Project Experience Table */}
+          <ProjectExperienceTable projectExperience={activeCv.projectExperience || []} />
+          
+          {/* Education Section */}
+          {activeCv.education && activeCv.education.length > 0 && (
+            <Paper sx={{ p: 3, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Utdanning
+              </Typography>
+              <Stack spacing={2}>
+                {activeCv.education.map((edu, index) => (
+                  <Box key={index}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                      {edu.degree || 'Utdanning'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {edu.school} · {edu.fromYearMonth} - {edu.toYearMonth || 'Pågående'}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Paper>
+          )}
+          
+          {/* Certifications and Courses */}
+          {((activeCv.certifications && activeCv.certifications.length > 0) || 
+            (activeCv.courses && activeCv.courses.length > 0)) && (
+            <Paper sx={{ p: 3, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Sertifiseringer og kurs
+              </Typography>
+              <Stack spacing={2}>
+                {activeCv.certifications?.map((cert, index) => (
+                  <Box key={`cert-${index}`}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                      {cert.name} {cert.year && `(${cert.year})`}
+                    </Typography>
+                  </Box>
+                ))}
+                {activeCv.courses?.map((course, index) => (
+                  <Box key={`course-${index}`}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                      {course.name} {course.year && `(${course.year})`}
+                    </Typography>
+                    {course.organizer && (
+                      <Typography variant="body2" color="text.secondary">
+                        {course.organizer}
+                      </Typography>
+                    )}
+                  </Box>
+                ))}
+              </Stack>
+            </Paper>
+          )}
+          
+          {/* Languages */}
+          {activeCv.languages && activeCv.languages.length > 0 && (
+            <Paper sx={{ p: 3, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Språk
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {activeCv.languages.map((lang, index) => (
+                  <Chip
+                    key={index}
+                    label={`${lang.name}${lang.level ? ` (${lang.level})` : ''}`}
+                    variant="outlined"
+                    color="info"
+                  />
+                ))}
               </Box>
-            )}
-            {skills.length > 0 && (
-              <>
-                <Typography variant="h6" gutterBottom>Kompetanse</Typography>
-                <WordCloud words={skills} />
-              </>
-            )}
-          </>
-        )}
-      </Paper>
-
-      {!loading && (
-        <Paper sx={{ p: 3, mb: 2 }}>
-          <Typography variant="h6" gutterBottom>Detaljer</Typography>
-          <Divider sx={{ mb: 2 }} />
-          <CvSectionsTable cv={cv} />
-        </Paper>
-      )}
-
-      {!loading && (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>Full CV (tekstlig visning)</Typography>
-          <Divider sx={{ mb: 2 }} />
-
-          {/* Arbeidserfaring som avsnitt */}
-          {Array.isArray(work) && work.length > 0 && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>Arbeidserfaring</Typography>
-              {work.map((w: any, i: number) => (
-                <Box key={i} sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    {[w?.employer ?? w?.company ?? w?.client, w?.role ?? w?.position ?? w?.title].filter(Boolean).join(' — ')}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                    {[w?.start ?? w?.startDate ?? w?.from, w?.end ?? w?.endDate ?? w?.to ?? 'nå'].filter(Boolean).join(' — ')}
-                  </Typography>
-                  {String(w?.description ?? w?.summary ?? '')
-                    .split(/\n{2,}|(?<=[.!?])\s{2,}/)
-                    .filter(Boolean)
-                    .map((p: string, j: number) => (
-                      <Typography key={j} paragraph>{p.trim()}</Typography>
-                    ))}
-                </Box>
-              ))}
-            </Box>
+            </Paper>
           )}
-
-          {/* Prosjekterfaring som avsnitt */}
-          {Array.isArray(projects) && projects.length > 0 && (
-            <Box>
-              <Typography variant="subtitle1" gutterBottom>Prosjekter</Typography>
-              {projects.map((p: any, i: number) => (
-                <Box key={i} sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    {[p?.projectName ?? p?.title ?? p?.name, p?.customer ?? p?.client, Array.isArray(p?.roles) ? p.roles.map((r: any) => r?.name ?? r).filter(Boolean).join(', ') : p?.role]
-                      .filter(Boolean)
-                      .join(' — ')}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                    {[(p?.start ?? p?.startDate ?? p?.from) || '', (p?.end ?? p?.endDate ?? p?.to) || 'nå']
-                      .filter(Boolean)
-                      .join(' — ')}
-                  </Typography>
-                  {/* Teknologier som chips hvis tilgjengelig */}
-                  {Array.isArray(p?.skills) || Array.isArray(p?.technologies) ? (
-                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 1 }}>
-                      {(Array.isArray(p?.skills) ? p.skills : p?.technologies || []).map((t: any, k: number) => (
-                        <Chip key={k} label={String(t?.name ?? t)} size="small" />
-                      ))}
-                    </Stack>
-                  ) : null}
-                  {String(p?.description ?? p?.summary ?? '')
-                    .split(/\n{2,}|(?<=[.!?])\s{2,}/)
-                    .filter(Boolean)
-                    .map((para: string, j: number) => (
-                      <Typography key={j} paragraph>{para.trim()}</Typography>
-                    ))}
-                </Box>
-              ))}
-            </Box>
-          )}
+        </Box>
+      ) : (
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <Typography variant="h6" color="text.secondary">
+            Ingen CV-data tilgjengelig for denne konsulenten
+          </Typography>
         </Paper>
       )}
     </Container>

@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Container, LinearProgress, Paper, Stack, Typography, Table, TableBody, TableCell, TableHead, TableRow, Alert } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import type { ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
-import { uploadProjectRequest } from '../../services/projectRequestsService';
+import { uploadProjectRequest, listProjectRequests } from '../../services/projectRequestsService';
+import { useNavigate } from 'react-router-dom';
 
 const ProjectRequestUploadPage: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -10,6 +11,9 @@ const ProjectRequestUploadPage: React.FC = () => {
   const [progressVisible, setProgressVisible] = useState(false);
   const [result, setResult] = useState<ProjectRequestResponseDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [existing, setExisting] = useState<ProjectRequestResponseDto[]>([]);
+  const [loadingList, setLoadingList] = useState(false);
+  const navigate = useNavigate();
 
   const isPdf = useMemo(() => (file?.type === 'application/pdf') || (file?.name?.toLowerCase().endsWith('.pdf')), [file]);
 
@@ -29,6 +33,16 @@ const ProjectRequestUploadPage: React.FC = () => {
     try {
       const res = await uploadProjectRequest(file);
       setResult(res);
+      // Refresh existing list after successful upload
+      setLoadingList(true);
+      try {
+        const list = await listProjectRequests();
+        // Sort newest first by id if present
+        list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+        setExisting(list);
+      } finally {
+        setLoadingList(false);
+      }
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Ukjent feil ved opplasting/analyse';
       setError(String(msg));
@@ -38,6 +52,21 @@ const ProjectRequestUploadPage: React.FC = () => {
       setTimeout(() => setProgressVisible(false), 400);
     }
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingList(true);
+        const list = await listProjectRequests();
+        list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+        setExisting(list);
+      } catch (e) {
+        // silently ignore list errors
+      } finally {
+        setLoadingList(false);
+      }
+    })();
+  }, []);
 
   return (
     <Container sx={{ py: 4 }}>
@@ -78,6 +107,54 @@ const ProjectRequestUploadPage: React.FC = () => {
         {error && (
           <Alert sx={{ mt: 2 }} severity="error">{error}</Alert>
         )}
+      </Paper>
+
+      {/* Existing project requests list (compact) */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Stack direction="row" spacing={2} sx={{ mb: 1, alignItems: 'center' }}>
+          <Typography variant="h6" sx={{ m: 0 }}>Eksisterende forespørsler</Typography>
+          {loadingList && <LinearProgress sx={{ flex: 1 }} />}
+        </Stack>
+        <Table size="small" stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell width={80}>ID</TableCell>
+              <TableCell>Kunde</TableCell>
+              <TableCell>Tittel</TableCell>
+              <TableCell>Fil</TableCell>
+              <TableCell width={110}>Detaljer</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {existing.map((r) => (
+              <TableRow
+                key={r.id ?? Math.random()}
+                hover
+                sx={{ cursor: r.id ? 'pointer' : 'default' }}
+                onClick={() => {
+                  if (r.id != null) navigate(`/project-requests/${r.id}`);
+                }}
+              >
+                <TableCell>{r.id ?? '-'}</TableCell>
+                <TableCell>{r.customerName ?? '-'}</TableCell>
+                <TableCell>{r.title ?? '-'}</TableCell>
+                <TableCell>{r.originalFilename ?? '-'}</TableCell>
+                <TableCell>
+                  <Button size="small" onClick={(e) => { e.stopPropagation(); if (r.id != null) navigate(`/project-requests/${r.id}`); }}>
+                    Åpne
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {(!existing || existing.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={5}>
+                  <Typography variant="body2" color="text.secondary">Ingen forespørsler funnet.</Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </Paper>
 
       {result && (
