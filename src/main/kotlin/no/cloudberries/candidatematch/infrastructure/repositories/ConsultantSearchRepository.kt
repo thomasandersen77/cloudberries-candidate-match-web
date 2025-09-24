@@ -1,5 +1,6 @@
 package no.cloudberries.candidatematch.infrastructure.repositories
 
+import mu.KotlinLogging
 import no.cloudberries.candidatematch.domain.consultant.RelationalSearchCriteria
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -14,11 +15,13 @@ import org.springframework.stereotype.Repository
 class ConsultantSearchRepository(
     private val jdbcTemplate: JdbcTemplate
 ) {
+    private val logger = KotlinLogging.logger { }
     
     /**
      * Finds consultants using relational criteria with skills matching
      */
     fun findByRelationalCriteria(criteria: RelationalSearchCriteria, pageable: Pageable): Page<ConsultantFlatView> {
+        logger.info { "Starting relational search with criteria: $criteria" }
         val whereConditions = mutableListOf<String>()
         val parameters = mutableListOf<Any>()
         
@@ -39,7 +42,7 @@ class ConsultantSearchRepository(
         
         // Handle quality score filter
         if (criteria.minQualityScore != null) {
-            whereConditions.add("cc.quality_score >= ?")
+            whereConditions.add("cc.quality_score IS NOT NULL AND cc.quality_score >= ?")
             parameters.add(criteria.minQualityScore)
         }
         
@@ -48,23 +51,24 @@ class ConsultantSearchRepository(
             whereConditions.add("cc.active = true")
         }
         
-        // Handle skills filtering - this is the complex part
-        var skillCounter = 0
+        // Handle skills filtering - using cv_skill_in_category through consultant_cv
+        var needsSkillJoins = false
         
         // Skills that must ALL be present (AND condition)
         if (criteria.skillsAll.isNotEmpty()) {
-            val skillsAllIds = getSkillIds(criteria.skillsAll)
-            if (skillsAllIds.isNotEmpty()) {
+            val matchingSkills = getMatchingSkillNames(criteria.skillsAll)
+            if (matchingSkills.isNotEmpty()) {
                 joinClause += """
-                    JOIN consultant_skill cs_all ON c.id = cs_all.consultant_id
+                    JOIN cv_skill_category csc_all ON cc.id = csc_all.cv_id
+                    JOIN cv_skill_in_category csic_all ON csc_all.id = csic_all.skill_category_id
                 """.trimIndent()
-                whereConditions.add("cs_all.skill_id IN (${skillsAllIds.joinToString(",") { "?" }})")
-                parameters.addAll(skillsAllIds)
+                whereConditions.add("UPPER(csic_all.name) IN (${matchingSkills.joinToString(",") { "?" }})")
+                parameters.addAll(matchingSkills.map { it.uppercase() })
                 
                 // Group by consultant and ensure all required skills are present
                 val groupByClause = "GROUP BY c.id, c.user_id, c.name, c.cv_id, cc.quality_score, cc.active"
-                val havingClause = "HAVING COUNT(DISTINCT cs_all.skill_id) >= ?"
-                parameters.add(criteria.skillsAll.size)
+                val havingClause = "HAVING COUNT(DISTINCT UPPER(csic_all.name)) >= ?"
+                parameters.add(matchingSkills.size)
                 
                 return executePagedQuery(baseSelect, joinClause, whereConditions, parameters, groupByClause, havingClause, pageable)
             }
@@ -72,17 +76,23 @@ class ConsultantSearchRepository(
         
         // Skills where ANY can be present (OR condition)
         if (criteria.skillsAny.isNotEmpty()) {
-            val skillsAnyIds = getSkillIds(criteria.skillsAny)
-            if (skillsAnyIds.isNotEmpty()) {
+            val matchingSkills = getMatchingSkillNames(criteria.skillsAny)
+            if (matchingSkills.isNotEmpty()) {
                 joinClause += """
-                    JOIN consultant_skill cs_any ON c.id = cs_any.consultant_id
+                    JOIN cv_skill_category csc_any ON cc.id = csc_any.cv_id
+                    JOIN cv_skill_in_category csic_any ON csc_any.id = csic_any.skill_category_id
                 """.trimIndent()
-                whereConditions.add("cs_any.skill_id IN (${skillsAnyIds.joinToString(",") { "?" }})")
-                parameters.addAll(skillsAnyIds)
+                whereConditions.add("UPPER(csic_any.name) IN (${matchingSkills.joinToString(",") { "?" }})")
+                parameters.addAll(matchingSkills.map { it.uppercase() })
+                needsSkillJoins = true
             }
         }
         
-        return executePagedQuery(baseSelect, joinClause, whereConditions, parameters, "", "", pageable)
+        // If we have skills filtering, we need to use DISTINCT to avoid duplicates
+        val finalGroupBy = if (needsSkillJoins) "GROUP BY c.id, c.user_id, c.name, c.cv_id, cc.quality_score, cc.active" else ""
+        
+        logger.info { "About to execute paged query with joinClause='$joinClause', whereConditions=$whereConditions, groupBy='$finalGroupBy'" }
+        return executePagedQuery(baseSelect, joinClause, whereConditions, parameters, finalGroupBy, "", pageable)
     }
     
     /**
@@ -123,7 +133,7 @@ class ConsultantSearchRepository(
         
         // Add optional filters
         if (minQualityScore != null) {
-            whereConditions.add("cc.quality_score >= ?")
+            whereConditions.add("cc.quality_score IS NOT NULL AND cc.quality_score >= ?")
             parameters.add(minQualityScore)
         }
         
@@ -150,17 +160,17 @@ class ConsultantSearchRepository(
     }
     
     /**
-     * Helper method to get skill IDs from skill names
+     * Helper method to get skill names that match (since skills are stored in cv_skill_in_category)
      */
-    private fun getSkillIds(skillNames: List<String>): List<Long> {
+    private fun getMatchingSkillNames(skillNames: List<String>): List<String> {
         if (skillNames.isEmpty()) return emptyList()
         
         val placeholders = skillNames.joinToString(",") { "?" }
-        val sql = "SELECT id FROM skill WHERE UPPER(name) IN ($placeholders)"
+        val sql = "SELECT DISTINCT name FROM cv_skill_in_category WHERE UPPER(name) IN ($placeholders)"
         val upperCaseNames = skillNames.map { it.uppercase() }
         
         return jdbcTemplate.query(sql, upperCaseNames.toTypedArray()) { rs, _ ->
-            rs.getLong("id")
+            rs.getString("name")
         }
     }
     
@@ -176,6 +186,7 @@ class ConsultantSearchRepository(
         havingClause: String,
         pageable: Pageable
     ): Page<ConsultantFlatView> {
+        logger.info { "executePagedQuery started" }
         
         val whereClause = if (whereConditions.isNotEmpty()) {
             "WHERE " + whereConditions.joinToString(" AND ")
@@ -198,7 +209,9 @@ class ConsultantSearchRepository(
             ) as counted
         """.trimIndent()
         
+        logger.info { "About to execute count query: $countSql with parameters: $parameters" }
         val totalElements = jdbcTemplate.queryForObject(countSql, parameters.toTypedArray(), Long::class.java) ?: 0L
+        logger.info { "Count query returned: $totalElements" }
         
         // Data query with pagination
         val dataSql = """
@@ -215,15 +228,17 @@ class ConsultantSearchRepository(
         dataParameters.add(pageable.pageSize)
         dataParameters.add(pageable.offset)
         
+        logger.info { "About to execute data query: $dataSql with parameters: $dataParameters" }
         val consultants: List<ConsultantFlatView> = jdbcTemplate.query(dataSql, dataParameters.toTypedArray()) { rs, _ ->
             object : ConsultantFlatView {
                 override fun getId(): Long = rs.getLong("id")
-                override fun getUserId(): String = rs.getString("userId")
+                override fun getUserId(): String = rs.getString("user_id")
                 override fun getName(): String = rs.getString("name")
-                override fun getCvId(): String = rs.getString("cvId")
+                override fun getCvId(): String = rs.getString("cv_id")
             }
         } ?: emptyList()
         
+        logger.info { "Data query returned ${consultants.size} consultants" }
         return PageImpl(consultants, pageable, totalElements)
     }
 }

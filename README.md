@@ -1,91 +1,147 @@
-# Cloudberries Candidate Match
+# Cloudberries Kandidatmatch
 
-End-to-end candidate matching service integrating with Flowcase for CV data, Google Gemini for content generation and
-embeddings, and PostgreSQL/pgvector for vector storage. This README includes quick-start instructions, test guidance,
-configuration for local development on macOS (zsh), and API endpoints for triggering embeddings on-demand.
+Avansert kandidatmatchingsystem som integrerer med Flowcase for CV-data, Google Gemini for innholdsgenerering og embeddings, og PostgreSQL/pgvector for vektorlagring. Systemet støtter både strukturert og semantisk søk for optimal kandidatmatching.
 
-## Architecture
+## Funksjonell oversikt
+
+Systemet tilbyr to hovedtyper søk for kandidatmatching:
+
+### 🔍 Strukturert søk (Relasjonelt)
+Tradisjonnelt databasesøk basert på spesifikke kriterier:
+- **Navnesøk**: Finn konsulenter basert på navn
+- **Ferdighetssøk**: 
+  - MÅ-krav: Konsulenter som har ALLE spesifiserte ferdigheter
+  - BØR-krav: Konsulenter som har NOEN av de spesifiserte ferdighetene
+- **Kvalitetsscore**: Minimum CV-kvalitetsscore
+- **Aktive CV-er**: Filtrer kun på aktive CV-versjoner
+
+### 🧠 Semantisk søk (AI-drevet)
+Avansert søk som forstår naturlig språk og kontekst:
+- **Naturlig språk**: Søk med vanlige setninger som "Senior Kotlin-utvikler med Spring-erfaring"
+- **Kontekstforståelse**: AI-en forstår sammenhenger og relaterte begreper
+- **Vektorsimilaritet**: Bruker pgvector for rask og presis matching
+- **Kombinert filtrering**: Kan kombineres med kvalitetsscore og andre filtre
+
+### 📊 Eksempler på bruksområder
+
+**Strukturert søk:**
+```json
+{
+  "skillsAll": ["KOTLIN", "SPRING"],
+  "skillsAny": ["ARCHITECTURE", "TECH_LEAD"],
+  "minQualityScore": 85
+}
+```
+*"Konsulenter som KAN Kotlin og Spring, og som OGSÅ har arkitektur- eller tech-lead-erfaring, med score over 85"*
+
+**Semantisk søk:**
+```json
+{
+  "text": "Erfaren fullstack-utvikler som kan mentorere juniorer",
+  "topK": 5
+}
+```
+*"5 beste konsulenter basert på semantisk matching av beskrivelsen"*
+
+## Arkitektur
 ```mermaid
 graph TB
-    subgraph Frontend["Web/Client Layer"]
-        CLI["Web Client/Scheduler"]
+    subgraph Frontend["Nettleser/Klient"]
+        WEB["React Frontend"]
+        CLI["API Klienter"]
     end
 
-    subgraph Application["Application Layer"]
-        MS["Matching Service"]
-        FS["Flowcase Service"]
-        AS["AI Service"]
+    subgraph Controllers["REST API"]
+        CC["Konsulent Controller"]
+        SC["Søk Controller"]
+        PC["Prosjekt Controller"]
+        SKC["Ferdigheter Controller"]
     end
 
-    subgraph Integration["Integration Layer"]
-        FC["Flowcase Client"]
-        OAI["OpenAI Client"]
-        GEM["Gemini Client"]
+    subgraph Services["Tjenester"]
+        CSS["Konsulent Søketjeneste"]
+        CMS["Kandidat Matchtjeneste"]
+        ES["Embedding Tjeneste"]
+        FS["Flowcase Tjeneste"]
     end
 
-    subgraph External["External Services"]
+    subgraph Domain["Domene"]
+        CONS["Konsulent"]
+        CRIT["Søkekriterier"]
+        SKILL["Ferdigheter"]
+        MATCH["Matcher"]
+    end
+
+    subgraph Infrastructure["Infrastruktur"]
+        REPO["Repositorier"]
+        DB[("PostgreSQL\n+ pgvector")]
+        FC["Flowcase Klient"]
+        GEM["Gemini AI"]
+    end
+
+    subgraph External["Eksterne tjenester"]
         FAPI["Flowcase API"]
-        OAPI["OpenAI API"]
-        GAPI["Google Gemini API"]
-    end
-
-    subgraph Domain["Domain Layer"]
-        CAN["Candidate"]
-        PROJ["Project"]
-        SKILL["Skills"]
-        MATCH["Match Results"]
+        GAPI["Google Gemini"]
     end
 
     %% Connections
-    CLI --> MS
-    CLI --> FS
+    WEB --> CC
+    WEB --> SC
+    CLI --> PC
+    CLI --> SKC
     
-    MS --> AS
-    MS --> FS
+    CC --> CSS
+    SC --> CSS
+    PC --> CMS
+    SKC --> ES
     
+    CSS --> CONS
+    CSS --> CRIT
+    CMS --> MATCH
+    ES --> SKILL
+    
+    CSS --> REPO
+    CMS --> REPO
+    ES --> REPO
     FS --> FC
-    AS --> OAI
-    AS --> GEM
     
+    REPO --> DB
     FC --> FAPI
-    OAI --> OAPI
+    ES --> GEM
     GEM --> GAPI
     
-    MS --> CAN
-    MS --> PROJ
-    MS --> SKILL
-    MS --> MATCH
-
     %% Styling
-    classDef service fill:#f9f,stroke:#333,stroke-width:2px
-    classDef client fill:#bbf,stroke:#333,stroke-width:2px
-    classDef external fill:#fbb,stroke:#333,stroke-width:2px
-    classDef domain fill:#bfb,stroke:#333,stroke-width:2px
+    classDef controller fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef service fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef domain fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef infra fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef external fill:#ffebee,stroke:#c62828,stroke-width:2px
     
-    class MS,FS,AS service
-    class FC,OAI,GEM client
-    class FAPI,OAPI,GAPI external
-    class CAN,PROJ,SKILL,MATCH domain
+    class CC,SC,PC,SKC controller
+    class CSS,CMS,ES,FS service
+    class CONS,CRIT,SKILL,MATCH domain
+    class REPO,DB,FC,GEM infra
+    class FAPI,GAPI external
 ```
 
-## Prerequisites (macOS, zsh)
+## Forutsetninger (macOS, zsh)
 
-- Java 21.0.7 Temurin (install via SDKMAN)
-- Maven (install via SDKMAN) — the project also includes the Maven Wrapper (mvnw)
-- Docker (for running PostgreSQL or Testcontainers-based integration tests)
+- Java 21.0.7 Temurin (installer via SDKMAN)
+- Maven (installer via SDKMAN) — prosjektet inkluderer også Maven Wrapper (mvnw)
+- Docker (for å kjøre PostgreSQL eller Testcontainers-baserte integrasjonstester)
 
-Install SDKMAN, Java, and Maven:
+Installer SDKMAN, Java og Maven:
 
 ```bash
 curl -s "https://get.sdkman.io" | bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
-sdk install java 21.0.3-tem
+sdk install java 21.0.7-tem
 sdk install maven
 ```
 
-## Configuration
+## Konfigurasjon
 
-Application properties are loaded from environment variables (preferred) or application YAML files. The main keys:
+Applikasjonsinnstillinger lastes fra miljøvariabler (foretrukket) eller application YAML-filer. Hovednøklene:
 
 - FLOWCASE_API_KEY
 - FLOWCASE_BASE_URL
@@ -93,36 +149,36 @@ Application properties are loaded from environment variables (preferred) or appl
 - OPENAI_ASSISTANT_ID
 - GEMINI_API_KEY
 
-Embedding configuration (defaults in application.yaml):
+Embedding-konfigurasjon (standardverdier i application.yaml):
 
-- embedding.enabled: false (enable in local profile)
+- embedding.enabled: false (aktiver i lokal profil)
 - embedding.provider: GEMINI
 - embedding.model: text-embedding-004
 - embedding.dimension: 768
 
-Local profile (application-local.yaml) also configures Liquibase context "pgvector" and a local Postgres URL:
+Lokal profil (application-local.yaml) konfigurerer også Liquibase-kontekst "pgvector" og en lokal Postgres URL:
 
 - spring.datasource.url: jdbc:postgresql://localhost:5433/candidatematch
 - spring.datasource.username: ${POSTGRES_USER}
 - spring.datasource.password: ${POSTGRES_PASSWORD}
 
-Export env vars in zsh (add to ~/.zshrc for persistence):
+Eksporter miljøvariabler i zsh (legg til ~/.zshrc for varig lagring):
 
 ```bash
-export FLOWCASE_API_KEY={{your_flowcase_api_key}}
-export FLOWCASE_BASE_URL={{your_flowcase_base_url}}
-export OPENAI_API_KEY={{your_openai_api_key}}
-export OPENAI_ASSISTANT_ID={{your_openai_assistant_id}}
-export GEMINI_API_KEY={{your_gemini_api_key}}
+export FLOWCASE_API_KEY={{din_flowcase_api_nøkkel}}
+export FLOWCASE_BASE_URL={{din_flowcase_base_url}}
+export OPENAI_API_KEY={{din_openai_api_nøkkel}}
+export OPENAI_ASSISTANT_ID={{din_openai_assistant_id}}
+export GEMINI_API_KEY={{din_gemini_api_nøkkel}}
 export POSTGRES_USER=candidatematch
 export POSTGRES_PASSWORD=candidatematch123
 ```
 
-## Database (local)
+## Database (lokal)
 
-The local profile expects PostgreSQL on localhost:5433. Options:
+Den lokale profilen forventer PostgreSQL på localhost:5433. Alternativer:
 
-- Use Docker directly:
+- Bruk Docker direkte:
 
 ```bash
 docker run --name candidate-postgres -e POSTGRES_DB=candidatematch \
@@ -130,72 +186,111 @@ docker run --name candidate-postgres -e POSTGRES_DB=candidatematch \
   -p 5433:5432 -d postgres:15-alpine
 ```
 
-- Or use docker-compose.yml (defaults map 5432:5432) and either:
-    - Update application-local.yaml to point to 5432, or
-    - Override at runtime: SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/candidatematch
+- Eller bruk docker-compose.yml (standard mapper 5432:5432) og enten:
+    - Oppdater application-local.yaml til å peke på 5432, eller
+    - Overstyr ved kjøretid: SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/candidatematch
 
-Liquibase will create schemas/tables on startup. The pgvector extension and tables used for embeddings are gated by
-the "pgvector" Liquibase context, which is enabled in the local profile.
+Liquibase oppretter skjemaer/tabeller ved oppstart. pgvector-utvidelsen og tabeller brukt for embeddings er avgrenset av
+"pgvector" Liquibase-kontekst, som er aktivert i den lokale profilen.
 
-## Quick start
+## Rask oppstart
 
-- Run unit tests only (skip integration tests):
-
-```bash
-mvn -q -DskipITs=true -Dtest='*Test' verify
-```
-
-- Run integration tests (requires Docker and Testcontainers, including pgvector IT):
+- Kjør kun enhetstester (hopp over integrasjonstester):
 
 ```bash
-mvn -q -DskipITs=false -DrunPgVectorIT=true verify
+mvn -q -DskipITs=true clean test
 ```
 
-- Start the app locally (uses the local profile and enables embeddings):
+- Kjør integrasjonstester (krever Docker og Testcontainers, inkludert pgvector IT):
+
+```bash
+mvn -q -DskipITs=false -DrunPgVectorIT=true clean verify
+```
+
+- Start appen lokalt (bruker lokal profil og aktiverer embeddings):
 
 ```bash
 mvn -q spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-## Embedding endpoints
+## API-endepunkter
 
-Once the app is up (default http://localhost:8080), you can trigger embedding runs:
+Når appen kjører (standard http://localhost:8080), kan du bruke følgende endepunkter:
 
-- Trigger Jason's embedding:
+### 🔍 Søkeendepunkter
 
+**Strukturert søk:**
+```bash
+curl -X POST http://localhost:8080/api/consultants/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John",
+    "skillsAll": ["KOTLIN"],
+    "skillsAny": ["JAVA", "SPRING"],
+    "minQualityScore": 80,
+    "onlyActiveCv": true
+  }'
+```
+
+**Semantisk søk:**
+```bash
+curl -X POST http://localhost:8080/api/consultants/search/semantic \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Senior Kotlin-utvikler med Spring-erfaring",
+    "topK": 5,
+    "minQualityScore": 80
+  }'
+```
+
+**Embedding-informasjon:**
+```bash
+curl http://localhost:8080/api/consultants/search/embedding-info
+```
+
+### 🧠 Embedding-endepunkter
+
+**Generer Jason's embedding (demo):**
 ```bash
 curl -X POST http://localhost:8080/api/embeddings/run/jason
 ```
 
-- Trigger a specific user/cv:
-
+**Generer for spesifikk konsulent:**
 ```bash
 curl -X POST "http://localhost:8080/api/embeddings/run?userId=thomas&cvId=andersen"
 ```
 
-- Process missing embeddings in batches (default batchSize=50):
-
+**Prosesser manglende embeddings i batch:**
 ```bash
 curl -X POST "http://localhost:8080/api/embeddings/run/missing?batchSize=100"
 ```
 
-Requirements for real embeddings:
+Krav for ekte embeddings:
 
-- embedding.enabled=true (in local profile)
-- GEMINI_API_KEY set
-- Embedding model defaults to text-embedding-004 and dimension 768
+- embedding.enabled=true (i lokal profil)
+- GEMINI_API_KEY satt
+- Embedding-modell standard til text-embedding-004 og dimensjon 768
 
-## Notes on tests and health checks
+## Notater om tester og helsesjekker
 
-- Test naming patterns: unit tests "*Test"; integration tests "*IT" or "*IntegrationTest" (Failsafe).
-- The pgvector integration test CvEmbeddingRepositoryIT is guarded by the system property runPgVectorIT=true to avoid
-  failures where Docker isn't available.
-- During test runs you may see health check error logs (database, Flowcase, GenAI). These are expected in isolated test
-  contexts and do not indicate a failing build unless tests explicitly depend on those checks.
+- Testnavn-mønstre: enhetstester "*Test"; integrasjonstester "*IT" eller "*IntegrationTest" (Failsafe).
+- pgvector integrasjonstesten CvEmbeddingRepositoryIT er beskyttet av system-egenskapen runPgVectorIT=true for å unngå
+  feil når Docker ikke er tilgjengelig.
+- Under testkjøringer kan du se helsesjekk-feillogger (database, Flowcase, GenAI). Disse er forventet i isolerte test-
+  kontekster og indikerer ikke en feilende bygging med mindre tester eksplisitt avhenger av disse sjekkene.
 
 ## macOS tips
 
-- On Apple Silicon, Embedded Postgres used in some tests may use amd64 binaries via Rosetta. If needed, install Rosetta:
+- På Apple Silicon kan Embedded Postgres brukt i noen tester bruke amd64-binærer via Rosetta. Installer Rosetta om nødvendig:
+
+```bash
+sudo softwareupdate --install-rosetta
+```
+
+## Teknisk arkitektur
+
+Teknologier: Kotlin, Spring Boot 3, Spring MVC, Liquibase, Hibernate 6 + Hypersistence (JSON/JSONB), OkHttp, springdoc-openapi,
+PostgreSQL, pgvector, Testcontainers for tester.
 
 ```bash
 softwareupdate --install-rosetta --agree-to-license
