@@ -1,6 +1,6 @@
 package no.cloudberries.candidatematch.service.consultants
 
-import no.cloudberries.candidatematch.controllers.consultants.ConsultantSummaryDto
+import no.cloudberries.candidatematch.dto.consultants.ConsultantSummaryDto
 import no.cloudberries.candidatematch.infrastructure.integration.flowcase.FlowcaseHttpClient
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl

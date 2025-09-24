@@ -4,7 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import no.cloudberries.candidatematch.controllers.consultants.ConsultantSummaryDto
+import no.cloudberries.candidatematch.dto.consultants.ConsultantSummaryDto
 import no.cloudberries.candidatematch.service.skills.SkillsService
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType

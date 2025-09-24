@@ -1,15 +1,15 @@
 package no.cloudberries.candidatematch.service.skills
 
 import mu.KotlinLogging
-import no.cloudberries.candidatematch.controllers.consultants.ConsultantSummaryDto
-import no.cloudberries.candidatematch.infrastructure.adapters.toDomain
-import no.cloudberries.candidatematch.infrastructure.repositories.ConsultantRepository
+import no.cloudberries.candidatematch.dto.consultants.ConsultantSummaryDto
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class SkillsService(
-    private val consultantRepository: ConsultantRepository,
+    private val consultantReader: ConsultantSkillReader,
+    private val projectSkillFetcher: ProjectSkillFetcher = ProjectSkillFetcher.Noop,
 ) {
     private val logger = KotlinLogging.logger { }
 
@@ -20,36 +20,39 @@ class SkillsService(
 
     @Transactional(readOnly = true)
     fun listSkills(skillFilters: List<String>?): List<SkillAggregate> {
-        val filters = skillFilters?.map { it.trim().uppercase() }?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
+        val normalizedFilters = skillFilters
+            ?.map { it.trim().uppercase() }
+            ?.filter { it.isNotBlank() }
+            ?.toSet()
+            ?: emptySet()
 
-        val allConsultants = consultantRepository.findAll().map { it.toDomain() }
-
-        // Build a map of consultant summaries upfront
-        val summariesByUserId: Map<String, ConsultantSummaryDto> = allConsultants.associate { c ->
-            val born = c.personalInfo.birthYear?.value ?: 0
-            c.id to ConsultantSummaryDto(
-                userId = c.id,
-                name = c.personalInfo.name,
-                email = c.personalInfo.email,
-                bornYear = born,
-                defaultCvId = c.defaultCvId
-            )
-        }
-
-        // Flatten (skillName -> userId)
-        val skillToUsers = mutableMapOf<String, MutableSet<String>>()
-        allConsultants.forEach { c ->
-            c.skills.forEach { s ->
-                val key = s.name.trim().uppercase()
-                if (filters.isEmpty() || key in filters) {
-                    val set = skillToUsers.getOrPut(key) { mutableSetOf() }
-                    set.add(c.id)
-                }
+        val rowsFromEnum = if (normalizedFilters.isEmpty()) {
+            consultantReader.findAllSkillAggregates()
+        } else {
+            // Map filter strings to enum values; ignore invalid entries
+            val skillEnums = normalizedFilters.mapNotNull {
+                runCatching { no.cloudberries.candidatematch.domain.candidate.Skill.valueOf(it) }.getOrNull()
             }
+            if (skillEnums.isEmpty()) emptyList() else consultantReader.findSkillAggregates(skillEnums)
         }
 
-        val aggregates = skillToUsers.toSortedMap().map { (skill, userIds) ->
-            val consultants = userIds.mapNotNull { summariesByUserId[it] }
+        val rowsFromProjects = projectSkillFetcher.fetch(normalizedFilters)
+        val rows = (rowsFromEnum + rowsFromProjects)
+
+        val grouped = rows.groupBy { it.skillName.trim().uppercase() }
+        val aggregates = grouped.toSortedMap().map { (skill, groupRows) ->
+            val consultants = groupRows
+                .map { r ->
+                    // Email and birthYear are not available from the lightweight row; set safe defaults
+                    ConsultantSummaryDto(
+                        userId = r.userId,
+                        name = r.name,
+                        email = "",
+                        bornYear = 0,
+                        defaultCvId = r.defaultCvId
+                    )
+                }
+                .distinctBy { it.userId }
                 .sortedBy { it.name.lowercase() }
             SkillAggregate(
                 name = skill,
@@ -57,7 +60,16 @@ class SkillsService(
             )
         }
 
-        logger.info { "Computed ${aggregates.size} skill aggregates${if (filters.isNotEmpty()) " with filters=" + filters.joinToString(",") else ""}" }
+        val filterCount = normalizedFilters.size
+        logger.info { "Computed ${aggregates.size} skill aggregates using ${filterCount} filters (project skills included)" }
         return aggregates
+    }
+}
+
+interface ProjectSkillFetcher {
+    fun fetch(normalizedFilters: Set<String>): List<SkillAggregateRow>
+
+    object Noop : ProjectSkillFetcher {
+        override fun fetch(normalizedFilters: Set<String>): List<SkillAggregateRow> = emptyList()
     }
 }

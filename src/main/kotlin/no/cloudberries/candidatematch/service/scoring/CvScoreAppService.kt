@@ -40,16 +40,15 @@ class CvScoreAppService(
     fun scoreCandidate(candidateId: String, aiProvider: AIProvider = AIProvider.GEMINI): CvScoreDto {
         val consultant = consultantRepository.findByUserId(candidateId)
             ?: throw IllegalArgumentException("Consultant with userId=$candidateId not found")
-        logger.info { "Scoring CV for ${consultant.name}" }
+logger.info { "Scoring CV for userId=$candidateId" }
 
-        val cv = consultant.resumeData.toString()
-        logger.info { "CV for ${consultant.name}: \n $cv" }
-        val evaluation: CVEvaluation = scoreCandidateService.performCvScoring(
-            aiProvider = aiProvider,
-            cv = cv,
-            consultantName = consultant.name
-        )
-        logger.info { "Finished scoring CV for ${consultant.name} with score: ${evaluation.scorePercentage}" }
+val cv = consultant.resumeData.toString()
+val evaluation: CVEvaluation = scoreCandidateService.performCvScoring(
+    aiProvider = aiProvider,
+    cv = cv,
+    consultantName = consultant.name
+)
+logger.info { "Finished scoring CV for userId=$candidateId with score: ${evaluation.scorePercentage}" }
         val strengthsNode = mapper.readTree(mapper.writeValueAsString(evaluation.strengths ?: emptyList<String>()))
         val improvementsNode = mapper.readTree(mapper.writeValueAsString(evaluation.improvements ?: emptyList<String>()))
 

@@ -1,7 +1,6 @@
 package no.cloudberries.candidatematch.controllers.skills
 
 import mu.KotlinLogging
-import no.cloudberries.candidatematch.controllers.consultants.ConsultantSummaryDto
 import no.cloudberries.candidatematch.service.skills.SkillsService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -16,21 +15,17 @@ class SkillsController(
 ) {
     private val logger = KotlinLogging.logger { }
 
-    data class SkillInCompanyDto(
-        val name: String,
-        val konsulenterMedSkill: Int,
-        val konsulenter: List<ConsultantSummaryDto>,
-    )
-
     @GetMapping
     fun listSkills(
         @RequestParam(name = "skill", required = false) skillFilters: List<String>?
-    ): ResponseEntity<List<SkillInCompanyDto>> {
-        logger.info { "List skills${if (!skillFilters.isNullOrEmpty()) " filter=" + skillFilters.joinToString(",") else ""}" }
+    ): ResponseEntity<List<no.cloudberries.candidatematch.controllers.skills.dto.SkillInCompanyDto>> {
+        val filterCount = skillFilters?.size ?: 0
+        logger.info { "List skills request received with filters=$filterCount" }
         val result = skillsService.listSkills(skillFilters)
         return ResponseEntity.ok(result.map { s ->
-            SkillInCompanyDto(
+            no.cloudberries.candidatematch.controllers.skills.dto.SkillInCompanyDto(
                 name = s.name,
+                consultantCount = s.konsulenter.size,
                 konsulenterMedSkill = s.konsulenter.size,
                 konsulenter = s.konsulenter
             )

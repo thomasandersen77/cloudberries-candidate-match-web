@@ -1,55 +1,24 @@
 package no.cloudberries.candidatematch.service.skills
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import io.mockk.every
 import io.mockk.mockk
-import no.cloudberries.candidatematch.infrastructure.entities.ConsultantEntity
-import no.cloudberries.candidatematch.infrastructure.repositories.ConsultantRepository
 import no.cloudberries.candidatematch.domain.candidate.Skill
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class SkillsServiceTest {
 
-    private val consultantRepository: ConsultantRepository = mockk()
-    private val skillsService = SkillsService(consultantRepository)
+    private val reader: ConsultantSkillReader = mockk()
+    private val skillsService = SkillsService(reader)
 
     @Test
     fun `aggregates consultants per skill and sorts names`() {
-        val jsonFactory = JsonNodeFactory.instance
-        val resume1 = jsonFactory.objectNode().put("email", "alice@example.com").put("bornYear", 1990)
-        val resume2 = jsonFactory.objectNode().put("email", "bob@example.com").put("bornYear", 1988)
-        val resume3 = jsonFactory.objectNode().put("email", "charlie@example.com").put("bornYear", 1992)
-
-        val e1 = ConsultantEntity(
-            id = null,
-            userId = "u1",
-            name = "Alice",
-            cvId = "cv1",
-            resumeData = resume1,
-            skills = mutableSetOf(
-                Skill.JAVA,
-                Skill.KOTLIN,
-            )
+        every { reader.findAllSkillAggregates() } returns listOf(
+            SkillAggregateRow("JAVA", "u1", "Alice", "cv1"),
+            SkillAggregateRow("JAVA", "u2", "Bob", "cv2"),
+            SkillAggregateRow("KOTLIN", "u1", "Alice", "cv1"),
+            SkillAggregateRow("REACT", "u3", "Charlie", "cv3"),
         )
-        val e2 = ConsultantEntity(
-            id = null,
-            userId = "u2",
-            name = "Bob",
-            cvId = "cv2",
-            resumeData = resume2,
-            skills = mutableSetOf(Skill.JAVA)
-        )
-        val e3 = ConsultantEntity(
-            id = null,
-            userId = "u3",
-            name = "Charlie",
-            cvId = "cv3",
-            resumeData = resume3,
-            skills = mutableSetOf(Skill.REACT)
-        )
-
-every { consultantRepository.findAll() } returns listOf(e1, e2, e3)
 
         val result = skillsService.listSkills(null)
 
@@ -69,20 +38,9 @@ every { consultantRepository.findAll() } returns listOf(e1, e2, e3)
 
     @Test
     fun `filters by provided skills`() {
-        val jsonFactory = JsonNodeFactory.instance
-        val resume1 = jsonFactory.objectNode().put("email", "alice@example.com").put("bornYear", 1990)
-        val e1 = ConsultantEntity(
-            id = null,
-            userId = "u1",
-            name = "Alice",
-            cvId = "cv1",
-            resumeData = resume1,
-            skills = mutableSetOf(
-                Skill.JAVA,
-                Skill.KOTLIN,
-            )
+        every { reader.findSkillAggregates(listOf(Skill.JAVA)) } returns listOf(
+            SkillAggregateRow("JAVA", "u1", "Alice", "cv1")
         )
-every { consultantRepository.findAll() } returns listOf(e1)
 
         val result = skillsService.listSkills(listOf("java"))
         assertEquals(1, result.size)

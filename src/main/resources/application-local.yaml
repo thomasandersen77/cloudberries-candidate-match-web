@@ -13,6 +13,9 @@ embedding:
   provider: GEMINI
   model: text-embedding-004
   dimension: 768
+sync:
+  consultants:
+    on-startup: true
 
 spring:
   liquibase:

@@ -3,7 +3,6 @@ package no.cloudberries.candidatematch.infrastructure.entities
 import com.fasterxml.jackson.databind.JsonNode
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.*
-import no.cloudberries.candidatematch.domain.candidate.Skill
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.Type
 import org.hibernate.annotations.UpdateTimestamp
@@ -34,9 +33,8 @@ class ConsultantEntity(
         name = "consultant_skills",
         joinColumns = [JoinColumn(name = "consultant_id")]
     )
-    @Enumerated(EnumType.STRING)
     @Column(name = "skill")
-    val skills: MutableSet<Skill> = mutableSetOf(),
+    val skills: MutableSet<String> = mutableSetOf(),
 
     @CreationTimestamp
     @Column(name = "created_at")

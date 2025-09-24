@@ -10,9 +10,10 @@ import org.springframework.stereotype.Repository
 import jakarta.persistence.QueryHint
 import org.springframework.data.repository.query.Param
 import no.cloudberries.candidatematch.domain.candidate.Skill
+import no.cloudberries.candidatematch.service.skills.ConsultantSkillReader
 
 @Repository
-interface ConsultantRepository : JpaRepository<ConsultantEntity, Long> {
+interface ConsultantRepository : JpaRepository<ConsultantEntity, Long>, ConsultantSkillReader {
     fun findByUserId(userId: String): ConsultantEntity?
     fun findByNameContainingIgnoreCase(name: String, pageable: Pageable): Page<ConsultantEntity>
 
@@ -28,6 +29,24 @@ interface ConsultantRepository : JpaRepository<ConsultantEntity, Long> {
 
     @Query("select c.id as consultantId, s as skill from ConsultantEntity c left join c.skills s where c.id in :ids")
     fun findSkillsByConsultantIds(@Param("ids") ids: Collection<Long>): List<ConsultantSkillRow>
+
+    // --- ConsultantSkillReader implementation ---
+    @Query(
+        "select new no.cloudberries.candidatematch.service.skills.SkillAggregateRow(" +
+            " cast(s as string), c.userId, c.name, c.cvId) " +
+            "from ConsultantEntity c join c.skills s"
+    )
+    override fun findAllSkillAggregates(): List<no.cloudberries.candidatematch.service.skills.SkillAggregateRow>
+
+    @Query(
+        "select new no.cloudberries.candidatematch.service.skills.SkillAggregateRow(" +
+            " cast(s as string), c.userId, c.name, c.cvId) " +
+            "from ConsultantEntity c join c.skills s " +
+            "where (:skills is null or s in :skills)"
+    )
+    override fun findSkillAggregates(
+        @Param("skills") skills: Collection<no.cloudberries.candidatematch.domain.candidate.Skill>?
+    ): List<no.cloudberries.candidatematch.service.skills.SkillAggregateRow>
 }
 
 // Projection types

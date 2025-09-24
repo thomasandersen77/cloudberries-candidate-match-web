@@ -669,9 +669,13 @@ components:
       properties:
         name:
           type: string
+        consultantCount:
+          type: integer
+          description: Number of consultants with this skill (preferred)
         konsulenterMedSkill:
           type: integer
-          description: Number of consultants with this skill
+          description: Number of consultants with this skill (deprecated)
+          deprecated: true
         konsulenter:
           type: array
           items:

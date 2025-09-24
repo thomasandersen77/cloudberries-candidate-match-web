@@ -13,5 +13,6 @@
     <include file="db/changelog/db_changelog-5.0-project-request.xml"/>
     <include file="db/changelog/db_changelog-6.0-json-to-jsonb.xml"/>
     <include file="db/changelog/db_changelog-7.0-cv-text-columns.xml"/>
+    <include file="db/changelog/db_changelog-8.0-consultant-skills.xml"/>
 
 </databaseChangeLog>

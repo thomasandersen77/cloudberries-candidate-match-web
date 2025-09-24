@@ -277,6 +277,8 @@ PostgreSQL, pgvector (opsjon), Testcontainers/Zonky for tester.
 
 ## OpenAPI og genererte typer
 
+Merk: For ferdighetsendepunktet (SkillInCompanyDto) er feltet consultantCount introdusert som foretrukket felt for antall konsulenter. Feltet konsulenterMedSkill beholdes midlertidig for bakoverkompatibilitet (deprecated i OpenAPI).
+
 - OpenAPI-spesifikasjonen ligger i rotmappen: `openapi.yaml`
 - Når appen kjører lokalt, kan spesifikasjonen også hentes fra Springdoc:
   - JSON: `http://localhost:8080/v3/api-docs`

@@ -45,7 +45,7 @@ class SyncConsultantService(
         val users = fetchUsers()
         var success = 0
         var failures = 0
-        val batchSize = 1 // Process in smaller batches
+        val batchSize = 10 // Process in smaller batches
         
         logger.info { "Starting sync for ${users.size} consultants in batches of $batchSize" }
         
