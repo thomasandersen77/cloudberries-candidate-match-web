@@ -4,7 +4,10 @@ import {
   listConsultantsWithCv,
   listConsultantsWithCvPaged,
   runConsultantSync,
-  syncSingleConsultant 
+  syncSingleConsultant,
+  searchConsultantsRelational,
+  searchConsultantsSemantic,
+  getEmbeddingInfo,
 } from './consultantsService';
 import apiClient from './apiClient';
 
@@ -156,6 +159,74 @@ describe('consultantsService', () => {
         { params: { batchSize: 100 } }
       );
       expect(result).toEqual(mockResponse.data);
+    });
+  });
+
+  describe('search endpoints', () => {
+    it('searchConsultantsRelational posts request with paging and returns page dto', async () => {
+      const pagePayload = {
+        content: [
+          { userId: 'u1', name: 'Alice', cvId: 'cv1', skills: [], cvs: [{ active: true }] }
+        ],
+        number: 0,
+        size: 10,
+        totalElements: 1,
+        totalPages: 1,
+        first: true,
+        last: true,
+        sort: {},
+        pageable: {}
+      };
+      mockedApiClient.post.mockResolvedValueOnce({ data: pagePayload });
+
+      const res = await searchConsultantsRelational({
+        request: { name: 'Alice', skillsAll: ['JAVA'], skillsAny: [], onlyActiveCv: true },
+        page: 0,
+        size: 10
+      });
+
+      expect(mockedApiClient.post).toHaveBeenCalledWith(
+        '/api/consultants/search',
+        { name: 'Alice', skillsAll: ['JAVA'], skillsAny: [], onlyActiveCv: true },
+        { params: { page: 0, size: 10, sort: undefined } }
+      );
+      expect(res).toEqual(pagePayload);
+    });
+
+    it('searchConsultantsSemantic posts request with paging and returns page dto', async () => {
+      const pagePayload = {
+        content: [],
+        number: 0,
+        size: 20,
+        totalElements: 0,
+        totalPages: 0,
+        first: true,
+        last: true,
+        sort: {},
+        pageable: {}
+      };
+      mockedApiClient.post.mockResolvedValueOnce({ data: pagePayload });
+
+      const res = await searchConsultantsSemantic({
+        request: { text: 'Senior Java developer', topK: 10, onlyActiveCv: true },
+        page: 0,
+        size: 20
+      });
+
+      expect(mockedApiClient.post).toHaveBeenCalledWith(
+        '/api/consultants/search/semantic',
+        { text: 'Senior Java developer', topK: 10, onlyActiveCv: true },
+        { params: { page: 0, size: 20, sort: undefined } }
+      );
+      expect(res).toEqual(pagePayload);
+    });
+
+    it('getEmbeddingInfo returns provider info', async () => {
+      const payload = { enabled: true, provider: 'GOOGLE_GEMINI', model: 'text-embedding-004', dimension: 768 };
+      mockedApiClient.get.mockResolvedValueOnce({ data: payload });
+      const res = await getEmbeddingInfo();
+      expect(mockedApiClient.get).toHaveBeenCalledWith('/api/consultants/search/embedding-info');
+      expect(res).toEqual(payload);
     });
   });
 

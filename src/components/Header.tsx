@@ -52,6 +52,7 @@ const Header: React.FC = () => {
                     <MenuItem component={RouterLink} to="/embeddings" onClick={handleMenuClose}>Embeddings</MenuItem>
                     <MenuItem component={RouterLink} to="/chat" onClick={handleMenuClose}>Chat Analyze</MenuItem>
                     <MenuItem component={RouterLink} to="/health" onClick={handleMenuClose}>Helse</MenuItem>
+                    <MenuItem component={RouterLink} to="/search" onClick={handleMenuClose}>Søk</MenuItem>
                     <Divider />
                     <MenuItem component={RouterLink} to="/project-requests/upload" onClick={handleMenuClose}>
                         Last opp kundeforspørsel (PDF)

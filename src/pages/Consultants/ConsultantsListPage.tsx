@@ -3,7 +3,7 @@ import {
   Box, Container, Typography, TextField, Paper, Stack, Button, Chip,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination,
   Avatar, CircularProgress, Card, CardContent, Skeleton, useTheme, useMediaQuery,
-  Grid, Divider
+  Divider
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { listConsultantsWithCv, runConsultantSync } from '../../services/consultantsService';
@@ -173,7 +173,6 @@ const ConsultantsListPage: React.FC = () => {
   // Data and UI states
   const [consultants, setConsultants] = useState<ConsultantWithCvDto[]>([]);
   const [loading, setLoading] = useState(true); // Start with loading true
-  const [showLoadingAnimation, setShowLoadingAnimation] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
   const [showScoringOverlay, setShowScoringOverlay] = useState(false);
   const [notification, setNotification] = useState<SyncNotification | null>(null);
@@ -196,9 +195,7 @@ const ConsultantsListPage: React.FC = () => {
     setLoading(true);
     
     // Show loading animation if data fetching takes longer than 0.5 seconds
-    const loadingTimer = setTimeout(() => {
-      setShowLoadingAnimation(true);
-    }, 500);
+    let loadingTimer: NodeJS.Timeout = setTimeout(() => {}, 500);
     
     try {
       const res = await listConsultantsWithCv(true); // Only active CVs
@@ -214,7 +211,6 @@ const ConsultantsListPage: React.FC = () => {
     } finally {
       clearTimeout(loadingTimer);
       setLoading(false);
-      setShowLoadingAnimation(false);
     }
   };
 
@@ -297,7 +293,6 @@ const ConsultantsListPage: React.FC = () => {
           loading={syncLoading}
           disabled={loading}
           onClick={handleSyncAll}
-          sx={{ alignSelf: isMobile ? 'center' : 'flex-end' }}
         />
       </Box>
 

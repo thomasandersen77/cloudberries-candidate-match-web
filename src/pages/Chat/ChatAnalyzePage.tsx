@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Container, Typography, TextField, Button, Paper, CircularProgress, Stack, 
   Box, Fade, Chip, useTheme, useMediaQuery 
@@ -18,14 +18,30 @@ const ChatAnalyzePage: React.FC = () => {
   const [content, setContent] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Auto-scroll to bottom when new messages are added
+  // Persist messages across the browser session
+  const SESSION_KEY = 'chatAnalyzeMessages';
   useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Array<Omit<ChatMessage, 'timestamp'> & { timestamp: string }>;
+        const restored: ChatMessage[] = parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }));
+        setMessages(restored);
+      }
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      const serializable = messages.map(m => ({ ...m, timestamp: m.timestamp.toISOString() }));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(serializable));
+    } catch {
+      // ignore
     }
   }, [messages]);
 
@@ -187,7 +203,7 @@ const ChatAnalyzePage: React.FC = () => {
   };
 
   return (
-    <Container sx={{ py: isMobile ? 2 : 4, height: '100vh', display: 'flex', flexDirection: 'column' }} maxWidth="md">
+    <Container sx={{ py: isMobile ? 2 : 4, minHeight: '100vh', display: 'flex', flexDirection: 'column' }} maxWidth="md">
       <Typography variant={isMobile ? "h5" : "h4"} gutterBottom sx={{ textAlign: 'center', mb: 3 }}>
         AI Chat Analyse
       </Typography>
@@ -226,9 +242,7 @@ const ChatAnalyzePage: React.FC = () => {
       <Paper 
         elevation={1} 
         sx={{ 
-          flexGrow: 1, 
           bgcolor: 'grey.50', 
-          overflow: 'hidden', 
           display: 'flex', 
           flexDirection: 'column',
           minHeight: 300
@@ -256,13 +270,10 @@ const ChatAnalyzePage: React.FC = () => {
           </Box>
         ) : (
           <Box
-            ref={chatContainerRef}
             sx={{
-              flexGrow: 1,
-              overflowY: 'auto',
               p: 2,
               display: 'flex',
-              flexDirection: 'column-reverse' // Latest messages at top
+              flexDirection: 'column' // Latest messages at top (array is newest-first)
             }}
           >
             {messages.map((message) => (

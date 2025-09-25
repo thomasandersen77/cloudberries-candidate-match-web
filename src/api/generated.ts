@@ -296,6 +296,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/consultants/search/embedding-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get embedding provider information
+         * @description Returns information about the available embedding provider for semantic search
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Embedding provider information */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EmbeddingProviderInfo"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cv/{userId}": {
         parameters: {
             query?: never;
@@ -896,46 +936,55 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         RelationalSearchRequest: {
+            /** @description Name filter (contains match) */
             name?: string;
-            skillsAll?: components["schemas"]["Skill"][];
-            skillsAny?: components["schemas"]["Skill"][];
+            /** @description Skills that must ALL be present (AND condition) */
+            skillsAll?: string[];
+            /** @description Skills where ANY can be present (OR condition) */
+            skillsAny?: string[];
+            /** @description Minimum CV quality score */
             minQualityScore?: number;
-            /** @default false */
+            /**
+             * @description Only include active CVs
+             * @default false
+             */
             onlyActiveCv: boolean;
         };
         SemanticSearchRequest: {
+            /** @description Natural language search text */
             text: string;
-            /** @description Embedding provider (defaults to server config) */
-            provider?: string;
-            /** @description Embedding model (defaults to server config) */
-            model?: string;
-            /** @default 10 */
+            /**
+             * @description Embedding provider (must match server configuration)
+             * @default GOOGLE_GEMINI
+             */
+            provider: string;
+            /**
+             * @description Embedding model (must match server configuration)
+             * @default text-embedding-004
+             */
+            model: string;
+            /**
+             * @description Maximum number of results to return
+             * @default 10
+             */
             topK: number;
+            /** @description Minimum CV quality score */
+            minQualityScore?: number;
+            /**
+             * @description Only include active CVs
+             * @default false
+             */
+            onlyActiveCv: boolean;
         };
-        ConsultantSearchResultDto: {
-            /** Format: int64 */
-            id?: number | null;
-            userId: string;
-            name: string;
-            cvId: string;
-            skills?: components["schemas"]["Skill"][];
-            /** Format: double */
-            similarity?: number | null;
-        };
-        PageConsultantSearchResultDto: {
-            content?: components["schemas"]["ConsultantSearchResultDto"][];
-            number?: number;
-            size?: number;
-            totalElements?: number;
-            totalPages?: number;
-            first?: boolean;
-            last?: boolean;
-            sort?: {
-                [key: string]: unknown;
-            };
-            pageable?: {
-                [key: string]: unknown;
-            };
+        EmbeddingProviderInfo: {
+            /** @description Whether semantic search is available */
+            enabled: boolean;
+            /** @description Name of the embedding provider */
+            provider: string;
+            /** @description Name of the embedding model */
+            model: string;
+            /** @description Vector dimension of the embeddings */
+            dimension: number;
         };
         /** @enum {string} */
         Skill: "BACKEND" | "FRONTEND" | "JAVA" | "KOTLIN" | "REACT" | "TYPESCRIPT" | "ARCHITECTURE";
@@ -1219,15 +1268,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PageConsultantSearchResultDto"];
+                    "application/json": components["schemas"]["PageConsultantWithCvDto"];
                 };
+            };
+            /** @description Invalid search criteria */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["ErrorResponse"];
         };
     };
     searchConsultantsSemantic: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page number (0-indexed) */
+                page?: components["parameters"]["PageParam"];
+                /** @description Page size */
+                size?: components["parameters"]["SizeParam"];
+                /** @description Sort field(s), e.g. `name,asc`. Repeat for multi-sort. */
+                sort?: components["parameters"]["SortParam"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1238,7 +1301,9 @@ export interface operations {
                  *       "text": "Senior Kotlin developer with Spring experience",
                  *       "provider": "GOOGLE_GEMINI",
                  *       "model": "text-embedding-004",
-                 *       "topK": 5
+                 *       "topK": 5,
+                 *       "minQualityScore": 80,
+                 *       "onlyActiveCv": true
                  *     } */
                 "application/json": components["schemas"]["SemanticSearchRequest"];
             };
@@ -1250,11 +1315,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConsultantSearchResultDto"][];
+                    "application/json": components["schemas"]["PageConsultantWithCvDto"];
                 };
             };
-            /** @description Embedding provider disabled or not configured */
+            /** @description Invalid search criteria */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Embedding provider disabled or not configured */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

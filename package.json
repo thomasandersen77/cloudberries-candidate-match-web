@@ -11,7 +11,8 @@
     "docker:dev": "docker-compose up --build",
     "gen:api": "openapi-typescript openapi.yaml -o src/api/generated.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -42,7 +43,8 @@
     "@testing-library/react": "^16.0.1",
     "@testing-library/user-event": "^14.6.1",
     "@testing-library/jest-dom": "^6.5.0",
-    "jsdom": "^25.0.1"
+    "jsdom": "^25.0.1",
+    "@playwright/test": "^1.48.2"
   },
   "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
   "main": "eslint.config.js",
@@ -61,6 +63,10 @@
     "environment": "jsdom",
     "setupFiles": [
       "src/setupTests.ts"
+    ],
+    "exclude": [
+      "e2e/**",
+      "playwright.config.ts"
     ]
   }
 }

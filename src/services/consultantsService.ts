@@ -5,8 +5,7 @@ import type {
     PageConsultantWithCvDto,
     RelationalSearchRequest,
     SemanticSearchRequest,
-    PageConsultantSearchResultDto,
-    ConsultantSearchResultDto
+    EmbeddingProviderInfo,
 } from '../types/api';
 
 function normalizePageDto(data: any): PageConsultantSummaryDto {
@@ -93,16 +92,31 @@ export async function searchConsultantsRelational(params: {
     page?: number;
     size?: number;
     sort?: string[]
-} = { request: {} as RelationalSearchRequest }): Promise<PageConsultantSearchResultDto> {
+} = { request: {} as RelationalSearchRequest }): Promise<PageConsultantWithCvDto> {
     const { request, page = 0, size = 20, sort } = params;
-    const { data } = await apiClient.post('/api/consultants/search', request, {
+    const { data } = await apiClient.post<PageConsultantWithCvDto>('/api/consultants/search', request, {
         params: { page, size, sort }
     });
     return data;
 }
 
-export async function searchConsultantsSemantic(request: SemanticSearchRequest): Promise<ConsultantSearchResultDto[]> {
-    const { data } = await apiClient.post('/api/consultants/search/semantic', request);
+export async function searchConsultantsSemantic(params: {
+    request: SemanticSearchRequest;
+    page?: number;
+    size?: number;
+    sort?: string[];
+}): Promise<PageConsultantWithCvDto> {
+    const { request, page = 0, size = 20, sort } = params;
+    const { data } = await aiScoringClient.post<PageConsultantWithCvDto>(
+        '/api/consultants/search/semantic',
+        request,
+        { params: { page, size, sort } }
+    );
+    return data;
+}
+
+export async function getEmbeddingInfo(): Promise<EmbeddingProviderInfo> {
+    const { data } = await apiClient.get<EmbeddingProviderInfo>('/api/consultants/search/embedding-info');
     return data;
 }
 

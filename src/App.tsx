@@ -13,6 +13,7 @@ import ChatAnalyzePage from './pages/Chat/ChatAnalyzePage';
 import HealthPage from './pages/Health/HealthPage';
 import ProjectRequestUploadPage from './pages/ProjectRequests/ProjectRequestUploadPage';
 import ProjectRequestDetailPage from './pages/ProjectRequests/ProjectRequestDetailPage';
+import ConsultantSearchPage from './pages/Search/ConsultantSearchPage';
 import Header from './components/Header';
 
 
@@ -35,6 +36,7 @@ function App() {
           <Route path="/health" element={<HealthPage />} />
           <Route path="/project-requests/upload" element={<ProjectRequestUploadPage />} />
           <Route path="/project-requests/:id" element={<ProjectRequestDetailPage />} />
+          <Route path="/search" element={<ConsultantSearchPage />} />
           <Route path="*" element={<div style={{ padding: 24 }}><a href="/">Gå til forsiden</a></div>} />
         </Routes>
       </Box>

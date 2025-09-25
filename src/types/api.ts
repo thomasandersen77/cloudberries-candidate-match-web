@@ -15,6 +15,7 @@ export type CvData = components['schemas']['CvData'];
 export type EmbeddingJasonRunResponse = components['schemas']['EmbeddingJasonRunResponse'];
 export type EmbeddingUserCvRunResponse = components['schemas']['EmbeddingUserCvRunResponse'];
 export type EmbeddingRunMissingResponse = components['schemas']['EmbeddingRunMissingResponse'];
+export type EmbeddingProviderInfo = components['schemas']['EmbeddingProviderInfo'];
 
 export type MatchApiRequest = components['schemas']['MatchApiRequest'];
 export type SkillsRequest = components['schemas']['SkillsRequest'];
@@ -54,6 +55,4 @@ export type AttachmentDto = components['schemas']['AttachmentDto'];
 // Search types
 export type RelationalSearchRequest = components['schemas']['RelationalSearchRequest'];
 export type SemanticSearchRequest = components['schemas']['SemanticSearchRequest'];
-export type ConsultantSearchResultDto = components['schemas']['ConsultantSearchResultDto'];
-export type PageConsultantSearchResultDto = components['schemas']['PageConsultantSearchResultDto'];
 export type Skill = components['schemas']['Skill'];
