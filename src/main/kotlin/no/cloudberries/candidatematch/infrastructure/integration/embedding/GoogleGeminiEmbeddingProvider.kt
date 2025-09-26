@@ -30,6 +30,7 @@ class GoogleGeminiEmbeddingProvider(
 
     override fun isEnabled(): Boolean = embeddingConfig.enabled
 
+    @no.cloudberries.candidatematch.utils.Timed
     override fun embed(text: String): DoubleArray {
         if (!isEnabled()) {
             logger.debug { "Embedding is disabled by configuration. Returning empty embedding." }

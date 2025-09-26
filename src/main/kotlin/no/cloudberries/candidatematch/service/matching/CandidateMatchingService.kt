@@ -69,6 +69,15 @@ class CandidateMatchingService(
                     AIProvider.OPENAI
                 )
             }
+
+            AIProvider.OLLAMA -> {
+                logger.debug { LOG_USING_OPENAI }
+                aiAnalysisService.analyzeContent(
+                    content = prompt,
+                    AIProvider.OLLAMA
+                )
+            }
+
         }
     }
 

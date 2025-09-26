@@ -1,5 +1,6 @@
 package no.cloudberries.candidatematch.controllers.consultants
 
+import mu.KotlinLogging
 import no.cloudberries.candidatematch.service.consultants.ConsultantWithCvService
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -24,16 +25,24 @@ class ConsultantCvQueryController(
     private val consultantWithCvService: ConsultantWithCvService,
 ) {
 
+    private val logger = KotlinLogging.logger { }
+
     @GetMapping("/with-cv")
+    @no.cloudberries.candidatematch.utils.Timed
     fun getAllWithCv(
         @RequestParam(name = "onlyActiveCv", required = false, defaultValue = "false") onlyActiveCv: Boolean,
-    ): List<ConsultantWithCvDto> = consultantWithCvService.getAllConsultantsWithCvs(onlyActiveCv)
+    ): List<ConsultantWithCvDto> {
+        logger.info { "GET /api/consultants/with-cv onlyActiveCv=$onlyActiveCv" }
+        return consultantWithCvService.getAllConsultantsWithCvs(onlyActiveCv)
+    }
 
     @GetMapping("/with-cv/paged")
+    @no.cloudberries.candidatematch.utils.Timed
     fun getAllWithCvPaged(
         @RequestParam(name = "onlyActiveCv", required = false, defaultValue = "false") onlyActiveCv: Boolean,
         @PageableDefault(size = 10) pageable: Pageable,
     ): PageResponse<ConsultantWithCvDto> {
+        logger.info { "GET /api/consultants/with-cv/paged onlyActiveCv=$onlyActiveCv page=${pageable.pageNumber} size=${pageable.pageSize}" }
         val page = consultantWithCvService.getConsultantsWithCvsPaged(pageable, onlyActiveCv)
         return PageResponse(
             content = page.content,

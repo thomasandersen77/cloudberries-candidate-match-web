@@ -57,6 +57,13 @@ class ScoreCandidateService(
                     AIProvider.OPENAI
                 )
             }
+
+            AIProvider.OLLAMA -> {
+                aiAnalysisService.analyzeContent(
+                    content = cvReviewTemplate,
+                    AIProvider.OLLAMA
+                )
+            }
         }
         val cvReviewResponseDto = mapper.readValue(
             response.content,

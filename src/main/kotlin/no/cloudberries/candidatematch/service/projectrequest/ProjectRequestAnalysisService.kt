@@ -1,10 +1,16 @@
 package no.cloudberries.candidatematch.service.projectrequest
 
 import mu.KotlinLogging
+import no.cloudberries.candidatematch.config.ProjectRequestAnalysisConfig
+import no.cloudberries.candidatematch.domain.ai.AIProvider
 import no.cloudberries.candidatematch.infrastructure.entities.projectrequest.CustomerProjectRequestEntity
 import no.cloudberries.candidatematch.infrastructure.entities.projectrequest.ProjectRequestRequirementEntity
 import no.cloudberries.candidatematch.infrastructure.repositories.projectrequest.CustomerProjectRequestRepository
+import no.cloudberries.candidatematch.service.ai.AIAnalysisService
 import no.cloudberries.candidatematch.service.projectrequest.parser.RequirementParser
+import no.cloudberries.candidatematch.templates.AnalyzeCustomerRequestPromptTemplate
+import no.cloudberries.candidatematch.templates.ProjectRequestParams
+import no.cloudberries.candidatematch.templates.renderProjectRequestTemplate
 import no.cloudberries.candidatematch.utils.PdfUtils
 import no.cloudberries.candidatematch.utils.Timed
 import org.springframework.stereotype.Service
@@ -16,6 +22,8 @@ class ProjectRequestAnalysisService(
     private val customerProjectRequestRepository: CustomerProjectRequestRepository,
     private val requirementRepository: no.cloudberries.candidatematch.infrastructure.repositories.projectrequest.ProjectRequestRequirementRepository,
     private val requirementParser: RequirementParser,
+    private val aiAnalysisService: AIAnalysisService,
+    private val analysisConfig: ProjectRequestAnalysisConfig,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -31,7 +39,23 @@ class ProjectRequestAnalysisService(
         originalFilename: String? = null,
     ): Aggregate {
         val text = PdfUtils.extractText(pdfStream).trim()
-        val (title, summary) = deriveTitleAndSummary(text)
+        val (title, fallbackSummary) = deriveTitleAndSummary(text)
+
+        // Optional AI analysis for better summary (and possibly structured extraction in the future)
+        val summary = if (analysisConfig.aiEnabled) {
+            try {
+                val prompt = renderProjectRequestTemplate(
+                    AnalyzeCustomerRequestPromptTemplate.template,
+                    ProjectRequestParams(requestText = text)
+                )
+                val aiResp = aiAnalysisService.analyzeContent(prompt, analysisConfig.provider)
+                aiResp.content.trim().ifBlank { fallbackSummary }
+            } catch (e: Exception) {
+                logger.warn(e) { "AI analysis failed; falling back to derived summary" }
+                fallbackSummary
+            }
+        } else fallbackSummary
+
         val parsed = requirementParser.parse(text)
         val request = CustomerProjectRequestEntity(
             customerName = "Imported",

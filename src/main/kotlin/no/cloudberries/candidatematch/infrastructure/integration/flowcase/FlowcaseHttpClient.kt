@@ -85,7 +85,7 @@ class FlowcaseHttpClient(
                                 it,
                                 FlowcaseUserDTO::class.java
                             ).also {
-                                logger.info { "Fetched user with userId $userId" }
+                                logger.debug { "Fetched user with userId $userId" }
                             }
                         )
                     }
@@ -119,7 +119,7 @@ class FlowcaseHttpClient(
                             it,
                             FlowcaseCvDto::class.java
                         ).also {
-                            logger.info { "Fetched CV for userId $userId / cvId $cvId" }
+                            logger.debug() { "Fetched CV for userId $userId / cvId $cvId" }
                         }
                     }
                 }

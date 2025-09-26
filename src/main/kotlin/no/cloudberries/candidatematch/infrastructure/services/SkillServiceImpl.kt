@@ -24,6 +24,7 @@ class SkillServiceImpl(
     }
 
     @Transactional(readOnly = true)
+    @no.cloudberries.candidatematch.utils.Timed
     override fun getConsultantSkills(consultantId: Long): List<Skill> {
         val skillEntities = consultantSkillRepository.findByConsultantId(consultantId)
         val skillIds = skillEntities.map { it.skillId }

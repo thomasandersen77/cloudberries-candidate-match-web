@@ -13,6 +13,18 @@ embedding:
   provider: GEMINI
   model: text-embedding-004
   dimension: 768
+ai:
+  provider: OLLAMA
+  ollama:
+    base-url: http://localhost:11434
+    model: llama3.2:1b
+    connect-timeout-seconds: 5
+    read-timeout-seconds: 120
+    write-timeout-seconds: 10
+projectrequest:
+  analysis:
+    ai-enabled: true
+    provider: GEMINI
 sync:
   consultants:
     on-startup: true
@@ -51,4 +63,4 @@ spring:
 
 logging:
   level:
-    no.cloudberries.candidatematch: DEBUG # Setter DEBUG-logging for din kode
+    no.cloudberries.candidatematch: INFO # Setter DEBUG-logging for din kode

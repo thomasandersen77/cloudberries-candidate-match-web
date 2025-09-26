@@ -20,6 +20,7 @@ class ConsultantSearchRepository(
     /**
      * Finds consultants using relational criteria with skills matching
      */
+    @no.cloudberries.candidatematch.utils.Timed
     fun findByRelationalCriteria(criteria: RelationalSearchCriteria, pageable: Pageable): Page<ConsultantFlatView> {
         logger.info { "Starting relational search with criteria: $criteria" }
         val whereConditions = mutableListOf<String>()
@@ -98,6 +99,7 @@ class ConsultantSearchRepository(
     /**
      * Finds consultants by semantic similarity using pgvector
      */
+    @no.cloudberries.candidatematch.utils.Timed
     fun findBySemanticSimilarity(
         embedding: DoubleArray, 
         provider: String,

@@ -1,6 +1,7 @@
 package no.cloudberries.candidatematch.infrastructure.repositories
 
 import no.cloudberries.candidatematch.infrastructure.entities.ProjectRequestEntity
+import no.cloudberries.candidatematch.utils.Timed
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
@@ -20,6 +21,7 @@ interface ProjectRequestRepository : JpaRepository<ProjectRequestEntity, Long> {
      * @param to the end of the response deadline period to search for open project requests.
      * @return a list of ProjectRequestEntity that are open and have a response deadline within the specified period.
      */
+    @Timed
     @Query(
         "SELECT pr FROM ProjectRequestEntity pr " +
                 "WHERE pr.status = 'OPEN' " +

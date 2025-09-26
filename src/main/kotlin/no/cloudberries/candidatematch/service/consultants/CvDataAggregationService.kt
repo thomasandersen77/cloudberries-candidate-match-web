@@ -18,6 +18,7 @@ class CvDataAggregationService(
     private val cvWorkExperienceRepository: CvWorkExperienceRepository,
     private val cvProjectExperienceRepository: CvProjectExperienceRepository,
     private val cvProjectExperienceRoleRepository: CvProjectExperienceRoleRepository,
+    private val cvProjectExperienceSkillRepository: CvProjectExperienceSkillRepository,
     private val cvCertificationRepository: CvCertificationRepository,
     private val cvCourseRepository: CvCourseRepository,
     private val cvLanguageRepository: CvLanguageRepository,
@@ -30,15 +31,37 @@ class CvDataAggregationService(
     /**
      * Aggregates CV data for given consultant IDs
      */
+    @no.cloudberries.candidatematch.utils.Timed
     fun aggregateCvData(consultantIds: List<Long>, onlyActiveCv: Boolean): Map<Long, List<ConsultantCvDto>> {
-        // Temporary fix: return empty CV data to isolate the search issue
-        return consultantIds.associateWith { emptyList<ConsultantCvDto>() }
+        if (consultantIds.isEmpty()) return emptyMap()
+
+        // Load CVs for all consultants (optionally only active)
+        val cvs: List<ConsultantCvEntity> = if (onlyActiveCv) {
+            consultantCvRepository.findByConsultantIdInAndActiveTrue(consultantIds)
+        } else {
+            consultantCvRepository.findByConsultantIdIn(consultantIds)
+        }
+        if (cvs.isEmpty()) return consultantIds.associateWith { emptyList() }
+
+        val cvIds = cvs.mapNotNull { it.id }
+        val cvData = loadCvData(cvIds)
+
+        // Group CVs by consultant and build DTOs
+        val cvByConsultant: Map<Long, List<ConsultantCvEntity>> = cvs.groupBy { it.consultantId }
+        return consultantIds.associateWith { consultantId ->
+            val consultantCvs = cvByConsultant[consultantId] ?: emptyList()
+            consultantCvs.map { buildConsultantCvDto(it, cvData) }
+        }
     }
 
     private fun loadCvData(cvIds: List<Long>): CvDataBundle {
         val projectExperiences = cvProjectExperienceRepository.findByCvIdIn(cvIds)
         val projectExperienceIds = projectExperiences.mapNotNull { it.id }
-        
+
+        val projectSkillsByProject: Map<Long?, List<CvProjectExperienceSkillEntity>> =
+            if (projectExperienceIds.isEmpty()) emptyMap()
+            else cvProjectExperienceSkillRepository.findByProjectExperienceIdIn(projectExperienceIds).groupBy { it.projectExperienceId }
+
         return CvDataBundle(
             keyQualificationsByCv = cvKeyQualificationRepository.findByCvIdIn(cvIds).groupBy { it.cvId },
             educationByCv = cvEducationRepository.findByCvIdIn(cvIds).groupBy { it.cvId },
@@ -46,6 +69,7 @@ class CvDataAggregationService(
             projectExperiencesByCv = projectExperiences.groupBy { it.cvId },
             rolesByProject = cvProjectExperienceRoleRepository.findByProjectExperienceIdIn(projectExperienceIds)
                 .groupBy { it.projectExperienceId },
+            projectSkillsByProject = projectSkillsByProject,
             certificationsByCv = cvCertificationRepository.findByCvIdIn(cvIds).groupBy { it.cvId },
             coursesByCv = cvCourseRepository.findByCvIdIn(cvIds).groupBy { it.cvId },
             languagesByCv = cvLanguageRepository.findByCvIdIn(cvIds).groupBy { it.cvId },
@@ -54,17 +78,18 @@ class CvDataAggregationService(
             attachmentsByCv = cvAttachmentRepository.findByCvIdIn(cvIds).groupBy { it.cvId }
         )
     }
-    
+
     private fun loadSkillInCategories(cvIds: List<Long>): Map<Long, List<CvSkillInCategoryEntity>> {
         val skillCategories = cvSkillCategoryRepository.findByCvIdIn(cvIds)
         val skillCategoryIds = skillCategories.mapNotNull { it.id }
-        return cvSkillInCategoryRepository.findBySkillCategoryIdIn(skillCategoryIds)
-            .groupBy { it.skillCategoryId }
+        return if (skillCategoryIds.isEmpty()) emptyMap() else
+            cvSkillInCategoryRepository.findBySkillCategoryIdIn(skillCategoryIds)
+                .groupBy { it.skillCategoryId }
     }
 
-    private fun buildConsultantCvDto(cv: ConsultantCvEntity, cvData: CvDataBundle, cvIds: List<Long>): ConsultantCvDto {
+    private fun buildConsultantCvDto(cv: ConsultantCvEntity, cvData: CvDataBundle): ConsultantCvDto {
         val projectExperiences = cvData.projectExperiencesByCv[cv.id] ?: emptyList()
-        
+
         return ConsultantCvDto(
             id = cv.id,
             versionTag = cv.versionTag,
@@ -81,14 +106,13 @@ class CvDataAggregationService(
             attachments = cvData.attachmentsByCv[cv.id]?.map { it.toDto() } ?: emptyList()
         )
     }
-    
+
     private fun buildProjectExperienceDto(
         projectExperience: CvProjectExperienceEntity,
         cvData: CvDataBundle
     ): ProjectExperienceDto {
-        // Temporary fix: disable project skills loading to avoid null pointer issues
-        // val projectSkills = skillService.getProjectSkills(projectExperience.id!!)
-        
+        val projectSkills = cvData.projectSkillsByProject[projectExperience.id]?.mapNotNull { it.skill } ?: emptyList()
+
         return ProjectExperienceDto(
             customer = projectExperience.customer,
             description = projectExperience.description,
@@ -96,10 +120,10 @@ class CvDataAggregationService(
             fromYearMonth = projectExperience.fromYearMonth,
             toYearMonth = projectExperience.toYearMonth,
             roles = cvData.rolesByProject[projectExperience.id]?.map { it.toDto() } ?: emptyList(),
-            skills = emptyList() // Temporarily return empty list instead of calling skillService
+            skills = projectSkills
         )
     }
-    
+
     private fun buildSkillCategoriesDto(cvId: Long, cvData: CvDataBundle): List<SkillCategoryDto> {
         return cvData.skillCategoriesByCv[cvId]?.map { category ->
             SkillCategoryDto(
@@ -119,6 +143,7 @@ private data class CvDataBundle(
     val workExperienceByCv: Map<Long?, List<CvWorkExperienceEntity>>,
     val projectExperiencesByCv: Map<Long?, List<CvProjectExperienceEntity>>,
     val rolesByProject: Map<Long?, List<CvProjectExperienceRoleEntity>>,
+    val projectSkillsByProject: Map<Long?, List<CvProjectExperienceSkillEntity>>,
     val certificationsByCv: Map<Long?, List<CvCertificationEntity>>,
     val coursesByCv: Map<Long?, List<CvCourseEntity>>,
     val languagesByCv: Map<Long?, List<CvLanguageEntity>>,

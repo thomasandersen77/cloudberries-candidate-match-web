@@ -8,6 +8,8 @@ Dette dokumentet beskriver alle API-endepunkter i systemet på en funksjonell m�
 |------------------------------------|--------|--------------------------------|--------------------------------|--------------------------------|------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `/api/chatbot/analyze`             | POST   | AIController                   | analyzeContent                 | -                              | `{"content": "tekst"}`                   | Analyserer tekst med AI for å trekke ut innsikt eller strukturert informasjon. Brukes til å behandle CV-tekster eller prosjektbeskrivelser med kunstig intelligens.                         |
 | `/api/consultants`                 | GET    | ConsultantController           | list                           | `name`, `page`, `size`, `sort` | -                                        | Henter en paginert liste over konsulenter fra Flowcase. Støtter navnefiltrering og sortering. Returnerer grunnleggende konsulentinformasjon som navn, e-post og fødselsår.                  |
+| `/api/consultants/search`          | POST   | ConsultantController           | searchRelational               | -                              | `{ RelationalSearchRequest, pagination }` | Relasjonelt søk etter konsulenter. Paginering i body via `pagination` (page/size/sort). |
+| `/api/consultants/search/semantic` | POST   | ConsultantController           | searchSemantic                 | -                              | `{ SemanticSearchRequest, pagination }`   | Semantisk søk (pgvector). Paginering i body via `pagination` (page/size/sort). |
 | `/api/consultants/with-cv`         | GET    | ConsultantCvQueryController    | getAllWithCv                   | `onlyActiveCv`                 | -                                        | Henter alle konsulenter med normaliserte CV-data og strukturert informasjon om kvalifikasjoner, utdanning, arbeidserfaring og prosjekter.                                                   |
 | `/api/consultants/sync/run`        | POST   | ConsultantSyncController       | syncAll                        | -                              | -                                        | Starter en manuell synkronisering av konsulentdata fra Flowcase til lokal database. Henter oppdaterte CV-er og konsulentinformasjon. Brukes når man vil sikre at lokale data er oppdaterte. |
 | `/api/cv/{userId}`                 | GET    | CvController                   | getCv                          | -                              | -                                        | Henter komplett CV-data for en spesifikk konsulent direkte fra Flowcase. Returnerer rådata i JSON-format med all tilgjengelig CV-informasjon inkludert prosjekter og ferdigheter.           |
@@ -28,7 +30,7 @@ Dette dokumentet beskriver alle API-endepunkter i systemet på en funksjonell m�
 
 ## Request Body Schemas
 
-### RelationalSearchRequest
+### RelationalSearchRequest (med paginering i body)
 
 ```json
 {
@@ -36,18 +38,20 @@ Dette dokumentet beskriver alle API-endepunkter i systemet på en funksjonell m�
   "skillsAll": ["KOTLIN", "BACKEND"],
   "skillsAny": ["JAVA", "REACT"],
   "minQualityScore": 70,
-  "onlyActiveCv": true
+  "onlyActiveCv": true,
+  "pagination": { "page": 0, "size": 10, "sort": ["name,asc"] }
 }
 ```
 
-### SemanticSearchRequest
+### SemanticSearchRequest (med paginering i body)
 
 ```json
 {
   "text": "Senior Kotlin developer with Spring experience",
   "provider": "GOOGLE_GEMINI",
   "model": "text-embedding-004", 
-  "topK": 5
+  "topK": 5,
+  "pagination": { "page": 0, "size": 10, "sort": ["name,asc"] }
 }
 ```
 
@@ -76,6 +80,6 @@ Følgende endepunkter er planlagt men ikke implementert i gjeldende versjon:
 ## Notater
 
 - Alle endepunkter returnerer JSON-data
-- Paginering følger standard Spring Boot-format med `page`, `size` og `sort` parametere
+- Paginering: GET-endepunkter bruker query-parametere (`page`, `size`, `sort`), mens POST-søk (relasjonelt/semantisk) bruker paginering i request-body via `pagination`.
 - Semantisk søk krever at embeddings er generert for konsulentene
 - AI-tjenester må være konfigurert og tilgjengelige for å fungere

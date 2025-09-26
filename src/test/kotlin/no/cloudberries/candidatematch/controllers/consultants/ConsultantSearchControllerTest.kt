@@ -31,7 +31,8 @@ class ConsultantSearchControllerTest {
             skillsAll = listOf("KOTLIN"),
             skillsAny = listOf("JAVA"),
             minQualityScore = 80,
-            onlyActiveCv = true
+            onlyActiveCv = true,
+            pagination = PaginationDto(page = 0, size = 10, sort = listOf("name,asc"))
         )
 
         val mockResult = PageImpl(
@@ -68,7 +69,8 @@ class ConsultantSearchControllerTest {
             text = "Senior Kotlin developer",
             provider = "GOOGLE_GEMINI",
             model = "text-embedding-004",
-            topK = 5
+            topK = 5,
+            pagination = PaginationDto(page = 0, size = 10)
         )
 
         val mockResult = PageImpl(
@@ -121,7 +123,7 @@ class ConsultantSearchControllerTest {
     fun `POST search should return 400 for invalid criteria`() {
         every { consultantSearchService.searchRelational(any(), any()) } throws IllegalArgumentException("Invalid criteria")
 
-        val request = RelationalSearchRequest(minQualityScore = 150) // Invalid score
+        val request = RelationalSearchRequest(minQualityScore = 150)
 
         mockMvc.perform(
             post("/api/consultants/search")

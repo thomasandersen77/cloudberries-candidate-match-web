@@ -14,25 +14,29 @@ class GeminiHttpClient(
     private val logger = KotlinLogging.logger {}
     private val client: Client by lazy {
         Client.builder()
+            //.location("us-central1") // <-- LEGG TIL DENNE LINJEN
+            //.project("weighty-list-422011-p4")
             .apiKey(geminiConfig.apiKey)
             .build()
     }
 
     fun testConnection(): Boolean {
-        if(geminiConfig.apiKey.isBlank()){
+        if (geminiConfig.apiKey.isBlank()) {
             logger.error { "Gemini API key not configured" }
-            return false // Returner false hvis ikke konfigurert
+            return false
         }
-
-        return runCatching { // Bruk runCatching for å håndtere exceptions
-            val response = client.models.generateContent(geminiConfig.model, "are you up? answer yes or no", null)
-            response?.text()?.lowercase()?.contains("yes") ?: false // Håndterer null-respons
+        val modelId = geminiConfig.model.ifBlank { "gemini-1.5-pro" }
+        return runCatching {
+            val response = client.models.generateContent(modelId, "are you up? answer yes or no", null)
+            response?.text()?.lowercase()?.contains("yes") ?: false
         }.getOrElse {
-            logger.error(it) { "Gemini connection test failed" }
+            logger.error(it) {
+                "Gemini connection test failed. Check model id '${geminiConfig.model}'. " +
+                    "Ensure it exists and is available in your region/project."
+            }
             false
         }
     }
-
 
     override fun generateContent(prompt: String): AIResponse {
         runCatching {
@@ -41,30 +45,24 @@ class GeminiHttpClient(
                 val content = fetchAndCleanGeminiResponse(prompt)
                 return AIResponse(
                     content = content,
-                    modelUsed = geminiConfig.model
+                    modelUsed = geminiConfig.model.ifBlank { "gemini-1.5-pro" }
                 )
             } catch (e: Exception) {
                 val errorMessage = "Failed to generate content with Gemini"
                 logger.error(e) { errorMessage }
-                // Avoid re-wrapping our specific exception.
                 if (e is AIGenerationException) throw e
-                throw AIGenerationException(
-                    errorMessage,
-                    e
-                )
+                throw AIGenerationException(errorMessage, e)
             }
         }.getOrElse { e ->
-            throw AIGenerationException(
-                "Failed to generate content with Gemini",
-                e
-            )
+            throw AIGenerationException("Failed to generate content with Gemini", e)
         }
     }
 
     private fun fetchAndCleanGeminiResponse(prompt: String): String {
+        val modelId = geminiConfig.model.ifBlank { "gemini-1.5-pro" }
         return client.models
             .generateContent(
-                geminiConfig.model,
+                modelId,
                 prompt,
                 null
             )
@@ -78,5 +76,4 @@ class GeminiHttpClient(
             Regex("```(json)?"),
             ""
         ).trim()
-
 }

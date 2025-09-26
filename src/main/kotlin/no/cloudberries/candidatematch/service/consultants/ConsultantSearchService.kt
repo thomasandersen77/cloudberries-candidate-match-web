@@ -28,6 +28,7 @@ class ConsultantSearchService(
     /**
      * Performs relational (structured) search for consultants based on criteria
      */
+    @no.cloudberries.candidatematch.utils.Timed
     fun searchRelational(criteria: RelationalSearchCriteria, pageable: Pageable): Page<ConsultantWithCvDto> {
         logger.info { "Performing relational search with criteria: name=${criteria.name}, skillsAll=${criteria.skillsAll}, skillsAny=${criteria.skillsAny}" }
         
@@ -67,6 +68,7 @@ class ConsultantSearchService(
     /**
      * Performs semantic search for consultants using embeddings and natural language
      */
+    @no.cloudberries.candidatematch.utils.Timed
     fun searchSemantic(criteria: SemanticSearchCriteria, pageable: Pageable): Page<ConsultantWithCvDto> {
         logger.info { "Performing semantic search with text: '${criteria.text}', provider: ${criteria.provider}, model: ${criteria.model}" }
         

@@ -219,7 +219,7 @@ Når appen kjører (standard http://localhost:8080), kan du bruke følgende ende
 
 ### 🔍 Søkeendepunkter
 
-**Strukturert søk:**
+**Strukturert søk (paginering i body):**
 ```bash
 curl -X POST http://localhost:8080/api/consultants/search \
   -H "Content-Type: application/json" \
@@ -228,18 +228,20 @@ curl -X POST http://localhost:8080/api/consultants/search \
     "skillsAll": ["KOTLIN"],
     "skillsAny": ["JAVA", "SPRING"],
     "minQualityScore": 80,
-    "onlyActiveCv": true
+    "onlyActiveCv": true,
+    "pagination": { "page": 0, "size": 10, "sort": ["name,asc"] }
   }'
 ```
 
-**Semantisk søk:**
+**Semantisk søk (paginering i body):**
 ```bash
 curl -X POST http://localhost:8080/api/consultants/search/semantic \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Senior Kotlin-utvikler med Spring-erfaring",
     "topK": 5,
-    "minQualityScore": 80
+    "minQualityScore": 80,
+    "pagination": { "page": 0, "size": 10, "sort": ["name,asc"] }
   }'
 ```
 
@@ -442,7 +444,9 @@ curl -s "http://localhost:8080/api/consultants/with-cv?onlyActiveCv=true" | jq '
 |-------:|-----------------------------------|--------------------------------|--------------------------------|----------------------------------------------|---------------|---------------------------------------------------------------------|
 | GET    | /api/skills                       | SkillsController               | listSkills                     | query: skill[]=KOTLIN,…                      | Aggregater    | Aggregerer og lister kompetanser i selskapet                       |
 | POST   | /api/chatbot/analyze              | AIController                   | analyzeContent                 | JSON: { content }                            | AI-respons    | Analyserer tekst med AI                                             |
-| GET    | /api/consultants                  | ConsultantController           | list                           | query: name, page/size/sort                  | Page<Consultant> | Lister konsulenter (paginert, filtrerbart på navn)                 |
+|| GET    | /api/consultants                  | ConsultantController           | list                           | query: name, page/size/sort                  | Page<Consultant> | Lister konsulenter (paginert, filtrerbart på navn)                 |
+|| POST   | /api/consultants/search           | ConsultantController           | searchRelational               | –                                          | JSON: RelationalSearchRequest + pagination | Relasjonelt søk (paginering i body) |
+|| POST   | /api/consultants/search/semantic  | ConsultantController           | searchSemantic                 | –                                          | JSON: SemanticSearchRequest + pagination   | Semantisk søk (paginering i body) |
 | GET    | /api/consultants/with-cv          | ConsultantCvQueryController    | getAllWithCv                   | query: onlyActiveCv?                           | Liste         | Lister alle konsulenter med normaliserte CV-data                    |
 | POST   | /api/consultants/sync/run         | ConsultantSyncController       | syncAll                        | –                                            | Sammendrag    | Kjører synk fra Flowcase                                            |
 | GET    | /api/cv/{userId}                  | CvController                   | getCv                          | path: userId                                  | CV JSON       | Henter CV-data (JSON) for gitt bruker                               |

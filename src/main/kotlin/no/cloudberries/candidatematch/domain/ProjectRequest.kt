@@ -22,16 +22,39 @@ data class ProjectRequest(
 ) {
     init {
         validateRequestDates()
+        validateResponseDeadline()
+        validateRequiredFields()
     }
 
     fun validateRequestDates() {
-        require(startDate.isBefore(endDate))
-        { "Startdato må være tidligere eller lik sluttdato" }
+        require(startDate.isBefore(endDate)) { 
+            "Startdato må være tidligere eller lik sluttdato" 
+        }
+    }
+    
+    fun validateResponseDeadline() {
+        require(responseDeadline.isBefore(startDate)) {
+            "Svarfristen kan ikke være etter prosjektets startdato"
+        }
+    }
+    
+    fun validateRequiredFields() {
+        require(customerName.isNotBlank()) { "Kundenavn må angis" }
+        require(requestDescription.isNotBlank()) { "Prosjektbeskrivelse må angis" }
+        require(responsibleSalespersonEmail.isNotBlank()) { "Ansvarlig selger må angis" }
     }
 
     fun closeRequest() {
         require(status != RequestStatus.CLOSED) { "Forespørselen er allerede lukket" }
         status = RequestStatus.CLOSED
+    }
+    
+    fun addAISuggestion(suggestion: AISuggestion): ProjectRequest {
+        return this.copy(aISuggestions = this.aISuggestions + suggestion)
+    }
+    
+    fun getTopSkills(count: Int = 3): List<Skill> {
+        return requiredSkills.take(count)
     }
 }
 

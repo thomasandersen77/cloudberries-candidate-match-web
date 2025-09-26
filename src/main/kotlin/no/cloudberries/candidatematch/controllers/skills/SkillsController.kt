@@ -16,6 +16,7 @@ class SkillsController(
     private val logger = KotlinLogging.logger { }
 
     @GetMapping
+    @no.cloudberries.candidatematch.utils.Timed
     fun listSkills(
         @RequestParam(name = "skill", required = false) skillFilters: List<String>?
     ): ResponseEntity<List<no.cloudberries.candidatematch.controllers.skills.dto.SkillInCompanyDto>> {

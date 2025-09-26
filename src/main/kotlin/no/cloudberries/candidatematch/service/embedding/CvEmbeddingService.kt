@@ -77,6 +77,7 @@ class CvEmbeddingService(
         return true
     }
 
+    @no.cloudberries.candidatematch.utils.Timed
     fun processMissingEmbeddings(batchSize: Int = 50): Int {
         if (!embeddingProvider.isEnabled()) {
             logger.info { "Embedding disabled; skipping scheduled processing." }

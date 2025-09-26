@@ -1,5 +1,6 @@
 package no.cloudberries.candidatematch.controllers.chat
 
+import mu.KotlinLogging
 import no.cloudberries.candidatematch.domain.ai.AIProvider
 import no.cloudberries.candidatematch.domain.ai.AIResponse
 import no.cloudberries.candidatematch.service.ai.AIAnalysisService
@@ -13,10 +14,14 @@ import org.springframework.web.bind.annotation.RestController
 class AIController(
     private val aiAnalysisService: AIAnalysisService
 ) {
+    private val logger = KotlinLogging.logger { }
+
     @PostMapping("/analyze")
+    @no.cloudberries.candidatematch.utils.Timed
     fun analyzeContent(
         @RequestBody request: AIAnalysisRequest,
     ): AIResponse {
+        logger.info { "POST /api/chatbot/analyze content.len=${request.content.length}" }
         return aiAnalysisService.analyzeContent(
             request.content,
             AIProvider.GEMINI
