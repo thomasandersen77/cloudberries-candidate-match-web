@@ -1,9 +1,10 @@
 # Teknologibarometer Arkitektur forslag
 
-Slik jeg forstår det, ønsker du en arkitektur for en teknologibarometer-app som kan analysere og visualisere etterspørsel etter teknologier, roller og kompetanse basert på innkommende forespørsler. 
-Det var nevnt integrasjon med Flowcase, LinkedIn,
+Slik jeg forstår det, ønsker man en arkitektur for en teknologibarometer-app som kan analysere og visualisere etterspørsel etter teknologier, roller og kompetanse basert på innkommende forespørsler. 
+Det var nevnt integrasjon med Flowcase, LinkedIn med mer. Her er et forslag til hvordan en slik arkitektur kan se ut, med fokus på inntak, behandling, lagring og presentasjon av data.
 
-**LinkedIn-integrasjon (Recruiting & nettverk):** I tillegg til Flowcase kan Candidate‑match konsumere LinkedIn‑data for rekruttering: via LinkedIn API/Recruiter‑eksport synker vi kandidater ("Candidate") og profiler, inkl. navn, overskrift, lokasjon, erfaring, utdanning og nøkkelord/skills. Data mappes til Candidate‑match sitt domenespråk (Candidate, Skills, Experience) og lagres side om side med Flowcase‑konsulenter. Dette muliggjør automatisert kandidat‑inntak, løpende oppdatering og semantisk søk/match i samme motor (pgvector/LLM). Inntaket kan trigges på e‑post/lenker eller batch‑eksport, og styres av samtykke/rate‑limits. Teknologibarometeret kan bruke disse profilene både til å måle etterspørsel vs. tilbud (skill‑gap) og til å presentere toppkandidater for innkomne forespørsler.
+**LinkedIn-integrasjon (Recruiting & nettverk):** I tillegg til Flowcase kan Candidate‑match konsumere LinkedIn‑data for rekruttering på samme måte som den gjøre Flowcase (scheduled updates/tv).
+: via LinkedIn API/Recruiter‑eksport synker vi kandidater ("Candidate") og profiler, inkl. navn, overskrift, lokasjon, erfaring, utdanning og nøkkelord/skills. Data mappes til Candidate‑match sitt domenespråk (Candidate, Skills, Experience) og lagres side om side med Flowcase‑konsulenter. Dette muliggjør automatisert kandidat‑inntak, løpende oppdatering og semantisk søk/match i samme motor (pgvector/LLM). Inntaket kan trigges på e‑post/lenker eller batch‑eksport, og styres av samtykke/rate‑limits. Teknologibarometeret kan bruke disse profilene både til å måle etterspørsel vs. tilbud (skill‑gap) og til å presentere toppkandidater for innkomne forespørsler.
 
 ### Foreslått overordnet flyt for teknologibarometer-appen
 
@@ -19,9 +20,10 @@ Samt hvordan vi kan får en flyingstart med candidate-match for teknologibaromet
 
 ## Candidate Match (kort)
 
-
 Avansert kandidatmatchingsystem som integrerer med Flowcase for CV-data, Google Gemini for innholdsgenerering og embeddings, og PostgreSQL/pgvector for vektorlagring. Systemet støtter både strukturert og semantisk søk for optimal kandidatmatching.
 Integrerer med 3 LLMs, OpenAI API, Google Gemini API og Ollama (for lokal kjøring av modeller). Bruker pgvector for effektiv vektorsøk i PostgreSQL. Har en React-basert frontend for brukerinteraksjon.
+
+Se [README.md](@file:README.md) for fullstendig beskrivelse av Candidate Match.
 
 ### Arkitektur
 
@@ -57,12 +59,15 @@ graph TB
         REPO["Repositorier"]
         DB[("PostgreSQL\n+ pgvector")]
         FC["Flowcase Klient"]
+        OAI["OpenAI AI"]
         GEM["Gemini AI"]
+        
     end
 
     subgraph External["Eksterne tjenester"]
         FAPI["Flowcase API"]
         GAPI["Google Gemini"]
+        OPENAPI["OpenAI API"]
     end
 
     %% Connections
@@ -79,6 +84,7 @@ graph TB
     CSS --> CONS
     CSS --> CRIT
     CMS --> MATCH
+    CMS --> OAI
     ES --> SKILL
     
     CSS --> REPO
@@ -90,19 +96,20 @@ graph TB
     FC --> FAPI
     ES --> GEM
     GEM --> GAPI
+    OAI --> OPENAPI 
     
     %% Styling
     classDef controller fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef service fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     classDef domain fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef infra fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef infra fill:#3bb33,stroke:#ef6c00,stroke-width:2px
     classDef external fill:#ffebee,stroke:#c62828,stroke-width:2px
     
     class CC,SC,PC,SKC controller
     class CSS,CMS,ES,FS service
     class CONS,CRIT,SKILL,MATCH domain
-    class REPO,DB,FC,GEM infra
-    class FAPI,GAPI external
+    class REPO,DB,FC,GEM,OAI infra
+    class FAPI,GAPI,OPENAPI external
 ```
 
 
@@ -110,55 +117,55 @@ graph TB
 
 ```mermaid
 flowchart LR
-  subgraph Sources
-    P1["Portal e-post\n(Emagine/Verama/...)"]
-    P2["Direkte kunde-epost"]
-    P3["Manuell opplasting"]
-  end
-
-  P1 & P2 & P3 --> GI["Gmail Intake\n(label + Pub/Sub)"]
-  GI --> BZ["Bronze:\nRaw email + metadata"]
-
-  subgraph Transform
-    EX["Extractor (LLM/RAG)\n→ must/bør/role/tech"]
-    EM["Embedder\n(OpenAI/Gemini/Azure/Ollama)"]
-  end
-
-  BZ --> EX --> SV["Silver:\nOpportunity JSONB"]
-  SV --> EM --> SV
-
-  subgraph CandidateMatch
-    FC["Flowcase Sync\n(Consultant/Skills/CV)"]
-    PG[(PostgreSQL + pgvector)]
-    MT["Match Service"]
-  end
-
-  SV --> MT
-  FC --> PG
-  MT --> PG
-  EM --> PG
-
-  subgraph Gold
-    AGG["Aggregations\nTechDemand/RoleDemand/SkillGaps"]
-  end
-
-  SV --> AGG
-  PG --> AGG
-
-  subgraph Presentation
-    UI["Barometer UI (React)\nTop tech/roller + trender"]
-    CMUI["Candidate-match UI\nKandidater/score"]
-    BI["BI (Superset/Power BI)"]
-    SL["Slack/Teams varsler"]
-  end
-
-  AGG --> UI & BI
-  SV --> CMUI
-  MT --> SL
+subgraph Sources["Sources"]
+P1["Portal e-post
+        (Emagine/Verama/...)"]
+P2["Direkte kunde-epost"]
+P3["Manuell opplasting"]
+end
+subgraph Transform["Transform
+(Spring Boot AI)"]
+EX["Extractor (LLM/RAG)→must/should/role/tech"]
+EM["Embedder
+(OpenAI/Gemini/Azure AI/Ollama/??)"]
+end
+subgraph CandidateMatch["CandidateMatch"]
+FC["Flowcase Sync
+(Consultant/Skills/CV)"]
+PG[("PostgreSQL + pgvector")]
+MT["Match Service"]
+end
+subgraph Gold["Gold"]
+AGG["Aggregations
+TechDemand/RoleDemand/SkillGaps"]
+end
+subgraph Presentation["Presentation"]
+UI["Barometer UI (React)
+Top tech/roller + trender"]
+CMUI["Candidate-match UI
+Kandidater/score"]
+BI["BI (Superset/Power BI)"]
+SL["Slack/Mail varsler"]
+end
+P1 --> GI["Gmail Intake
+(label + Pub/Sub/Push?)"]
+P2 --> GI
+P3 --> GI
+GI --> BZ["Bronze:
+Raw email + metadata"]
+BZ --> EX
+EX --> SV["Silver:
+Opportunity JSONB"]
+SV --> EM & MT & AGG & CMUI
+EM --> SV & PG
+FC --> PG
+MT --> PG & SL
+PG --> AGG
+AGG --> UI & BI
 
 ```
 
-## Akseptansekriterier (MVP)
+## Akseptansekriterier for en mulig MVP
 
 ### Inntak & kilder
 1.	Gmail-inntak på intake@cloudberries.no med labels per portal; push via Pub/Sub (fallback: polling).
