@@ -28,3 +28,6 @@ ngrok_recovery_codes.txt
 # Ignore task docs
 /tasks/
 /Tasks/
+
+# Google Cloud service account keys
+weighty-list-422011-p4-2c71c334f4ae.json
