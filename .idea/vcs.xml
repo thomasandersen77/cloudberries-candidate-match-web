@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/../Infra" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../LSK-arkiv" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../candidate-match-fronted" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../cloudberries-candidate-match-web" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../grpc-java" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../hello-aarasen" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../hello-berries" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../kotlin-httpclient-dsl" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../kotlin-sdk" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../spring-ai" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../terraform" vcs="Git" />
+  </component>
+</project>

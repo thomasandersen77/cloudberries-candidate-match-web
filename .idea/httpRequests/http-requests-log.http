@@ -1,0 +1,97 @@
+POST http://localhost:8080/api/embeddings/run/missing?batchSize=120
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.2.2
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+content-length: 0
+
+<> 2025-09-27T053554.500.json
+
+###
+
+GET http://localhost:8080/api/consultants/with-cv?onlyActiveCv=false
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.2.2
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+<> 2025-09-25T161218.200.json
+
+###
+
+GET http://localhost:8080/api/consultants/with-cv?onlyActiveCv=true
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.2.2
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+<> 2025-09-25T161208.200.json
+
+###
+
+GET http://localhost:8080/api/consultants?name&page=1&size=120&sort=descContent-Type: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.2.2
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+<> 2025-09-25T161009.200.json
+
+###
+
+POST http://localhost:8080/api/embeddings/run/missing?batchSize=100
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.2.2
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+content-length: 0
+
+<> 2025-09-24T160459.200.json
+
+###
+
+POST http://localhost:8080/api/embeddings/run/missing?batchSize=100
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.2.2
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+content-length: 0
+
+<> 2025-09-24T160355.200.json
+
+###
+
+POST http://localhost:8080/api/embeddings/run/missing?batchSize=100
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.2.2
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+content-length: 0
+
+<> 2025-09-24T155035.200.json
+
+###
+
+POST http://localhost:8080/api/embeddings/run/missing?batchSize=100
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.2.2
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+content-length: 0
+
+<> 2025-09-24T154800.200.json
+
+###
+
+POST http://localhost:8080/api/embeddings/run/missing?batchSize=13
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.2.2
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+content-length: 0
+
+<> 2025-09-24T154416.200.json
+
+###
+
+POST http://localhost:8080/api/embeddings/run/missing?batchSize=15Content-Type: application/x-www-form-urlencoded
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.2.2
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+content-length: 0
+
+<> 2025-09-24T154343.400.json
+
+###
+
