@@ -77,6 +77,51 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /api/chatbot/search:
+    post:
+      tags: [ Chat ]
+      summary: AI-powered consultant search
+      description: Search consultants using natural language with intelligent routing to structured, semantic, hybrid, or RAG search modes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatSearchRequest'
+            examples:
+              structured:
+                summary: Structured search example
+                value:
+                  text: "Find consultants who know Kotlin and Spring"
+                  topK: 10
+              semantic:
+                summary: Semantic search example  
+                value:
+                  text: "Experienced fullstack developer who can mentor juniors"
+                  topK: 5
+              forced_mode:
+                summary: Forced mode example
+                value:
+                  text: "Java developer"
+                  forceMode: "semantic"
+                  topK: 3
+              rag:
+                summary: RAG search example
+                value:
+                  text: "Tell me about Thomas Andersen's experience with React"
+                  topK: 5
+      responses:
+        '200':
+          description: Search results with AI interpretation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSearchResponse'
+        '400':
+          description: Invalid request parameters
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /api/consultants:
     get:
       tags: [ Consultants ]
@@ -1357,3 +1402,236 @@ components:
           type: string
         path:
           type: string
+
+    # AI Chat Search Schemas
+    
+    ChatSearchRequest:
+      type: object
+      required:
+        - text
+      properties:
+        conversationId:
+          type: string
+          description: Optional conversation ID to maintain context
+          example: "conv-123"
+        text:
+          type: string
+          description: Natural language search text
+          example: "Find consultants who know Kotlin and Spring"
+        forceMode:
+          type: string
+          enum: [structured, semantic, hybrid, rag]
+          description: Force a specific search mode
+          example: "structured"
+        topK:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+          description: Maximum number of results to return
+          example: 10
+
+    ChatSearchResponse:
+      type: object
+      required:
+        - mode
+        - latencyMs
+      properties:
+        mode:
+          type: string
+          enum: [structured, semantic, hybrid, rag]
+          description: Search mode used
+          example: "structured"
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+          description: Search results (for structured/semantic/hybrid modes)
+        answer:
+          type: string
+          description: Generated answer text (for RAG mode)
+          example: "Based on the consultant's CV..."
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/RAGSource'
+          description: Sources used for RAG answers
+        latencyMs:
+          type: integer
+          description: Response time in milliseconds
+          example: 1250
+        debug:
+          $ref: '#/components/schemas/DebugInfo'
+          description: Optional debug information
+        conversationId:
+          type: string
+          description: Conversation ID for follow-up queries
+
+    SearchResult:
+      type: object
+      required:
+        - consultantId
+        - name
+        - score
+      properties:
+        consultantId:
+          type: string
+          format: uuid
+          description: Consultant ID
+        name:
+          type: string
+          description: Consultant name
+          example: "Thomas Andersen"
+        score:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Relevance score (0-1)
+          example: 0.87
+        highlights:
+          type: array
+          items:
+            type: string
+          description: Text highlights from matching
+        meta:
+          type: object
+          additionalProperties: true
+          description: Additional metadata
+
+    RAGSource:
+      type: object
+      required:
+        - consultantId
+        - consultantName
+        - chunkId
+        - text
+        - score
+      properties:
+        consultantId:
+          type: string
+          format: uuid
+          description: Consultant ID
+        consultantName:
+          type: string
+          description: Consultant name
+        chunkId:
+          type: string
+          format: uuid
+          description: Chunk ID
+        text:
+          type: string
+          description: Source text excerpt
+        score:
+          type: number
+          format: double
+          description: Relevance score
+          example: 0.92
+        location:
+          type: string
+          description: CV section location
+          example: "Experience"
+
+    DebugInfo:
+      type: object
+      properties:
+        interpretation:
+          $ref: '#/components/schemas/QueryInterpretation'
+          description: Query interpretation details
+        timings:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Timing breakdown
+        extra:
+          type: object
+          additionalProperties: true
+          description: Additional debug data
+
+    QueryInterpretation:
+      type: object
+      required:
+        - route
+        - confidence
+      properties:
+        route:
+          type: string
+          enum: [structured, semantic, hybrid, rag]
+          description: Determined search route
+          example: "structured"
+        structured:
+          $ref: '#/components/schemas/StructuredCriteria'
+          description: Extracted structured search criteria
+        semanticText:
+          type: string
+          description: Semantic search text
+          example: "experienced fullstack developer"
+        consultantName:
+          type: string
+          description: Detected consultant name
+          example: "Thomas Andersen"
+        question:
+          type: string
+          description: RAG question
+          example: "What is his experience with React?"
+        confidence:
+          $ref: '#/components/schemas/ConfidenceScores'
+          description: Confidence scores for the interpretation
+
+    StructuredCriteria:
+      type: object
+      properties:
+        skillsAll:
+          type: array
+          items:
+            type: string
+          description: Skills that must all be present
+          example: ["kotlin", "spring"]
+        skillsAny:
+          type: array
+          items:
+            type: string
+          description: Skills where at least one must be present
+          example: ["architecture", "tech lead"]
+        roles:
+          type: array
+          items:
+            type: string
+          description: Required roles or positions
+          example: ["senior developer", "tech lead"]
+        minQualityScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Minimum quality score
+          example: 85
+        locations:
+          type: array
+          items:
+            type: string
+          description: Location requirements
+        availability:
+          type: string
+          description: Availability requirements
+          example: "available"
+
+    ConfidenceScores:
+      type: object
+      required:
+        - route
+        - extraction
+      properties:
+        route:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Confidence in route selection (0-1)
+          example: 0.87
+        extraction:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Confidence in criteria extraction (0-1)
+          example: 0.92

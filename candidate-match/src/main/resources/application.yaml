@@ -14,7 +14,7 @@ flowcase:
   baseUrl: ${FLOWCASE_BASE_URL}
 openai:
   apiKey: ${OPENAI_API_KEY}
-  model: gpt-4
+  model: gpt-5
   assistantId: ${OPENAI_ASSISTANT_ID}
 gemini:
   apiKey: ${GEMINI_API_KEY}

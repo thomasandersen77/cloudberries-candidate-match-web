@@ -32,91 +32,14 @@
     <list default="true" id="1ba1438b-7156-4271-a809-b27b3e925c55" name="Changes" comment="docs: enhance architecture documentation for teknologibarometer app with clearer integration details and flowcharts">
       <change afterPath="$PROJECT_DIR$/../Infra/wiki/TeknologiBarometer/Proposed_Architechure_Draft.md" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/../Infra/wiki/TeknologiBarometer/flow_teknologibarometer_gullikk.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../cloudberries-candidate-match-web/src/pages/Chat/refactor_01.md" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/../cloudberries-candidate-match-web/src/pages/ProjectRequests/ProjectRequestCreatePage.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.env" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ai-rag-service/src/main/resources/vector.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/API-ENDPOINTS.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/CandidateMatch_Funksjonalitet.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/OPPGAVE-Konsulent-Entiteter.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/cloudberries-candidate-match.2025-06-29.private-key.pem" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/docker-compose-local.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/feature_projectrequest.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/flowcase.http" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/mvnw" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/chat/AIController.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/chat/feature_chat.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/consultants/ConsultantWithCvDtos.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/embedding/EmbeddingController.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/matching/MatchingController.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/scoring/CvScoreController.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/skills/dto/SkillInCompanyDto.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/domain/ai/AIGenerationException.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/domain/ai/AIResponseModel.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/domain/candidate/ConsultantMatchedEvent.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/domain/consultant/ConsultantAdapter.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/domain/consultant/ConsultantAggregate.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/domain/customer/Customer.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/domain/customer/ProjectExistsEvent.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/domain/event/DomainEvent.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/domain/scoring/CvEvaluation.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/health/HealthService.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/adapters/ConsultantEntityMappers.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/AISuggstionEntity.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/ConsultantEntity.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/CustomerEntity.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/SkillEntity.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/consultant/ProjectAssignmentEntity.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/projectrequest/CustomerProjectRequestEntity.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/projectrequest/ProjectRequestRequirementEntity.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/scoring/CvScoreEntity.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/embedding/EmbeddingConfig.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/flowcase/FlowcaseHttpClient.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/flowcase/FlowcaseResumeDto.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/ollama/OllamaConfig.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/ollama/OllamaHttpClient.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/openai/OpenAIHttpClient.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/ConsultantRepository.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/projectrequest/CustomerProjectRequestRepository.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/skills/JdbcProjectSkillFetcher.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/services/SkillServiceImpl.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/web/RequestIdFilter.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/ai/AIContentAnalysisService.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/ai/AIService.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/ConsultantCvService.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/ConsultantPersistenceService.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/ConsultantWithCvService.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/LiquidityReductionService.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/SyncConsultantsStartupRunner.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/projectrequest/ProjectRequestAnalysisService.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/projectrequest/parser/DefaultRequirementParser.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/scoring/ScoreCandidateService.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/service/scoring/ScoreCandidateStartupRunner.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/utils/PdfUtils.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/resources/Thomas-Andersen_CV.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/resources/db/changelog/db_changelog-7.0-cv-text-columns.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/main/resources/db/changelog/db_changelog-8.0-consultant-skills.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/ManuallDataSyncTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/config/EmbeddedPostgresTestConfig.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/config/WebConfig.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/controllers/projectrequest/ProjectRequestIntegrationTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/domain/candidate/SkillTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/domain/consultant/CvExtensionsTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/domain/scoring/CvEvaluationParsingTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/health/HealthServiceTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/infrastructure/adapters/ConsultantAdapterImplTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/service/FlowcaseSyncServiceIntegrationTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/service/projectrequest/ProjectRequestAnalysisServiceTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/service/projectrequest/parser/DefaultRequirementParserTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/service/scoring/CvScoreAppServiceTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/kotlin/no/cloudberries/candidatematch/service/skills/SkillsServiceTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/resources/mappings/flowcase-get-cv-200.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/resources/martin/martin_cv.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/src/test/resources/politiet/cv-mal.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/technolgibarometer/arch_flow.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/candidate-match/technolgibarometer/thomas_forslag.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/teknologi-barometer-service/docker-compose-local.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mvnw" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mvnw.cmd" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/../kotlin-httpclient-dsl/.github/prompts/pr_review_prompt.txt" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/../kotlin-httpclient-dsl/.github/workflows/maven.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../terraform/.idea/terraform.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../cloudberries-candidate-match-web/openapi.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/../cloudberries-candidate-match-web/openapi.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../cloudberries-candidate-match-web/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/../cloudberries-candidate-match-web/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../cloudberries-candidate-match-web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../cloudberries-candidate-match-web/package.json" afterDir="false" />
@@ -130,238 +53,23 @@
       <change beforePath="$PROJECT_DIR$/../cloudberries-candidate-match-web/src/services/projectRequestsService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../cloudberries-candidate-match-web/src/services/projectRequestsService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../cloudberries-candidate-match-web/src/types/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../cloudberries-candidate-match-web/src/types/api.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../cloudberries-candidate-match-web/src/utils/skillUtils.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../cloudberries-candidate-match-web/src/utils/skillUtils.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.aiignore" beforeDir="false" afterPath="$PROJECT_DIR$/.aiignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/prompts/architecture_review_prompt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/.github/prompts/architecture_review_prompt.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/prompts/pr_review_prompt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/.github/prompts/pr_review_prompt.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/prompts/readability_review_prompt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/.github/prompts/readability_review_prompt.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/prompts/security_review_prompt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/.github/prompts/security_review_prompt.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/azure-container-webapp.yml" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/.github/workflows/azure-container-webapp.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/gemini-issue-triage.yml" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/.github/workflows/gemini-issue-triage.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/maven.yml" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/.github/workflows/maven.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/qodana_code_quality.yml" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/.github/workflows/qodana_code_quality.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/API-ENDPOINTS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/CandidateMatch_Funksjonalitet.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/OPPGAVE-Konsulent-Entiteter.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backup-tests/ConsultantPersistenceServiceIntegrationTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backup-tests/SyncConsultantServiceTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/candidate-match.puml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/candidatematch.puml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cloudberries-candidate-match.2025-06-29.private-key.pem" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cvs.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose-local.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose-test.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/feature_projectrequest.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flowcase.http" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/health-checks.http" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mvnw" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mvnw.cmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ngrok_recovery_codes.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/openapi.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/Main.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/config/AIConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/config/ProjectRequestAnalysisConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/config/WebConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/chat/AIController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/consultants/ConsultantController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/consultants/ConsultantCvQueryController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/consultants/ConsultantSyncController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/consultants/ConsultantWithCvDtos.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/cv/CvController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/embedding/EmbeddingController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/health/HealthController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/matching/MatchingController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/projectrequest/ProjectRequestController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/projectrequest/ProjectRequestDtos.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/projectrequest/ProjectRequestMappers.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/projectrequest/feature_projectrequest.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/scoring/CvScoreController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/skills/SkillsController.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/controllers/skills/dto/SkillInCompanyDto.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/AIResponse.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/AISuggestion.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/CandidateMatchResponse.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/Identifiable.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/ProjectRequest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/ai/AIContentGenerator.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/ai/AIGenerationException.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/ai/AIProvider.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/ai/AIResponseModel.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/candidate/Candidate.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/candidate/ConsultantMatchedEvent.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/candidate/DomainEventListener.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/candidate/Skill.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/candidate/SkillService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/candidate/scoring/CandidateCvScoringService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/consultant/ConsultantAdapter.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/consultant/ConsultantAggregate.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/consultant/CvExtensions.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/consultant/SearchCriteria.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/customer/Customer.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/customer/Project.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/customer/ProjectExistsEvent.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/embedding/EmbeddingProvider.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/event/DomainEvent.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/domain/scoring/CvEvaluation.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/dto/consultants/ConsultantSummaryDto.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/health/AIHealthCheckers.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/health/DependenciesHealthIndicator.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/health/HealthService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/adapters/ConsultantAdapterImpl.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/adapters/ConsultantEntityMappers.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/AISuggstionEntity.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/ConsultantEntity.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/CustomerEntity.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/ProjectRequestEntity.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/SkillEntity.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/consultant/CvEntities.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/consultant/ProjectAssignmentEntity.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/projectrequest/CustomerProjectRequestEntity.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/projectrequest/ProjectRequestRequirementEntity.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/projectrequest/RequirementPriority.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/entities/scoring/CvScoreEntity.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/ai/AIContentGeneratorFactory.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/config/EnvConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/embedding/EmbeddingConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/embedding/GoogleGeminiEmbeddingProvider.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/flowcase/FlowcaseConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/flowcase/FlowcaseHttpClient.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/flowcase/FlowcaseMappers.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/flowcase/FlowcaseResumeDto.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/gemini/GeminiConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/gemini/GeminiHttpClient.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/ollama/OllamaConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/ollama/OllamaHttpClient.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/openai/OpenAIConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/openai/OpenAIHttpClient.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/ConsultantRepository.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/ConsultantSearchRepository.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/ProjectRequestRepository.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/SkillRepository.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/consultant/ConsultantCvRepository.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/consultant/CvRepositories.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/consultant/ProjectAssignmentRepository.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/embedding/CvEmbeddingRepository.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/projectrequest/CustomerProjectRequestRepository.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/projectrequest/ProjectRequestRequirementRepository.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/scoring/CvScoreRepository.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/skills/JdbcProjectSkillFetcher.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/services/SkillServiceImpl.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/web/RequestIdFilter.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/ProjectRequestService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/ai/AIContentAnalysisService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/ai/AIService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/ConsultantCvService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/ConsultantPersistenceService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/ConsultantReadService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/ConsultantSearchService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/ConsultantWithCvService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/CvDataAggregationService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/LiquidityReductionService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/SyncConsultantService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/SyncConsultantsStartupRunner.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/consultants/UpdateConsultantsService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/embedding/CvEmbeddingScheduler.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/embedding/CvEmbeddingService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/embedding/FlowcaseCvTextFlattener.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/matching/CandidateMatchingService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/notification/LoggingNotificationService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/notification/NotificationScheduler.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/notification/NotificationService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/projectrequest/ProjectRequestAnalysisService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/projectrequest/parser/DefaultRequirementParser.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/projectrequest/parser/RequirementParser.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/scoring/CvScoreAppService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/scoring/ScoreCandidateService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/scoring/ScoreCandidateStartupRunner.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/skills/ConsultantSkillReader.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/skills/SkillsService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/service/validation/InputValidationService.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/templates/CustomerRequestPromptTemplate.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/templates/CvReveiewPromptTemlate.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/templates/MatchPromptTemplate.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/templates/TemlatesParams.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/utils/JsonUtils.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/utils/PdfUtils.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/no/cloudberries/candidatematch/utils/Timed.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/Thomas-Andersen_CV.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application-local.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/005-refactor-skills-structure.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db.changelog-master.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db_changelog-1.0.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db_changelog-2.1-consultant.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db_changelog-3.0-embeddings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db_changelog-3.1-indexes.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db_changelog-4.0-cv-score.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db_changelog-5.0-project-request.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db_changelog-6.0-json-to-jsonb.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db_changelog-7.0-cv-text-columns.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db_changelog-8.0-consultant-skills.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/db_changelog-9.0-add_missing_duration_column.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/changelog/schema.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/logback-spring.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/ManuallDataSyncTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/config/EmbeddedPostgresTestConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/config/LiquibaseTestConfiguration.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/config/WebConfig.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/controllers/consultants/ConsultantControllerIntegrationTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/controllers/consultants/ConsultantCvQueryControllerIntegrationTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/controllers/consultants/ConsultantSearchControllerTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/controllers/projectrequest/ProjectRequestControllerTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/controllers/projectrequest/ProjectRequestIntegrationTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/controllers/scoring/CvScoreControllerTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/controllers/skills/SkillsControllerTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/domain/candidate/SkillTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/domain/consultant/CvExtensionsTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/domain/consultant/SearchCriteriaTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/domain/scoring/CvEvaluationParsingTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/health/HealthServiceTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/infrastructure/adapters/ConsultantAdapterImplTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/infrastructure/integration/flowcase/FlowcaseHttpClientIntegrationTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/infrastructure/integration/openai/CandidateMatchingServiceIntegrationTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/infrastructure/repositories/embedding/CvEmbeddingRepositoryIT.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/CandidateMatchingServiceTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/FlowcaseSyncServiceIntegrationTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/FlowcaseSyncServiceTestManuel.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/ProjectRequestServiceTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/consultants/ConsultantSearchServiceTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/consultants/SyncConsultantServiceWorkingTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/notification/LoggingNotificationServiceTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/projectrequest/ProjectRequestAnalysisServiceIntegrationTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/projectrequest/ProjectRequestAnalysisServiceTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/projectrequest/parser/DefaultRequirementParserTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/scoring/CvScoreAppServiceTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/scoring/ScoreCandidateServiceIntegrationTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/skills/SkillsServiceIntegrationTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/no/cloudberries/candidatematch/service/skills/SkillsServiceTest.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/Thomas-Andersen_CV.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/__files/cv_ola_norman.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/__files/cv_tandersen.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/application-integration.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/application-test.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/db/changelog/it_init_pgvector.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/mappings/flowcase-get-cv-200.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/mappings/flowcase-get-cv-tandersen-200.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/mappings/flowcase-get-users-200.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/martin/martin.docx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/martin/martin_cv.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/match-response-template.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/politiet/cv-mal.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/politiet/forespørsel_fra_polititet.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/resources/politiet_arkitektur.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/Review1_task2.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/Review1_task3.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/TASK1_db_mapping_consultant.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/TASK2_controller_mapping_consultant.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/TASK3_implement_vector_database_cvs.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/technolgibarometer/arch_suggest.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/technolgibarometer/flow_teknologibarometer_gullikk.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/technolgibarometer/thomas_forslag.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/data_source_mapping.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-rag-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/ai-rag-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-rag-service/src/main/kotlin/no/cloudberries/ai/rag/DbIngestionService.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ai-rag-service/src/main/kotlin/no/cloudberries/ai/rag/DbIngestionService.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-rag-service/src/main/kotlin/no/cloudberries/ai/rag/RagService.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ai-rag-service/src/main/kotlin/no/cloudberries/ai/rag/RagService.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-rag-service/src/main/kotlin/no/cloudberries/ai/rag/StartupIngestRunner.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ai-rag-service/src/main/kotlin/no/cloudberries/ai/rag/StartupIngestRunner.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/candidate-match/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/candidate-match/openapi.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/openapi.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/chat/AIController.kt" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/chat/AIController.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/chat/feature_chat.md" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/controllers/chat/feature_chat.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/gemini/GeminiConfig.kt" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/gemini/GeminiConfig.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/gemini/GeminiHttpClient.kt" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/src/main/kotlin/no/cloudberries/candidatematch/infrastructure/integration/gemini/GeminiHttpClient.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/candidate-match/src/main/resources/application-local.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/src/main/resources/application-local.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/candidate-match/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/candidate-match/src/main/resources/application.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/weighty-list-422011-p4-2c71c334f4ae.json" beforeDir="false" afterPath="$PROJECT_DIR$/weighty-list-422011-p4-2c71c334f4ae.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../hello-aarasen/src/main/kotlin/no/lsk/helloaarasen/web/GeminiHttpClient.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../hello-aarasen/src/main/kotlin/no/lsk/helloaarasen/web/GeminiHttpClient.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../hello-aarasen/src/main/kotlin/no/lsk/helloaarasen/web/GeminiService.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../hello-aarasen/src/main/kotlin/no/lsk/helloaarasen/web/GeminiService.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../hello-aarasen/src/main/resources/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/../hello-aarasen/src/main/resources/templates/index.html" afterDir="false" />
@@ -2958,12 +2666,13 @@
     "RequestMappingsPanelWidth1": "75",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "Spring Boot.Main.executor": "Run",
     "Spring Boot.TeknologiBarometerApplication.executor": "Run",
-    "git-widget-placeholder": "#4 on refactor/aufo__2",
+    "git-widget-placeholder": "#4 on feat/ai-consultant-search",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/Users/tandersen/git/cloudberries-candidate-match/teknologi-barometer-service",
+    "last_opened_file_path": "/Users/tandersen/git/cloudberries-candidate-match",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -2992,9 +2701,9 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/teknologi-barometer-service" />
       <recent name="$PROJECT_DIR$/teknologi-barometer-service/src/main/resources" />
-      <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/tasks" />
       <recent name="$PROJECT_DIR$/src/main/resources/db/changelog" />
     </key>
@@ -3025,6 +2734,7 @@
         <entry key="SpringBootApplicationConfigurationType">
           <value>
             <map>
+              <entry key="Main" value="STOPPED" />
               <entry key="TeknologiBarometerApplication" value="FAILED" />
             </map>
           </value>
@@ -3040,7 +2750,7 @@
       <method v="2" />
     </configuration>
     <configuration name="CandidateMatchingServiceIntegrationTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <module name="candidate-matcher (1)" />
+      <module name="candidate-match" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="no.cloudberries.candidatematch.infrastructure.integration.openai.*" />
@@ -3056,7 +2766,7 @@
       </method>
     </configuration>
     <configuration name="CandidateMatchingServiceIntegrationTest.matchCandidateGemini (1)" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <module name="candidate-matcher (1)" />
+      <module name="candidate-match" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="no.cloudberries.candidatematch.infrastructure.integration.openai.*" />
@@ -3072,7 +2782,7 @@
       </method>
     </configuration>
     <configuration name="CandidateMatchingServiceIntegrationTest.matchCandidateOpenAI" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <module name="candidate-matcher (1)" />
+      <module name="candidate-match" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="no.cloudberries.candidatematch.infrastructure.integration.openai.*" />
@@ -3087,6 +2797,54 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="candidate-match" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="candidate-match" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <module name="candidate-match" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="Python.FlaskServer">
+      <module name="candidate-match" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="launchJavascriptDebuger" value="false" />
+      <method v="2" />
+    </configuration>
     <configuration name="AiRagServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="ai-rag-service" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="no.cloudberries.ai.AiRagServiceApplication" />
@@ -3097,7 +2855,7 @@
     <configuration name="Main" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <option name="ACTIVE_PROFILES" value="local" />
       <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
-      <module name="candidate-matcher (1)" />
+      <module name="candidate-match" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="no.cloudberries.candidatematch.Main" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -3110,6 +2868,19 @@
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
+    </configuration>
+    <configuration default="true" type="Tox" factoryName="Tox">
+      <module name="candidate-match" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <method v="2" />
     </configuration>
     <list>
       <item itemvalue="HTTP Request.generated-requests | #24" />
@@ -3152,7 +2923,7 @@
       <workItem from="1758929215119" duration="10274000" />
       <workItem from="1758942729170" duration="56000" />
       <workItem from="1758942801237" duration="1121000" />
-      <workItem from="1758943948268" duration="6868000" />
+      <workItem from="1758943948268" duration="12114000" />
     </task>
     <task id="LOCAL-00001" summary="chore(cors): update allowed origins to use port 5175 for local and networked access">
       <option name="closed" value="true" />
@@ -3352,6 +3123,12 @@
           <url>jar://$MAVEN_REPOSITORY$/org/springframework/ai/spring-ai-model/1.1.0-M2/spring-ai-model-1.1.0-M2-sources.jar!/org/springframework/ai/model/ModelDescription.java</url>
           <line>25</line>
           <option name="timeStamp" value="33" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="kotlin-field">
+          <url>file://$PROJECT_DIR$/ai-rag-service/src/main/kotlin/no/cloudberries/ai/rag/DbIngestionService.kt</url>
+          <line>11</line>
+          <properties myFieldName="vectorStore" myClassName="no.cloudberries.ai.rag.DbIngestionService" />
+          <option name="timeStamp" value="37" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

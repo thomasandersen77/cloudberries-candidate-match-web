@@ -14,8 +14,6 @@ class GeminiHttpClient(
     private val logger = KotlinLogging.logger {}
     private val client: Client by lazy {
         Client.builder()
-            //.location("us-central1") // <-- LEGG TIL DENNE LINJEN
-            //.project("weighty-list-422011-p4")
             .apiKey(geminiConfig.apiKey)
             .build()
     }
@@ -27,12 +25,16 @@ class GeminiHttpClient(
         }
         val modelId = geminiConfig.model.ifBlank { "gemini-1.5-pro" }
         return runCatching {
-            val response = client.models.generateContent(modelId, "are you up? answer yes or no", null)
+            val response = client.models.generateContent(
+                modelId,
+                "are you up? answer yes or no",
+                null
+            )
             response?.text()?.lowercase()?.contains("yes") ?: false
         }.getOrElse {
             logger.error(it) {
                 "Gemini connection test failed. Check model id '${geminiConfig.model}'. " +
-                    "Ensure it exists and is available in your region/project."
+                        "Ensure it exists and is available in your region/project."
             }
             false
         }
@@ -51,10 +53,16 @@ class GeminiHttpClient(
                 val errorMessage = "Failed to generate content with Gemini"
                 logger.error(e) { errorMessage }
                 if (e is AIGenerationException) throw e
-                throw AIGenerationException(errorMessage, e)
+                throw AIGenerationException(
+                    errorMessage,
+                    e
+                )
             }
         }.getOrElse { e ->
-            throw AIGenerationException("Failed to generate content with Gemini", e)
+            throw AIGenerationException(
+                "Failed to generate content with Gemini",
+                e
+            )
         }
     }
 

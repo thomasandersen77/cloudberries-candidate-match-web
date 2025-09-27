@@ -1,7 +1,7 @@
 package no.cloudberries.ai.rag
 
 import org.springframework.ai.chat.client.ChatClient
-import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor
 import org.springframework.ai.document.Document
 import org.springframework.ai.vectorstore.SearchRequest
 import org.springframework.ai.vectorstore.VectorStore
@@ -43,9 +43,9 @@ class RagService(
             .build()
 
         val answer = chatClient
-            .prompt()
+            .prompt(message)
             .advisors(qaAdvisor)
-            .user(message)
+            .user { it.text(message) }
             .call()
             .content()
 
@@ -53,7 +53,10 @@ class RagService(
         val docs = vectorStore.similaritySearch(searchReq)
         val sources = docs.map { it.toSourceDocument() }
 
-        return ChatResult(answer = answer, sources = sources)
+        return ChatResult(
+            answer = answer!!,
+            sources = sources
+        )
     }
 
     fun ingestCv(candidateId: Long, name: String?, cvText: String): Int {
@@ -64,14 +67,17 @@ class RagService(
         if (!name.isNullOrBlank()) {
             metadata["name"] = name
         }
-        val doc = Document(cvText, metadata)
+        val doc = Document(
+            cvText,
+            metadata
+        )
         vectorStore.add(listOf(doc))
         return 1
     }
 
     private fun Document.toSourceDocument(): SourceDocument = SourceDocument(
-        id = this.id.orElse(null),
-        contentPreview = this.content.take(200),
+        id = this.id,
+        contentPreview = text!!.take(200),
         metadata = this.metadata
     )
 }

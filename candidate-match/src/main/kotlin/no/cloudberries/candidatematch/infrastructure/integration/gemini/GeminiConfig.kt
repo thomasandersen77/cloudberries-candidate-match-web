@@ -8,4 +8,5 @@ import org.springframework.context.annotation.Configuration
 class GeminiConfig {
     lateinit var apiKey: String
     lateinit var model: String
+    lateinit var quickModel: String
 }

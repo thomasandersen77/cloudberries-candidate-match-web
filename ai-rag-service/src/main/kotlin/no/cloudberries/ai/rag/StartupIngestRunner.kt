@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 @Component
 class StartupIngestRunner(
     private val dbIngestionService: DbIngestionService,
-    @Value("\${rag.ingest.on-start:false}") private val onStart: Boolean
+    @param:Value("\${rag.ingest.on-start:false}") private val onStart: Boolean
 ) : CommandLineRunner {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -17,7 +17,11 @@ class StartupIngestRunner(
         if (onStart) {
             log.info("rag.ingest.on-start=true -> starting DB ingestion...")
             val report = dbIngestionService.ingestAll()
-            log.info("DB ingestion complete: rowsProcessed={}, chunksAdded={}", report.rowsProcessed, report.chunksAdded)
+            log.info(
+                "DB ingestion complete: rowsProcessed={}, chunksAdded={}",
+                report.rowsProcessed,
+                report.chunksAdded
+            )
         } else {
             log.info("rag.ingest.on-start is false -> skipping automatic DB ingestion")
         }

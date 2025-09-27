@@ -11,12 +11,12 @@ class DbIngestionService(
     private val jdbcTemplate: JdbcTemplate,
     private val vectorStore: VectorStore,
     private val tokenChunker: TokenChunker,
-    @Value("\${rag.ingest.sql:}") private val sql: String,
-    @Value("\${rag.ingest.id-column:candidate_id}") private val idColumn: String,
-    @Value("\${rag.ingest.name-column:candidate_name}") private val nameColumn: String,
-    @Value("\${rag.ingest.text-column:cv_text}") private val textColumn: String,
-    @Value("\${rag.ingest.chunk.max-tokens:400}") private val maxTokens: Int,
-    @Value("\${rag.ingest.chunk.overlap-tokens:50}") private val overlapTokens: Int
+    @param:Value("\${rag.ingest.sql:}") private val sql: String,
+    @param:Value("\${rag.ingest.id-column:candidate_id}") private val idColumn: String,
+    @param:Value("\${rag.ingest.name-column:candidate_name}") private val nameColumn: String,
+    @param:Value("\${rag.ingest.text-column:cv_text}") private val textColumn: String,
+    @param:Value("\${rag.ingest.chunk.max-tokens:400}") private val maxTokens: Int,
+    @param:Value("\${rag.ingest.chunk.overlap-tokens:50}") private val overlapTokens: Int
 ) {
     data class IngestReport(val rowsProcessed: Int, val chunksAdded: Int)
 
@@ -31,7 +31,11 @@ class DbIngestionService(
             val name = rs.getString(nameColumn)
             val text = rs.getString(textColumn) ?: ""
             if (text.isNotBlank()) {
-                val parts = tokenChunker.chunk(text, maxTokens, overlapTokens)
+                val parts = tokenChunker.chunk(
+                    text,
+                    maxTokens,
+                    overlapTokens
+                )
                 val docs = parts.mapIndexed { idx, chunk ->
                     val meta = linkedMapOf<String, Any>(
                         "type" to "cv",
@@ -40,7 +44,11 @@ class DbIngestionService(
                         "chunkIndex" to idx
                     )
                     val docId = "cv:${id}:${idx}"
-                    Document(docId, chunk, meta)
+                    Document(
+                        docId,
+                        chunk,
+                        meta
+                    )
                 }
                 if (docs.isNotEmpty()) {
                     vectorStore.add(docs)
@@ -49,6 +57,9 @@ class DbIngestionService(
                 rows++
             }
         }
-        return IngestReport(rowsProcessed = rows, chunksAdded = chunks)
+        return IngestReport(
+            rowsProcessed = rows,
+            chunksAdded = chunks
+        )
     }
 }

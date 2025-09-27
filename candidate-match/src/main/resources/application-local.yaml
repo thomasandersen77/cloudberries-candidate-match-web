@@ -3,7 +3,7 @@ flowcase:
   baseUrl: ${FLOWCASE_BASE_URL}
 openai:
   apiKey: ${OPENAI_API_KEY}
-  model: gpt-4
+  model: gpt-5
   assistantId: ${OPENAI_ASSISTANT_ID}
 gemini:
   apiKey: ${GEMINI_API_KEY}
@@ -14,7 +14,29 @@ embedding:
   model: text-embedding-004
   dimension: 768
 ai:
-  provider: OLLAMA
+  provider: GEMINI
+  models:
+    interpretation: gemini-2.5-flash
+    generation_default: gemini-2.5-flash
+    generation_quality: gemini-2.5-pro
+    embeddings: text-embedding-004
+  timeouts:
+    interpretation: 1500  # 1.5s for fast query classification
+    generation: 3000     # 3s for answer generation
+    retrieval: 150       # 150ms for vector retrieval
+  rag:
+    enabled: true
+    chunk_size: 700
+    chunk_overlap: 100
+    top_k_chunks: 8
+  semantic:
+    enabled: true
+  hybrid:
+    enabled: true
+    semantic_weight: 0.6
+    quality_weight: 0.4
+  streaming:
+    enabled: false  # Enable later when UI supports it
   ollama:
     base-url: http://localhost:11434
     model: llama3.2:1b

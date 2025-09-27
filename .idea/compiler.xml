@@ -7,7 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="teknologi-barometer-service" />
-        <module name="candidate-matcher (1)" />
+        <module name="candidate-match" />
         <module name="ai-rag-service" />
       </profile>
     </annotationProcessing>
