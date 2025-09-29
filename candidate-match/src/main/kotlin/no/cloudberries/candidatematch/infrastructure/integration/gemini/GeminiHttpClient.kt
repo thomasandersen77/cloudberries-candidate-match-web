@@ -42,12 +42,13 @@ class GeminiHttpClient(
 
     override fun generateContent(prompt: String): AIResponse {
         runCatching {
-            logger.debug { "Requesting content generation from Gemini." }
+            logger.info { "Requesting content generation from Gemini. Model '${geminiConfig.model}" }
+            val modelUsed = geminiConfig.model.ifBlank { "gemini-1.5-pro" }
             try {
                 val content = fetchAndCleanGeminiResponse(prompt)
                 return AIResponse(
                     content = content,
-                    modelUsed = geminiConfig.model.ifBlank { "gemini-1.5-pro" }
+                    modelUsed = modelUsed
                 )
             } catch (e: Exception) {
                 val errorMessage = "Failed to generate content with Gemini"
@@ -57,7 +58,7 @@ class GeminiHttpClient(
                     errorMessage,
                     e
                 )
-            }
+            }.also { logger.info { "Gemini Model ${modelUsed ?: "default"} generated content: $it" } }
         }.getOrElse { e ->
             throw AIGenerationException(
                 "Failed to generate content with Gemini",

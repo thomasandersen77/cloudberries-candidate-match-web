@@ -23,7 +23,7 @@ data class ChatSearchRequest(
     @Schema(
         description = "Force a specific search mode",
         example = "structured",
-        allowableValues = ["structured", "semantic", "hybrid", "rag"]
+        allowableValues = ["STRUCTURED", "SEMANTIC", "HYBRID", "RAG"]
     )
     val forceMode: SearchMode? = null,
 

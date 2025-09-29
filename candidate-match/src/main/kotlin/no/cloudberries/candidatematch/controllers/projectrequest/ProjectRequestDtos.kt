@@ -37,26 +37,26 @@ data class PagedProjectRequestResponseDto(
 data class CreateProjectRequestDto(
     @field:NotBlank(message = "Customer name is required")
     val customerName: String,
-    
+
     @field:NotNull(message = "Required skills are required")
-    val requiredSkills: List<Skill>,
-    
+    var requiredSkills: List<Skill>,
+
     @field:NotNull(message = "Start date is required")
-    val startDate: LocalDateTime,
-    
+    var startDate: LocalDateTime,
+
     @field:NotNull(message = "End date is required")
-    val endDate: LocalDateTime,
-    
+    var endDate: LocalDateTime,
+
     @field:NotNull(message = "Response deadline is required")
-    val responseDeadline: LocalDateTime,
-    
+    var responseDeadline: LocalDateTime,
+
     val status: RequestStatus? = null,
-    
+
     @field:NotBlank(message = "Request description is required")
-    val requestDescription: String,
-    
+    var requestDescription: String,
+
     @field:NotBlank(message = "Responsible salesperson email is required")
-    @field:Email(message = "Valid email is required")
+    @field:Email(message = "varid email is required")
     val responsibleSalespersonEmail: String
 )
 

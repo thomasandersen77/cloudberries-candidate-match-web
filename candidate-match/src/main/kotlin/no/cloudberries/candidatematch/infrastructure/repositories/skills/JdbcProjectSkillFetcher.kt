@@ -33,14 +33,14 @@ class JdbcProjectSkillFetcher(
         } else {
             val inClause = normalizedFilters.joinToString(",") { "?" }
             val sql = "$sqlBase where upper(trim(ps.skill)) in ($inClause)"
-            jdbcTemplate.query(sql, normalizedFilters.toTypedArray()) { rs, _ ->
+            jdbcTemplate.query(sql,  { rs, _ ->
                 SkillAggregateRow(
                     skillName = rs.getString("skill_name").trim(),
                     userId = rs.getString("user_id"),
                     name = rs.getString("name"),
                     defaultCvId = rs.getString("default_cv_id"),
                 )
-            }
+            }, *normalizedFilters.toTypedArray())
         }
         return rows.distinctBy { it.skillName.uppercase() to it.userId }
     }

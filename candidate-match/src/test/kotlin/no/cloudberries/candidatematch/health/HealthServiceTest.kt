@@ -6,7 +6,8 @@ import io.mockk.verify
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
 import no.cloudberries.candidatematch.infrastructure.integration.flowcase.FlowcaseHttpClient
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -37,7 +38,10 @@ class HealthServiceTest {
         // Oppretter en ny instans av HealthService med de mockede avhengighetene
         healthService = HealthService(
             flowcaseHttpClient = flowcaseHttpClient,
-            aiHealthCheckers = listOf(aiHealthChecker1, aiHealthChecker2),
+            aiHealthCheckers = listOf(
+                aiHealthChecker1,
+                aiHealthChecker2
+            ),
             entityManager = entityManager
         )
     }
@@ -45,7 +49,12 @@ class HealthServiceTest {
     @Test
     fun `isDatabaseHealthy returnerer true når database er tilgjengelig`() {
         // Arrange: Simulerer at databasekallet lykkes
-        every { query.setHint("jakarta.persistence.query.timeout", 5000).singleResult } returns 1
+        every {
+            query.setHint(
+                "jakarta.persistence.query.timeout",
+                5000
+            ).singleResult
+        } returns 1
 
         // Act: Kaller metoden
         val isHealthy = healthService.isDatabaseHealthy()
@@ -57,7 +66,12 @@ class HealthServiceTest {
     @Test
     fun `isDatabaseHealthy returnerer false når databasekall feiler`() {
         // Arrange: Simulerer at databasekallet kaster en exception
-        every { query.setHint("jakarta.persistence.query.timeout", 5000).singleResult } throws RuntimeException("Database connection error")
+        every {
+            query.setHint(
+                "jakarta.persistence.query.timeout",
+                5000
+            ).singleResult
+        } throws RuntimeException("Database connection error")
 
         // Act: Kaller metoden
         val isHealthy = healthService.isDatabaseHealthy()
@@ -110,7 +124,12 @@ class HealthServiceTest {
     fun `checkOverallHealth returnerer true når alle avhengigheter er sunne`() {
         // Arrange: Alle systemer er "go"
         every { flowcaseHttpClient.checkHealth() } returns true
-        every { query.setHint("jakarta.persistence.query.timeout", 5000).singleResult } returns 1
+        every {
+            query.setHint(
+                "jakarta.persistence.query.timeout",
+                5000
+            ).singleResult
+        } returns 1
         every { aiHealthChecker1.isConfigured() } returns true
         every { aiHealthChecker1.isHealthy() } returns true
 

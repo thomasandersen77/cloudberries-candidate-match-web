@@ -207,6 +207,21 @@ class ConsultantSearchRepository(
     }
 
     /**
+     * Data class implementation of ConsultantFlatView for easier instantiation
+     */
+    private data class ConsultantFlatViewImpl(
+        private val id: Long,
+        private val userId: String,
+        private val name: String,
+        private val cvId: String
+    ) : ConsultantFlatView {
+        override fun getId(): Long = id
+        override fun getUserId(): String = userId
+        override fun getName(): String = name
+        override fun getCvId(): String = cvId
+    }
+
+    /**
      * Helper method to execute paged queries
      */
     private fun executePagedQuery(
@@ -220,26 +235,67 @@ class ConsultantSearchRepository(
     ): Page<ConsultantFlatView> {
         logger.info { "executePagedQuery started" }
 
+        val sqlClauses = buildSqlClauses(
+            whereConditions,
+            pageable
+        )
+        val totalElements = executeCountQuery(
+            baseSelect,
+            joinClause,
+            sqlClauses,
+            parameters
+        )
+        val consultants = executeDataQuery(
+            baseSelect,
+            joinClause,
+            sqlClauses,
+            parameters,
+            pageable
+        )
+
+        logger.info { "Data query returned ${consultants.size} consultants" }
+        return PageImpl(
+            consultants,
+            pageable,
+            totalElements
+        )
+    }
+
+    private data class SqlClauses(
+        val whereClause: String,
+        val orderByClause: String
+    )
+
+    private fun buildSqlClauses(whereConditions: List<String>, pageable: Pageable): SqlClauses {
         val whereClause = if (whereConditions.isNotEmpty()) {
             "WHERE " + whereConditions.joinToString(" AND ")
         } else ""
 
-        val orderBy = if (pageable.sort.isSorted) {
+        val orderByClause = if (pageable.sort.isSorted) {
             "ORDER BY " + pageable.sort.map { "${it.property} ${it.direction}" }.joinToString(", ")
         } else {
             "ORDER BY c.name"
         }
 
-        // Count query for pagination
+        return SqlClauses(
+            whereClause,
+            orderByClause
+        )
+    }
+
+    private fun executeCountQuery(
+        baseSelect: String,
+        joinClause: String,
+        sqlClauses: SqlClauses,
+        parameters: List<Any>
+    ): Long {
         val countSql = """
-            SELECT COUNT(*) FROM (
-                $baseSelect 
-                $joinClause 
-                $whereClause 
-                $groupByClause 
-                $havingClause
-            ) as counted
-        """.trimIndent()
+        SELECT COUNT(*) FROM (
+            $baseSelect 
+            $joinClause 
+            ${sqlClauses.whereClause}
+        ) as counted
+    """.trimIndent()
 
         logger.info { "About to execute count query: $countSql with parameters: $parameters" }
         val totalElements = jdbcTemplate.queryForObject(
@@ -248,45 +304,41 @@ class ConsultantSearchRepository(
             Long::class.java
         ) ?: 0L
         logger.info { "Count query returned: $totalElements" }
+        return totalElements
+    }
 
-        // Data query with pagination
+    private fun executeDataQuery(
+        baseSelect: String,
+        joinClause: String,
+        sqlClauses: SqlClauses,
+        parameters: List<Any>,
+        pageable: Pageable
+    ): List<ConsultantFlatView> {
         val dataSql = """
-            $baseSelect 
-            $joinClause 
-            $whereClause 
-            $groupByClause 
-            $havingClause 
-            $orderBy 
-            LIMIT ? OFFSET ?
-        """.trimIndent()
+        $baseSelect 
+        $joinClause 
+        ${sqlClauses.whereClause}
+        ${sqlClauses.orderByClause}
+        LIMIT ? OFFSET ?
+    """.trimIndent()
 
-        val dataParameters = parameters.toMutableList()
-        dataParameters.add(pageable.pageSize)
-        dataParameters.add(pageable.offset)
+        val dataParameters = parameters.toMutableList().apply {
+            add(pageable.pageSize)
+            add(pageable.offset)
+        }
 
         logger.info { "About to execute data query: $dataSql with parameters: $dataParameters" }
-        val consultants: List<ConsultantFlatView> = jdbcTemplate.query(dataSql, dataParameters.toTypedArray()) { rs, _ ->
-            // Eagerly extract all values while ResultSet is open
-            val id = rs.getLong("id")
-            val userId = rs.getString("user_id")
-            val name = rs.getString("name")
-            val cvId = rs.getString("cv_id")
-            
-            // Return object with captured values (no lazy ResultSet access)
-            object : ConsultantFlatView {
-                override fun getId(): Long = id
-                override fun getUserId(): String = userId
-                override fun getName(): String = name
-                override fun getCvId(): String = cvId
-            }
+        return jdbcTemplate.query(
+            dataSql,
+            dataParameters.toTypedArray()
+        ) { rs, _ ->
+            ConsultantFlatViewImpl(
+                id = rs.getLong("id"),
+                userId = rs.getString("user_id"),
+                name = rs.getString("name"),
+                cvId = rs.getString("cv_id")
+            )
         } ?: emptyList()
-
-        logger.info { "Data query returned ${consultants.size} consultants" }
-        return PageImpl(
-            consultants,
-            pageable,
-            totalElements
-        )
     }
 }
 

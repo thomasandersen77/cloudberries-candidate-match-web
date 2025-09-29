@@ -57,8 +57,8 @@ spring:
     contexts: pgvector
   datasource:
     url: jdbc:postgresql://localhost:5433/candidatematch
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    username: ${POSTGRES_USER:candidatematch}
+    password: ${POSTGRES_PASSWORD:candidatematch123}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -66,6 +66,8 @@ spring:
       idle-timeout: 300000 # 5 minxutes
       connection-timeout: 5000 # 5 seconds
       schema: public
+      data-source-properties:
+        sslmode: disable
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
