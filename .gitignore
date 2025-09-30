@@ -4,3 +4,9 @@ UPSERT_IMPLEMENTATION_SUMMARY.md
 .idea/
 WARP.md
 
+# IntelliJ IDEA
+*.iml
+*.ipr
+*.iws
+.run/
+out/
