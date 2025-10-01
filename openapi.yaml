@@ -552,6 +552,57 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /api/matches/requests:
+    get:
+      tags: [ Matches ]
+      summary: List project requests (uploaded customer documents) with coverage info
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 0, minimum: 0 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+        - in: query
+          name: sort
+          schema: { type: string, default: "uploadedAt,desc" }
+      responses:
+        '200':
+          description: Paged list of requests with coverage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedMatchesListDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/matches/requests/{id}/top-consultants:
+    get:
+      tags: [ Matches ]
+      summary: Get top consultants for a request (AI-enriched)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer, default: 5, minimum: 1, maximum: 10 }
+      responses:
+        '200':
+          description: Top consultants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchConsultantDto'
+        '404':
+          description: Project request not found
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /api/project-requests:
     get:
       tags: [ Project Requests ]
@@ -869,6 +920,66 @@ components:
             $ref: '#/components/schemas/Problem'
 
   schemas:
+    CoverageStatus:
+      type: string
+      enum: [ GREEN, YELLOW, RED, NEUTRAL ]
+
+    MatchesListItemDto:
+      type: object
+      required: [ id, hitCount, coverageStatus, coverageLabel ]
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+          nullable: true
+        customerName:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date-time
+          nullable: true
+        deadlineDate:
+          type: string
+          format: date-time
+          nullable: true
+        hitCount:
+          type: integer
+          format: int64
+        coverageStatus:
+          $ref: '#/components/schemas/CoverageStatus'
+        coverageLabel:
+          type: string
+
+    PagedMatchesListDto:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/MatchesListItemDto' }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+        currentPage: { type: integer }
+        pageSize: { type: integer }
+        hasNext: { type: boolean }
+        hasPrevious: { type: boolean }
+
+    MatchConsultantDto:
+      type: object
+      required: [ userId, name, cvId, relevanceScore ]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        cvId: { type: string }
+        relevanceScore:
+          type: number
+          format: double
+        justification:
+          type: string
+          nullable: true
+
     RelationalSearchRequest:
       type: object
       properties:

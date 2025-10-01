@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Chip, CircularProgress, Container, IconButton, Link as MuiLink, Paper, Stack, Tooltip, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { listMatchRequests, getTopConsultantsForRequest, type PagedMatchRequestList, type TopConsultantDto, type CoverageStatus } from '../../services/matchesRequestsService';
+import { listMatchRequests, getTopConsultantsForRequest } from '../../services/matchesRequestsService';
+import type { PagedMatchesListDto, MatchConsultantDto, CoverageStatus } from '../../types/api';
 import { Link as RouterLink } from 'react-router-dom';
 
 // Helper to decide coverage color/status from count
@@ -26,10 +27,10 @@ function getCoverageFromStatus(status?: CoverageStatus | null, label?: string | 
 }
 
 const MatchesPage: React.FC = () => {
-  const [page, setPage] = useState<PagedMatchRequestList | null>(null);
+  const [page, setPage] = useState<PagedMatchesListDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
-  const [top5, setTop5] = useState<Record<number, TopConsultantDto[] | 'loading' | 'error'>>({});
+  const [top5, setTop5] = useState<Record<number, MatchConsultantDto[] | 'loading' | 'error'>>({});
   const [pageSize, setPageSize] = useState<number>(20);
 
   const loadPage = async (pageIndex: number) => {
@@ -105,7 +106,7 @@ const MatchesPage: React.FC = () => {
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between">
                 <Box sx={{ flex: 1, minWidth: 260 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    {pr.title || pr.summary || pr.originalFilename || `Forespørsel #${id}`}
+                    {pr.title || `Forespørsel #${id}`}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {pr.customerName ? `${pr.customerName} • ` : ''}
@@ -140,15 +141,15 @@ const MatchesPage: React.FC = () => {
                   )}
                   {Array.isArray(top5[id!]) && (
                     <Stack spacing={1}>
-                      {((top5[id!] as TopConsultantDto[])
+                      {((top5[id!] as MatchConsultantDto[])
                         .slice()
-                        .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
+                        .sort((a, b) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0))
                         .slice(0, 5)
                       ).map((s, i) => (
                         <Paper key={i} sx={{ p: 1 }}>
                           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ sm: 'center' }}>
                             <Typography variant="body2">
-                              <b>{s.consultantName}</b>{typeof s.matchScore === 'number' ? ` • score ${s.matchScore.toFixed(1)}` : ''}
+                              <b>{s.name}</b>{typeof s.relevanceScore === 'number' ? ` • score ${s.relevanceScore.toFixed(2)}` : ''}
                             </Typography>
                             <Stack direction="row" spacing={1}>
                               {s.userId && (
@@ -159,11 +160,7 @@ const MatchesPage: React.FC = () => {
                               )}
                             </Stack>
                           </Stack>
-                          <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
-                            {(s.skills ?? []).map((sk, skIdx) => (
-                              <Chip key={skIdx} size="small" label={sk} variant="outlined" />
-                            ))}
-                          </Stack>
+                          {/* skills kan komme fra AISuggestionDto; MatchConsultantDto har ikke skills */}
                           {s.justification && (
                             <Tooltip title={s.justification} placement="bottom-start">
                               <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }} color="text.secondary">

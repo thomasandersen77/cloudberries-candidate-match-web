@@ -71,3 +71,9 @@ export type QueryInterpretation = components['schemas']['QueryInterpretation'];
 export type StructuredCriteria = components['schemas']['StructuredCriteria'];
 export type ConfidenceScores = components['schemas']['ConfidenceScores'];
 export type ScoringInfo = components['schemas']['ScoringInfo'];
+
+// Matches domain types (from OpenAPI)
+export type CoverageStatus = components['schemas']['CoverageStatus'];
+export type MatchesListItemDto = components['schemas']['MatchesListItemDto'];
+export type PagedMatchesListDto = components['schemas']['PagedMatchesListDto'];
+export type MatchConsultantDto = components['schemas']['MatchConsultantDto'];

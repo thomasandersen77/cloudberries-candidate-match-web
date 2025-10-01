@@ -178,12 +178,31 @@ const ConsultantsListPage: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Derived filtered list
+  // Industries filter state
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const industryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of consultants) {
+      for (const cv of c.cvs ?? []) {
+        for (const ind of cv.industries ?? []) {
+          if (typeof ind === 'string' && ind.trim().length > 0) set.add(ind);
+        }
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'no'));
+  }, [consultants]);
+
+  // Derived filtered list (name + industries)
   const filteredConsultants = useMemo(() => {
     const q = nameFilter.trim().toLowerCase();
-    if (!q) return consultants;
-    return consultants.filter(c => c.name.toLowerCase().includes(q));
-  }, [consultants, nameFilter]);
+    return consultants.filter(c => {
+      const nameMatch = !q || c.name.toLowerCase().includes(q);
+      if (!nameMatch) return false;
+      if (selectedIndustries.length === 0) return true;
+      const cvIndustries = (c.cvs ?? []).flatMap(cv => cv.industries ?? []);
+      return selectedIndustries.some(ind => cvIndustries.includes(ind));
+    });
+  }, [consultants, nameFilter, selectedIndustries]);
 
   const pagedConsultants = useMemo(() => {
     const start = page * rowsPerPage;
@@ -331,6 +350,29 @@ const ConsultantsListPage: React.FC = () => {
         >
           {filteredConsultants.length} av {consultants.length} konsulenter
         </Typography>
+      </Stack>
+
+      {/* Industries filter */}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }} alignItems={{ xs: 'stretch', sm: 'center' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 120 }}>Industries:</Typography>
+        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+          {industryOptions.map(opt => (
+            <Chip
+              key={opt}
+              label={opt}
+              size="small"
+              variant={selectedIndustries.includes(opt) ? 'filled' : 'outlined'}
+              color={selectedIndustries.includes(opt) ? 'primary' : 'default'}
+              onClick={() => {
+                setSelectedIndustries(prev => prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]);
+                setPage(0);
+              }}
+            />
+          ))}
+          {industryOptions.length === 0 && (
+            <Typography variant="caption" color="text.secondary">Ingen industries funnet</Typography>
+          )}
+        </Box>
       </Stack>
 
       {loading ? (

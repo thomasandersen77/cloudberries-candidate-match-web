@@ -844,6 +844,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/matches/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List project requests (uploaded customer documents) with coverage info */
+        get: {
+            parameters: {
+                query?: {
+                    page?: number;
+                    size?: number;
+                    sort?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Paged list of requests with coverage */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PagedMatchesListDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/matches/requests/{id}/top-consultants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get top consultants for a request (AI-enriched) */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Top consultants */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchConsultantDto"][];
+                    };
+                };
+                /** @description Project request not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/project-requests": {
         parameters: {
             query?: never;
@@ -1349,6 +1438,40 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        CoverageStatus: "GREEN" | "YELLOW" | "RED" | "NEUTRAL";
+        MatchesListItemDto: {
+            /** Format: int64 */
+            id: number;
+            title?: string | null;
+            customerName?: string | null;
+            /** Format: date-time */
+            date?: string | null;
+            /** Format: date-time */
+            deadlineDate?: string | null;
+            /** Format: int64 */
+            hitCount: number;
+            coverageStatus: components["schemas"]["CoverageStatus"];
+            coverageLabel: string;
+        };
+        PagedMatchesListDto: {
+            content?: components["schemas"]["MatchesListItemDto"][];
+            /** Format: int64 */
+            totalElements?: number;
+            totalPages?: number;
+            currentPage?: number;
+            pageSize?: number;
+            hasNext?: boolean;
+            hasPrevious?: boolean;
+        };
+        MatchConsultantDto: {
+            userId: string;
+            name: string;
+            cvId: string;
+            /** Format: double */
+            relevanceScore: number;
+            justification?: string | null;
+        };
         RelationalSearchRequest: {
             /** @description Name filter (contains match) */
             name?: string;

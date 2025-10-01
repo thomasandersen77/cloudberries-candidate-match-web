@@ -23,7 +23,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {searchChat} from '../../services/chatService';
 import { listConsultants, listConsultantCvs, getConsultantByUserId } from '../../services/consultantsService';
-import type {ChatSearchRequest, ChatSearchResponse, DebugInfo, SearchResult, ConsultantSummaryDto} from '../../types/api';
+import type {ChatSearchRequest, ChatSearchResponse, DebugInfo, SearchResult, ConsultantSummaryDto, ScoringInfo} from '../../types/api';
 
 // Helpers
 const DELAYED_SPINNER_MS = 500;
@@ -146,7 +146,7 @@ const ChatSearchTab = () => {
     const isRag = response?.mode === 'RAG';
     const items: SearchResult[] = useMemo(() => response?.results ?? [], [response]);
     const debug: DebugInfo | undefined = response?.debug;
-    const scoring = response?.scoring as any;
+    const scoring: ScoringInfo | undefined = response?.scoring as ScoringInfo | undefined;
 
     const startSpinnerTimer = () => {
         if (spinnerTimer.current) clearTimeout(spinnerTimer.current);
