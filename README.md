@@ -121,14 +121,24 @@ Se mer detaljer i `openapi.yaml` i dette repoet.
 - `openapi.yaml` i dette repoet speiler backendens REST-kontrakt.
 - Typer genereres inn i `src/api/generated.ts` og re-eksporteres fra `src/types/api.ts` for konsistens i resten av koden.
 - Når backend endres:
-  1. Eksporter ny spesifikasjon fra backend: 
+  1. Kopier oppdatert spesifikasjon fra backend (per prosjektregler):
      ```bash path=null start=null
-     curl -s http://localhost:8080/v3/api-docs.yaml > openapi.yaml
+     cp ~/git/cloudberries-candidate-match/candidate-match/openapi.yaml ~/git/cloudberries-candidate-match-web/openapi.yaml
      ```
   2. Regenerer typer: 
      ```bash path=null start=null
      npm run gen:api
      ```
+  3. Test at endringene ikke introduserer type-feil:
+     ```bash path=null start=null
+     npm run build
+     ```
+
+#### Viktige API-endringer
+- **consultantId og chunkId**: Endret fra UUID-format til rene string-typer (oktober 2024)
+  - Årsak: userId i systemet er ikke nødvendigvis gyldige UUID-er
+  - Dette påvirker `SearchResult.consultantId` og `RAGSource.consultantId/chunkId`
+  - Frontend-koden behandlet disse som strenger allerede, så ingen kodeendringer var nødvendig
 
 ### Miljøvariabler
 - `VITE_API_BASE_URL` (default: `http://localhost:8080`)
