@@ -4,6 +4,8 @@ Frontend-appen for Cloudberries Candidate Match. Denne webklienten lar deg:
 - Se liste over konsulenter, og åpne detaljer/CV
 - Se aggregerte ferdigheter (skills) i firma, filtrere på utvalgte ferdigheter, og markere «beste» konsulenter (topp 3) pr. skill basert på nylig CV-score
 - Se og trigge CV-scoring for én kandidat eller for alle
+- **🆕 AI-drevet chat-søk** med støtte for konversasjonshistorikk og multiple søkemodi (STRUCTURED, SEMANTIC, HYBRID, RAG)
+- **🆕 Avansert matches-håndtering** med dekningsanalyse og AI-anbefaling av topp konsulenter
 - Kjøres mot Candidate Match API definert i OpenAPI (openapi.yaml) i dette repoet
 
 ## Innhold
@@ -29,6 +31,15 @@ Frontend-appen for Cloudberries Candidate Match. Denne webklienten lar deg:
   - Handlinger:
     - «Score på nytt» (én kandidat)
     - «Kjør scoring for alle» (alle konsulenter)
+- **🆕 AI Chat-søk**
+  - Naturlig språk-søk med automatisk routing til beste søkemodus
+  - Konversasjonshistorikk med `conversationId` for oppfølgingsspørsmål
+  - Støtte for konsulent-spesifikke spørsmål med RAG (Retrieval Augmented Generation)
+  - Debug-informasjon og timing-data for analyse
+- **🆕 Matches med dekningsanalyse**
+  - Liste over prosjektforespørsler med fargekodede dekningsstatus (GREEN/YELLOW/RED)
+  - AI-anbefalte topp konsulenter for hver forespørsel med relevanscore og begrunnelse
+  - Expanderbar visning av topp 5 konsulenter per forespørsel
 
 ---
 
@@ -87,15 +98,19 @@ flowchart TD
 | `/api/consultants` | GET | Paginert liste over konsulenter (navnefilter) |
 | `/api/consultants/sync/run` | POST | Trigger manuell synk fra kilde (Flowcase) |
 | `/api/consultants/search` | POST | Relasjonelt søk (strukturerte filtre) |
-| `/api/consultants/search/semantic` | POST | Semantisk (vektor) søk │
-| `/api/cv/{userId}` | GET | Hent rå CV-data for konsulent |
+|| `/api/consultants/search/semantic` | POST | Semantisk (vektor) søk |
+|| **`/api/chatbot/search`** | **POST** | **🆕 AI-drevet søk med naturlig språk og konversasjonshistorikk** |
+|| **`/api/chatbot/analyze`** | **POST** | **🆕 Analyser innhold med AI** |
+|| `/api/cv/{userId}` | GET | Hent rå CV-data for konsulent |
 | `/api/embeddings/run/jason` | POST | Demo: generer embeddings for «Jason» |
 | `/api/embeddings/run?userId&cvId` | POST | Generer embeddings for spesifikk bruker/CV |
 | `/api/embeddings/run/missing` | POST | Batch: generer manglende embeddings |
 | `/api/health` | GET | Helsesjekk |
 | `/api/matches` | POST | Finn kandidatmatcher fra prosjektbeskrivelse |
 | `/api/matches/upload` | POST | Last opp PDF og finn matcher |
-| `/api/matches/by-skills` | POST | Finn matcher basert på skills-liste |
+|| `/api/matches/by-skills` | POST | Finn matcher basert på skills-liste |
+|| **`/api/matches/requests`** | **GET** | **🆕 Liste prosjektforespørsler med dekningsinfo** |
+|| **`/api/matches/requests/{id}/top-consultants`** | **GET** | **🆕 Hent AI-anbefalte topp konsulenter for forespørsel** |
 | `/api/project-requests/upload` | POST | Last opp kundens prosjektforespørsel (PDF), trekk ut krav via AI |
 | `/api/project-requests/{id}` | GET | Hent lagret prosjektforespørsel |
 | `/api/cv-score/{candidateId}` | GET | Hent CV-score for kandidat |
@@ -139,6 +154,14 @@ Se mer detaljer i `openapi.yaml` i dette repoet.
   - Årsak: userId i systemet er ikke nødvendigvis gyldige UUID-er
   - Dette påvirker `SearchResult.consultantId` og `RAGSource.consultantId/chunkId`
   - Frontend-koden behandlet disse som strenger allerede, så ingen kodeendringer var nødvendig
+- **🆕 AI Chat Search med konversasjonsstøtte** (oktober 2024)
+  - `/api/chatbot/search` støtter nå `conversationId` for konversasjonshistorikk
+  - Multiple søkemodi: STRUCTURED, SEMANTIC, HYBRID, RAG
+  - Konsulent-spesifikke spørsmål med `consultantId` og `cvId` parametere
+- **🆕 Matches API utvidelser** (oktober 2024)
+  - `/api/matches/requests` - liste prosjektforespørsler med dekningsanalyse
+  - `/api/matches/requests/{id}/top-consultants` - AI-anbefalte konsulenter
+  - Ny `CoverageStatus` enum (GREEN, YELLOW, RED, NEUTRAL) for dekningsvisualisering
 
 ### Miljøvariabler
 - `VITE_API_BASE_URL` (default: `http://localhost:8080`)
