@@ -85,6 +85,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chatbot/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * AI-powered consultant search
+         * @description Search consultants using natural language with intelligent routing to STRUCTURED, SEMANTIC, HYBRID, or RAG search modes
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ChatSearchRequest"];
+                };
+            };
+            responses: {
+                /** @description Search results with AI interpretation */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChatSearchResponse"];
+                    };
+                };
+                /** @description Invalid request parameters */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/consultants": {
         parameters: {
             query?: never;
@@ -205,6 +256,94 @@ export interface paths {
                     content: {
                         "application/json": components["schemas"]["PageConsultantWithCvDto"];
                     };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/consultants/{userId}/cvs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List CVs for a consultant by userId */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description If true, include only the active CV */
+                    onlyActiveCv?: boolean;
+                };
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Consultant CVs */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConsultantCvDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/consultants/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get consultant summary by userId */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Consultant summary */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConsultantSummaryDto"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 default: components["responses"]["ErrorResponse"];
             };
@@ -672,30 +811,81 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List stored customer project requests (compact) */
+        /** List stored customer project requests with pagination */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Page number (0-based) */
+                    page?: number;
+                    /** @description Number of items per page */
+                    size?: number;
+                    /** @description Sort specification (field,direction) */
+                    sort?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description Project requests */
+                /** @description Paged project requests */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ProjectRequestResponseDto"][];
+                        "application/json": components["schemas"]["PagedProjectRequestResponseDto"];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
             };
         };
         put?: never;
-        post?: never;
+        /** Create a new project request */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /** @example {
+                     *       "customerName": "Acme Corp AS",
+                     *       "requiredSkills": [
+                     *         "KOTLIN",
+                     *         "JAVA"
+                     *       ],
+                     *       "startDate": "2024-04-01T09:00:00",
+                     *       "endDate": "2024-10-01T17:00:00",
+                     *       "responseDeadline": "2024-03-15T17:00:00",
+                     *       "requestDescription": "We need a senior backend developer for a 6-month project using Kotlin and Spring Boot.",
+                     *       "responsibleSalespersonEmail": "sales@acme.com"
+                     *     } */
+                    "application/json": components["schemas"]["CreateProjectRequestDto"];
+                };
+            };
+            responses: {
+                /** @description Project request created successfully */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectRequestDto"];
+                    };
+                };
+                /** @description Invalid request data */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -711,7 +901,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Upload and analyze a customer project request PDF */
+        /**
+         * Upload and analyze a customer project request PDF
+         * @description Uploads a PDF document and uses AI to extract structured information including:
+         *     - Customer name from the document
+         *     - Project summary and requirements
+         *     - MUST vs SHOULD requirements categorization
+         *     - Project deadline (if mentioned)
+         *     - Upload timestamp tracking
+         *
+         */
         post: {
             parameters: {
                 query?: never;
@@ -728,12 +927,49 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Extracted project request */
+                /** @description Extracted project request with AI-analyzed structure */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
+                        /** @example {
+                         *       "id": 123,
+                         *       "customerName": "Acme Corporation AS",
+                         *       "title": "Senior Kotlin Developer - Mobile Platform",
+                         *       "summary": "Project for developing a new mobile banking application using Kotlin and modern Android architecture. Requires experienced developer with strong backend integration skills.",
+                         *       "originalFilename": "project-request-acme-mobile.pdf",
+                         *       "uploadedAt": "2024-10-01T10:30:00Z",
+                         *       "deadlineDate": "2024-12-15T00:00:00Z",
+                         *       "mustRequirements": [
+                         *         {
+                         *           "name": "5+ years experience with Kotlin/Android development",
+                         *           "details": null
+                         *         },
+                         *         {
+                         *           "name": "Experience with REST API integration",
+                         *           "details": null
+                         *         },
+                         *         {
+                         *           "name": "Knowledge of Material Design principles",
+                         *           "details": null
+                         *         }
+                         *       ],
+                         *       "shouldRequirements": [
+                         *         {
+                         *           "name": "Experience with Jetpack Compose",
+                         *           "details": null
+                         *         },
+                         *         {
+                         *           "name": "Familiarity with CI/CD pipelines",
+                         *           "details": null
+                         *         },
+                         *         {
+                         *           "name": "Previous fintech application experience",
+                         *           "details": null
+                         *         }
+                         *       ]
+                         *     } */
                         "application/json": components["schemas"]["ProjectRequestResponseDto"];
                     };
                 };
@@ -775,6 +1011,144 @@ export interface paths {
                     };
                 };
                 /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/project-requests/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Close a project request */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Project request closed successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectRequestDto"];
+                    };
+                };
+                /** @description Project request not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/project-requests/{id}/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger AI analysis for a project request */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Analysis completed successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectRequestDto"];
+                    };
+                };
+                /** @description Project request not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/project-requests/{id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get AI suggestions for a project request */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description AI suggestions for the project request */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AISuggestionDto"][];
+                    };
+                };
+                /** @description Project request not found */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -949,6 +1323,7 @@ export interface components {
              * @default false
              */
             onlyActiveCv: boolean;
+            pagination?: components["schemas"]["PaginationDto"];
         };
         SemanticSearchRequest: {
             /** @description Natural language search text */
@@ -975,6 +1350,7 @@ export interface components {
              * @default false
              */
             onlyActiveCv: boolean;
+            pagination?: components["schemas"]["PaginationDto"];
         };
         EmbeddingProviderInfo: {
             /** @description Whether semantic search is available */
@@ -1037,6 +1413,7 @@ export interface components {
             userId: string;
             name: string;
             cvId: string;
+            /** @description Top 3 skills for the consultant when available */
             skills: string[];
             cvs: components["schemas"]["ConsultantCvDto"][];
         };
@@ -1187,16 +1564,107 @@ export interface components {
         ProjectRequestResponseDto: {
             /** Format: int64 */
             id?: number;
+            /** @description Customer name extracted from the document */
             customerName?: string;
+            /** @description Title/subject derived from the document */
             title?: string;
+            /** @description AI-generated summary of the project request */
             summary?: string;
+            /** @description Original filename of the uploaded PDF */
             originalFilename?: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when the document was uploaded
+             */
+            uploadedAt?: string;
+            /**
+             * Format: date-time
+             * @description Project deadline extracted from the document (if available)
+             */
+            deadlineDate?: string;
+            /** @description Critical requirements that must be met */
             mustRequirements?: components["schemas"]["ProjectRequirementDto"][];
+            /** @description Preferred requirements that would be beneficial */
             shouldRequirements?: components["schemas"]["ProjectRequirementDto"][];
         };
         ProjectRequirementDto: {
             name: string;
             details?: string;
+        };
+        PagedProjectRequestResponseDto: {
+            content?: components["schemas"]["ProjectRequestResponseDto"][];
+            /** Format: int64 */
+            totalElements?: number;
+            totalPages?: number;
+            currentPage?: number;
+            pageSize?: number;
+            hasNext?: boolean;
+            hasPrevious?: boolean;
+        };
+        CreateProjectRequestDto: {
+            customerName: string;
+            requiredSkills: ("KOTLIN" | "JAVA" | "PYTHON" | "JAVASCRIPT" | "TYPESCRIPT" | "REACT" | "ANGULAR" | "VUE" | "SPRING_BOOT" | "BACKEND" | "FRONTEND" | "FULLSTACK" | "AZURE" | "AWS" | "DOCKER" | "KUBERNETES")[];
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: string;
+            /** Format: date-time */
+            responseDeadline: string;
+            /**
+             * @default OPEN
+             * @enum {string}
+             */
+            status: "OPEN" | "IN_PROGRESS" | "CLOSED";
+            requestDescription: string;
+            /** Format: email */
+            responsibleSalespersonEmail: string;
+        };
+        ProjectRequestDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            customerId?: number;
+            customerName: string;
+            requiredSkills: string[];
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: string;
+            /** Format: date-time */
+            responseDeadline: string;
+            /** @enum {string} */
+            status: "OPEN" | "IN_PROGRESS" | "CLOSED";
+            requestDescription: string;
+            /** Format: email */
+            responsibleSalespersonEmail: string;
+            aiSuggestions?: components["schemas"]["AISuggestionDto"][];
+        };
+        AISuggestionDto: {
+            /** Format: int64 */
+            id?: number;
+            consultantName: string;
+            userId: string;
+            cvId: string;
+            /** Format: double */
+            matchScore: number;
+            justification: string;
+            /** Format: date-time */
+            createdAt: string;
+            skills?: string[];
+        };
+        PaginationDto: {
+            /**
+             * @description Page number (0-indexed)
+             * @default 0
+             */
+            page: number;
+            /**
+             * @description Number of items per page
+             * @default 10
+             */
+            size: number;
+            /** @description Sort specifications (e.g. "name,asc", "id,desc") */
+            sort?: string[];
         };
         /** @description Generic error payload */
         Problem: {
@@ -1204,6 +1672,208 @@ export interface components {
             error?: string;
             message?: string;
             path?: string;
+        };
+        ChatSearchRequest: {
+            /**
+             * @description Optional conversation ID to maintain context
+             * @example conv-123
+             */
+            conversationId?: string;
+            /**
+             * @description Optional consultant userId to target the query (used to bias or provide RAG context)
+             * @example thomas.andersen
+             */
+            consultantId?: string;
+            /**
+             * @description Optional CV/resume id for the selected consultant; used to include CV JSON as context to the AI
+             * @example default
+             */
+            cvId?: string;
+            /**
+             * @description Natural language search text
+             * @example Find consultants who know Kotlin and Spring
+             */
+            text: string;
+            /**
+             * @description Force a specific search mode
+             * @example STRUCTURED
+             * @enum {string}
+             */
+            forceMode?: "STRUCTURED" | "SEMANTIC" | "HYBRID" | "RAG";
+            /**
+             * @description Maximum number of results to return
+             * @default 10
+             * @example 10
+             */
+            topK: number;
+        };
+        ChatSearchResponse: {
+            /**
+             * @description Search mode used
+             * @example STRUCTURED
+             * @enum {string}
+             */
+            mode: "STRUCTURED" | "SEMANTIC" | "HYBRID" | "RAG";
+            /** @description Search results (for structured/semantic/hybrid modes) */
+            results?: components["schemas"]["SearchResult"][];
+            /**
+             * @description Generated answer text (for RAG mode)
+             * @example Based on the consultant's CV...
+             */
+            answer?: string;
+            /** @description Sources used for RAG answers */
+            sources?: components["schemas"]["RAGSource"][];
+            /**
+             * @description Response time in milliseconds
+             * @example 1250
+             */
+            latencyMs: number;
+            /** @description Optional debug information */
+            debug?: components["schemas"]["DebugInfo"];
+            /** @description Conversation ID for follow-up queries */
+            conversationId?: string;
+        };
+        SearchResult: {
+            /**
+             * Format: uuid
+             * @description Consultant ID
+             */
+            consultantId: string;
+            /**
+             * @description Consultant name
+             * @example Thomas Andersen
+             */
+            name: string;
+            /**
+             * Format: double
+             * @description Relevance score (0-1)
+             * @example 0.87
+             */
+            score: number;
+            /** @description Text highlights from matching */
+            highlights?: string[];
+            /** @description Additional metadata */
+            meta?: {
+                [key: string]: unknown;
+            };
+        };
+        RAGSource: {
+            /**
+             * Format: uuid
+             * @description Consultant ID
+             */
+            consultantId: string;
+            /** @description Consultant name */
+            consultantName: string;
+            /**
+             * Format: uuid
+             * @description Chunk ID
+             */
+            chunkId: string;
+            /** @description Source text excerpt */
+            text: string;
+            /**
+             * Format: double
+             * @description Relevance score
+             * @example 0.92
+             */
+            score: number;
+            /**
+             * @description CV section location
+             * @example Experience
+             */
+            location?: string;
+        };
+        DebugInfo: {
+            /** @description Query interpretation details */
+            interpretation?: components["schemas"]["QueryInterpretation"];
+            /** @description Timing breakdown */
+            timings?: {
+                [key: string]: number;
+            };
+            /** @description Additional debug data */
+            extra?: {
+                [key: string]: unknown;
+            };
+        };
+        QueryInterpretation: {
+            /**
+             * @description Determined search route
+             * @example STRUCTURED
+             * @enum {string}
+             */
+            route: "STRUCTURED" | "SEMANTIC" | "HYBRID" | "RAG";
+            /** @description Extracted structured search criteria */
+            structured?: components["schemas"]["StructuredCriteria"];
+            /**
+             * @description Semantic search text
+             * @example experienced fullstack developer
+             */
+            semanticText?: string;
+            /**
+             * @description Detected consultant name
+             * @example Thomas Andersen
+             */
+            consultantName?: string;
+            /**
+             * @description RAG question
+             * @example What is his experience with React?
+             */
+            question?: string;
+            /** @description Confidence scores for the interpretation */
+            confidence: components["schemas"]["ConfidenceScores"];
+        };
+        StructuredCriteria: {
+            /**
+             * @description Skills that must all be present
+             * @example [
+             *       "kotlin",
+             *       "spring"
+             *     ]
+             */
+            skillsAll?: string[];
+            /**
+             * @description Skills where at least one must be present
+             * @example [
+             *       "architecture",
+             *       "tech lead"
+             *     ]
+             */
+            skillsAny?: string[];
+            /**
+             * @description Required roles or positions
+             * @example [
+             *       "senior developer",
+             *       "tech lead"
+             *     ]
+             */
+            roles?: string[];
+            /**
+             * @description Minimum quality score
+             * @example 85
+             */
+            minQualityScore?: number;
+            /** @description Location requirements */
+            locations?: string[];
+            /**
+             * @description Availability requirements
+             * @example available
+             */
+            availability?: string;
+        };
+        ConfidenceScores: {
+            /**
+             * Format: double
+             * @description Confidence in route selection (0-1)
+             * @example 0.87
+             */
+            route: number;
+            /**
+             * Format: double
+             * @description Confidence in criteria extraction (0-1)
+             * @example 0.92
+             */
+            extraction: number;
         };
     };
     responses: {
@@ -1233,14 +1903,7 @@ export type $defs = Record<string, never>;
 export interface operations {
     searchConsultantsRelational: {
         parameters: {
-            query?: {
-                /** @description Page number (0-indexed) */
-                page?: components["parameters"]["PageParam"];
-                /** @description Page size */
-                size?: components["parameters"]["SizeParam"];
-                /** @description Sort field(s), e.g. `name,asc`. Repeat for multi-sort. */
-                sort?: components["parameters"]["SortParam"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -1256,7 +1919,14 @@ export interface operations {
                  *         "BACKEND"
                  *       ],
                  *       "minQualityScore": 70,
-                 *       "onlyActiveCv": true
+                 *       "onlyActiveCv": true,
+                 *       "pagination": {
+                 *         "page": 0,
+                 *         "size": 10,
+                 *         "sort": [
+                 *           "name,asc"
+                 *         ]
+                 *       }
                  *     } */
                 "application/json": components["schemas"]["RelationalSearchRequest"];
             };
@@ -1283,14 +1953,7 @@ export interface operations {
     };
     searchConsultantsSemantic: {
         parameters: {
-            query?: {
-                /** @description Page number (0-indexed) */
-                page?: components["parameters"]["PageParam"];
-                /** @description Page size */
-                size?: components["parameters"]["SizeParam"];
-                /** @description Sort field(s), e.g. `name,asc`. Repeat for multi-sort. */
-                sort?: components["parameters"]["SortParam"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -1303,7 +1966,14 @@ export interface operations {
                  *       "model": "text-embedding-004",
                  *       "topK": 5,
                  *       "minQualityScore": 80,
-                 *       "onlyActiveCv": true
+                 *       "onlyActiveCv": true,
+                 *       "pagination": {
+                 *         "page": 0,
+                 *         "size": 10,
+                 *         "sort": [
+                 *           "name,asc"
+                 *         ]
+                 *       }
                  *     } */
                 "application/json": components["schemas"]["SemanticSearchRequest"];
             };

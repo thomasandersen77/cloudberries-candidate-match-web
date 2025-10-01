@@ -30,6 +30,10 @@ export type CvScoreDto = components['schemas']['CvScoreDto'];
 // Project Request typer
 export type ProjectRequirementDto = components['schemas']['ProjectRequirementDto'];
 export type ProjectRequestResponseDto = components['schemas']['ProjectRequestResponseDto'];
+export type ProjectRequestDto = components['schemas']['ProjectRequestDto'];
+export type CreateProjectRequestDto = components['schemas']['CreateProjectRequestDto'];
+export type PagedProjectRequestResponseDto = components['schemas']['PagedProjectRequestResponseDto'];
+export type AISuggestionDto = components['schemas']['AISuggestionDto'];
 
 // Skills aggregate
 export type SkillInCompanyDto = components['schemas']['SkillInCompanyDto'];
@@ -56,3 +60,13 @@ export type AttachmentDto = components['schemas']['AttachmentDto'];
 export type RelationalSearchRequest = components['schemas']['RelationalSearchRequest'];
 export type SemanticSearchRequest = components['schemas']['SemanticSearchRequest'];
 export type Skill = components['schemas']['Skill'];
+
+// Chat AI Search types
+export type ChatSearchRequest = components['schemas']['ChatSearchRequest'];
+export type ChatSearchResponse = components['schemas']['ChatSearchResponse'];
+export type SearchResult = components['schemas']['SearchResult'];
+export type RAGSource = components['schemas']['RAGSource'];
+export type DebugInfo = components['schemas']['DebugInfo'];
+export type QueryInterpretation = components['schemas']['QueryInterpretation'];
+export type StructuredCriteria = components['schemas']['StructuredCriteria'];
+export type ConfidenceScores = components['schemas']['ConfidenceScores'];

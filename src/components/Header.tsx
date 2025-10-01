@@ -15,7 +15,7 @@ const Header: React.FC = () => {
     return (
         <AppBar position="static" color="transparent" elevation={0} sx={{borderBottom: '1px solid #e0e0e0'}}>
             <Toolbar>
-                <Avatar sx={{bgcolor: '#c17005', mr: 2}}>TA</Avatar>
+                <Avatar sx={{bgcolor: 'primary.main', mr: 2}}>TA</Avatar>
                 <Typography variant="h6" component="div" sx={{flexGrow: 1}}>
                     Cloudberries<br/>
                     <span style={{fontWeight: '300'}}>Intelligent Skill Search and Matching Platform</span>
@@ -53,9 +53,13 @@ const Header: React.FC = () => {
                     <MenuItem component={RouterLink} to="/chat" onClick={handleMenuClose}>Chat Analyze</MenuItem>
                     <MenuItem component={RouterLink} to="/health" onClick={handleMenuClose}>Helse</MenuItem>
                     <MenuItem component={RouterLink} to="/search" onClick={handleMenuClose}>Søk</MenuItem>
+                    <MenuItem component={RouterLink} to="/search/semantic" onClick={handleMenuClose}>Semantisk Søk</MenuItem>
                     <Divider />
                     <MenuItem component={RouterLink} to="/project-requests/upload" onClick={handleMenuClose}>
                         Last opp kundeforspørsel (PDF)
+                    </MenuItem>
+                    <MenuItem component={RouterLink} to="/project-requests/new" onClick={handleMenuClose}>
+                        Ny kundeforspørsel
                     </MenuItem>
                 </Menu>
             </Toolbar>

@@ -29,6 +29,8 @@ tags:
     description: Candidate matching
   - name: CV Scoring
     description: CV scoring utilities
+  - name: Project Requests
+    description: Customer project request management and analysis
 
 paths:
   /api/skills:
@@ -74,6 +76,59 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AIResponseModel'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/chatbot/search:
+    post:
+      tags: [ Chat ]
+      summary: AI-powered consultant search
+      description: Search consultants using natural language with intelligent routing to STRUCTURED, SEMANTIC, HYBRID, or RAG search modes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatSearchRequest'
+            examples:
+              structured:
+                summary: Structured search example
+                value:
+                  text: "Find consultants who know Kotlin and Spring"
+                  topK: 10
+              semantic:
+                summary: Semantic search example  
+                value:
+                  text: "Experienced fullstack developer who can mentor juniors"
+                  topK: 5
+              forced_mode:
+                summary: Forced mode example
+                value:
+                  text: "Java developer"
+                  forceMode: "SEMANTIC"
+                  topK: 3
+              rag:
+                summary: RAG search example
+                value:
+                  text: "Tell me about Thomas Andersen's experience with React"
+                  topK: 5
+              targeted:
+                summary: Target a specific consultant and CV
+                value:
+                  consultantId: "thomas.andersen"
+                  cvId: "default"
+                  text: "Summarize key React experience and recent roles"
+                  forceMode: "RAG"
+                  topK: 3
+      responses:
+        '200':
+          description: Search results with AI interpretation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSearchResponse'
+        '400':
+          description: Invalid request parameters
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -147,6 +202,57 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /api/consultants/{userId}/cvs:
+    get:
+      tags: [ Consultants ]
+      summary: List CVs for a consultant by userId
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: onlyActiveCv
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: If true, include only the active CV
+      responses:
+        '200':
+          description: Consultant CVs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsultantCvDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/consultants/{userId}:
+    get:
+      tags: [ Consultants ]
+      summary: Get consultant summary by userId
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Consultant summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultantSummaryDto'
+        '404':
+          description: Not found
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /api/consultants/sync/run:
     post:
       tags: [ Consultants ]
@@ -176,10 +282,6 @@ paths:
       tags: [ Consultants ]
       summary: Relational search for consultants
       operationId: searchConsultantsRelational
-      parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/SizeParam'
-        - $ref: '#/components/parameters/SortParam'
       requestBody:
         required: true
         content:
@@ -192,6 +294,10 @@ paths:
               skillsAny: [ "BACKEND" ]
               minQualityScore: 70
               onlyActiveCv: true
+              pagination:
+                page: 0
+                size: 10
+                sort: [ "name,asc" ]
       responses:
         '200':
           description: Paged consultants matching filters
@@ -210,10 +316,6 @@ paths:
       summary: Semantic (vector) search for consultants
       operationId: searchConsultantsSemantic
       description: Embeds the provided text using the configured EmbeddingProvider and performs pgvector similarity search.
-      parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/SizeParam'
-        - $ref: '#/components/parameters/SortParam'
       requestBody:
         required: true
         content:
@@ -227,6 +329,10 @@ paths:
               topK: 5
               minQualityScore: 80
               onlyActiveCv: true
+              pagination:
+                page: 0
+                size: 10
+                sort: [ "name,asc" ]
       responses:
         '200':
           description: Top-K semantically similar consultants
@@ -429,16 +535,61 @@ paths:
   /api/project-requests:
     get:
       tags: [ Project Requests ]
-      summary: List stored customer project requests (compact)
+      summary: List stored customer project requests with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+          description: Page number (0-based)
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 20
+          description: Number of items per page
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: "id,desc"
+          description: Sort specification (field,direction)
       responses:
         '200':
-          description: Project requests
+          description: Paged project requests
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ProjectRequestResponseDto'
+                $ref: '#/components/schemas/PagedProjectRequestResponseDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+    post:
+      tags: [ Project Requests ]
+      summary: Create a new project request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequestDto'
+            example:
+              customerName: "Acme Corp AS"
+              requiredSkills: ["KOTLIN", "JAVA"]
+              startDate: "2024-04-01T09:00:00"
+              endDate: "2024-10-01T17:00:00"
+              responseDeadline: "2024-03-15T17:00:00"
+              requestDescription: "We need a senior backend developer for a 6-month project using Kotlin and Spring Boot."
+              responsibleSalespersonEmail: "sales@acme.com"
+      responses:
+        '201':
+          description: Project request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRequestDto'
+        '400':
+          description: Invalid request data
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -446,6 +597,13 @@ paths:
     post:
       tags: [ Project Requests ]
       summary: Upload and analyze a customer project request PDF
+      description: |
+        Uploads a PDF document and uses AI to extract structured information including:
+        - Customer name from the document
+        - Project summary and requirements
+        - MUST vs SHOULD requirements categorization
+        - Project deadline (if mentioned)
+        - Upload timestamp tracking
       requestBody:
         required: true
         content:
@@ -459,11 +617,33 @@ paths:
                   format: binary
       responses:
         '200':
-          description: Extracted project request
+          description: Extracted project request with AI-analyzed structure
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectRequestResponseDto'
+              example:
+                id: 123
+                customerName: "Acme Corporation AS"
+                title: "Senior Kotlin Developer - Mobile Platform"
+                summary: "Project for developing a new mobile banking application using Kotlin and modern Android architecture. Requires experienced developer with strong backend integration skills."
+                originalFilename: "project-request-acme-mobile.pdf"
+                uploadedAt: "2024-10-01T10:30:00Z"
+                deadlineDate: "2024-12-15T00:00:00Z"
+                mustRequirements:
+                  - name: "5+ years experience with Kotlin/Android development"
+                    details: null
+                  - name: "Experience with REST API integration"
+                    details: null
+                  - name: "Knowledge of Material Design principles"
+                    details: null
+                shouldRequirements:
+                  - name: "Experience with Jetpack Compose"
+                    details: null
+                  - name: "Familiarity with CI/CD pipelines"
+                    details: null
+                  - name: "Previous fintech application experience"
+                    details: null
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -487,6 +667,77 @@ paths:
                 $ref: '#/components/schemas/ProjectRequestResponseDto'
         '404':
           description: Not found
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+  
+  /api/project-requests/{id}/close:
+    put:
+      tags: [ Project Requests ]
+      summary: Close a project request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Project request closed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRequestDto'
+        '404':
+          description: Project request not found
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+  
+  /api/project-requests/{id}/analyze:
+    post:
+      tags: [ Project Requests ]
+      summary: Trigger AI analysis for a project request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRequestDto'
+        '404':
+          description: Project request not found
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+  
+  /api/project-requests/{id}/suggestions:
+    get:
+      tags: [ Project Requests ]
+      summary: Get AI suggestions for a project request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: AI suggestions for the project request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AISuggestionDto'
+        '404':
+          description: Project request not found
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -623,6 +874,8 @@ components:
           type: boolean
           default: false
           description: Only include active CVs
+        pagination:
+          $ref: '#/components/schemas/PaginationDto'
 
     SemanticSearchRequest:
       type: object
@@ -654,6 +907,8 @@ components:
           type: boolean
           default: false
           description: Only include active CVs
+        pagination:
+          $ref: '#/components/schemas/PaginationDto'
 
     EmbeddingProviderInfo:
       type: object
@@ -768,6 +1023,8 @@ components:
           type: string
         skills:
           type: array
+          description: Top 3 skills for the consultant when available
+          maxItems: 3
           items:
             type: string
         cvs:
@@ -1060,20 +1317,34 @@ components:
           format: int64
         customerName:
           type: string
+          description: Customer name extracted from the document
         title:
           type: string
+          description: Title/subject derived from the document
         summary:
           type: string
+          description: AI-generated summary of the project request
         originalFilename:
           type: string
+          description: Original filename of the uploaded PDF
+        uploadedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the document was uploaded
+        deadlineDate:
+          type: string
+          format: date-time
+          description: Project deadline extracted from the document (if available)
         mustRequirements:
           type: array
           items:
             $ref: '#/components/schemas/ProjectRequirementDto'
+          description: Critical requirements that must be met
         shouldRequirements:
           type: array
           items:
             $ref: '#/components/schemas/ProjectRequirementDto'
+          description: Preferred requirements that would be beneficial
 
     ProjectRequirementDto:
       type: object
@@ -1083,6 +1354,145 @@ components:
           type: string
         details:
           type: string
+
+    PagedProjectRequestResponseDto:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectRequestResponseDto'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        currentPage:
+          type: integer
+        pageSize:
+          type: integer
+        hasNext:
+          type: boolean
+        hasPrevious:
+          type: boolean
+
+    CreateProjectRequestDto:
+      type: object
+      required: [ customerName, requiredSkills, startDate, endDate, responseDeadline, requestDescription, responsibleSalespersonEmail ]
+      properties:
+        customerName:
+          type: string
+          minLength: 1
+        requiredSkills:
+          type: array
+          items:
+            type: string
+            enum: [ KOTLIN, JAVA, PYTHON, JAVASCRIPT, TYPESCRIPT, REACT, ANGULAR, VUE, SPRING_BOOT, BACKEND, FRONTEND, FULLSTACK, AZURE, AWS, DOCKER, KUBERNETES ]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        responseDeadline:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [ OPEN, IN_PROGRESS, CLOSED ]
+          default: OPEN
+        requestDescription:
+          type: string
+          minLength: 1
+        responsibleSalespersonEmail:
+          type: string
+          format: email
+
+    ProjectRequestDto:
+      type: object
+      required: [ customerName, requiredSkills, startDate, endDate, responseDeadline, status, requestDescription, responsibleSalespersonEmail ]
+      properties:
+        id:
+          type: integer
+          format: int64
+        customerId:
+          type: integer
+          format: int64
+        customerName:
+          type: string
+        requiredSkills:
+          type: array
+          items:
+            type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        responseDeadline:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [ OPEN, IN_PROGRESS, CLOSED ]
+        requestDescription:
+          type: string
+        responsibleSalespersonEmail:
+          type: string
+          format: email
+        aiSuggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AISuggestionDto'
+
+    AISuggestionDto:
+      type: object
+      required: [ consultantName, userId, cvId, matchScore, justification, createdAt ]
+      properties:
+        id:
+          type: integer
+          format: int64
+        consultantName:
+          type: string
+        userId:
+          type: string
+        cvId:
+          type: string
+        matchScore:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 100.0
+        justification:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        skills:
+          type: array
+          items:
+            type: string
+
+    PaginationDto:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Page number (0-indexed)
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+          description: Number of items per page
+        sort:
+          type: array
+          items:
+            type: string
+          description: Sort specifications (e.g. "name,asc", "id,desc")
 
     Problem:
       type: object
@@ -1096,3 +1506,244 @@ components:
           type: string
         path:
           type: string
+
+    # AI Chat Search Schemas
+    
+    ChatSearchRequest:
+      type: object
+      required:
+        - text
+      properties:
+        conversationId:
+          type: string
+          description: Optional conversation ID to maintain context
+          example: "conv-123"
+        consultantId:
+          type: string
+          description: Optional consultant userId to target the query (used to bias or provide RAG context)
+          example: "thomas.andersen"
+        cvId:
+          type: string
+          description: Optional CV/resume id for the selected consultant; used to include CV JSON as context to the AI
+          example: "default"
+        text:
+          type: string
+          description: Natural language search text
+          example: "Find consultants who know Kotlin and Spring"
+        forceMode:
+          type: string
+          enum: ["STRUCTURED", "SEMANTIC", "HYBRID", "RAG"]
+          description: Force a specific search mode
+          example: "STRUCTURED"
+        topK:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+          description: Maximum number of results to return
+          example: 10
+
+    ChatSearchResponse:
+      type: object
+      required:
+        - mode
+        - latencyMs
+      properties:
+        mode:
+          type: string
+          enum: ["STRUCTURED", "SEMANTIC", "HYBRID", "RAG"]
+          description: Search mode used
+          example: "STRUCTURED"
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+          description: Search results (for structured/semantic/hybrid modes)
+        answer:
+          type: string
+          description: Generated answer text (for RAG mode)
+          example: "Based on the consultant's CV..."
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/RAGSource'
+          description: Sources used for RAG answers
+        latencyMs:
+          type: integer
+          description: Response time in milliseconds
+          example: 1250
+        debug:
+          $ref: '#/components/schemas/DebugInfo'
+          description: Optional debug information
+        conversationId:
+          type: string
+          description: Conversation ID for follow-up queries
+
+    SearchResult:
+      type: object
+      required:
+        - consultantId
+        - name
+        - score
+      properties:
+        consultantId:
+          type: string
+          format: uuid
+          description: Consultant ID
+        name:
+          type: string
+          description: Consultant name
+          example: "Thomas Andersen"
+        score:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Relevance score (0-1)
+          example: 0.87
+        highlights:
+          type: array
+          items:
+            type: string
+          description: Text highlights from matching
+        meta:
+          type: object
+          additionalProperties: true
+          description: Additional metadata
+
+    RAGSource:
+      type: object
+      required:
+        - consultantId
+        - consultantName
+        - chunkId
+        - text
+        - score
+      properties:
+        consultantId:
+          type: string
+          format: uuid
+          description: Consultant ID
+        consultantName:
+          type: string
+          description: Consultant name
+        chunkId:
+          type: string
+          format: uuid
+          description: Chunk ID
+        text:
+          type: string
+          description: Source text excerpt
+        score:
+          type: number
+          format: double
+          description: Relevance score
+          example: 0.92
+        location:
+          type: string
+          description: CV section location
+          example: "Experience"
+
+    DebugInfo:
+      type: object
+      properties:
+        interpretation:
+          $ref: '#/components/schemas/QueryInterpretation'
+          description: Query interpretation details
+        timings:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Timing breakdown
+        extra:
+          type: object
+          additionalProperties: true
+          description: Additional debug data
+
+    QueryInterpretation:
+      type: object
+      required:
+        - route
+        - confidence
+      properties:
+        route:
+          type: string
+          enum: ["STRUCTURED", "SEMANTIC", "HYBRID", "RAG"]
+          description: Determined search route
+          example: "STRUCTURED"
+        structured:
+          $ref: '#/components/schemas/StructuredCriteria'
+          description: Extracted structured search criteria
+        semanticText:
+          type: string
+          description: Semantic search text
+          example: "experienced fullstack developer"
+        consultantName:
+          type: string
+          description: Detected consultant name
+          example: "Thomas Andersen"
+        question:
+          type: string
+          description: RAG question
+          example: "What is his experience with React?"
+        confidence:
+          $ref: '#/components/schemas/ConfidenceScores'
+          description: Confidence scores for the interpretation
+
+    StructuredCriteria:
+      type: object
+      properties:
+        skillsAll:
+          type: array
+          items:
+            type: string
+          description: Skills that must all be present
+          example: ["kotlin", "spring"]
+        skillsAny:
+          type: array
+          items:
+            type: string
+          description: Skills where at least one must be present
+          example: ["architecture", "tech lead"]
+        roles:
+          type: array
+          items:
+            type: string
+          description: Required roles or positions
+          example: ["senior developer", "tech lead"]
+        minQualityScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Minimum quality score
+          example: 85
+        locations:
+          type: array
+          items:
+            type: string
+          description: Location requirements
+        availability:
+          type: string
+          description: Availability requirements
+          example: "available"
+
+    ConfidenceScores:
+      type: object
+      required:
+        - route
+        - extraction
+      properties:
+        route:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Confidence in route selection (0-1)
+          example: 0.87
+        extraction:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Confidence in criteria extraction (0-1)
+          example: 0.92

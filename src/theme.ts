@@ -3,10 +3,11 @@ import { createTheme } from '@mui/material/styles';
 const theme = createTheme({
   palette: {
     mode: 'light',
-    primary: { main: '#FFA726' }, // light orange
-    secondary: { main: '#424242' }, // dark grey
-    background: { default: '#FFFFFF', paper: '#FFFFFF' }, // white
-    text: { primary: '#111111', secondary: '#555555' }, // black + grey
+    primary: { main: '#D32F2F' }, // red
+    secondary: { main: '#1976D2' }, // blue
+    success: { main: '#2E7D32' }, // green (buttons)
+    background: { default: '#F5F9FF', paper: '#FFFFFF' }, // light blue background, white surfaces
+    text: { primary: '#111111', secondary: '#555555' },
   },
   shape: { borderRadius: 12 },
   typography: {
@@ -26,6 +27,9 @@ const theme = createTheme({
       },
     },
     MuiButton: {
+      defaultProps: {
+        color: 'success',
+      },
       styleOverrides: {
         root: { textTransform: 'none', fontWeight: 600 },
       },

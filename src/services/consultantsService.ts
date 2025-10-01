@@ -6,6 +6,8 @@ import type {
     RelationalSearchRequest,
     SemanticSearchRequest,
     EmbeddingProviderInfo,
+    ConsultantCvDto,
+    ConsultantSummaryDto,
 } from '../types/api';
 
 function normalizePageDto(data: any): PageConsultantSummaryDto {
@@ -79,6 +81,16 @@ export async function listConsultantsWithCvPaged(params: {
     return data;
 }
 
+export async function listConsultantCvs(userId: string): Promise<ConsultantCvDto[]> {
+    const { data } = await apiClient.get(`/api/consultants/${encodeURIComponent(userId)}/cvs`);
+    return data as ConsultantCvDto[];
+}
+
+export async function getConsultantByUserId(userId: string): Promise<ConsultantSummaryDto> {
+    const { data } = await apiClient.get(`/api/consultants/${encodeURIComponent(userId)}`);
+    return data as ConsultantSummaryDto;
+}
+
 export interface ConsultantSyncSingleResponse {
     userId: string;
     cvId: string;
@@ -94,9 +106,15 @@ export async function searchConsultantsRelational(params: {
     sort?: string[]
 } = { request: {} as RelationalSearchRequest }): Promise<PageConsultantWithCvDto> {
     const { request, page = 0, size = 20, sort } = params;
-    const { data } = await apiClient.post<PageConsultantWithCvDto>('/api/consultants/search', request, {
-        params: { page, size, sort }
-    });
+    const body = {
+        ...(request as any),
+        pagination: {
+            page,
+            size,
+            ...(sort ? { sort } : {})
+        }
+    };
+    const { data } = await apiClient.post<PageConsultantWithCvDto>('/api/consultants/search', body);
     return data;
 }
 
@@ -107,10 +125,17 @@ export async function searchConsultantsSemantic(params: {
     sort?: string[];
 }): Promise<PageConsultantWithCvDto> {
     const { request, page = 0, size = 20, sort } = params;
+    const body = {
+        ...(request as any),
+        pagination: {
+            page,
+            size,
+            ...(sort ? { sort } : {})
+        }
+    };
     const { data } = await aiScoringClient.post<PageConsultantWithCvDto>(
         '/api/consultants/search/semantic',
-        request,
-        { params: { page, size, sort } }
+        body
     );
     return data;
 }

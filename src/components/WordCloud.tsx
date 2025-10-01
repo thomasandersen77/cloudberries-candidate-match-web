@@ -23,9 +23,9 @@ export const WordCloud: React.FC<WordCloudProps> = ({ words, max = 60 }) => {
           label={w}
           sx={{
             fontSize: `${Math.round(12 * scale(i, total))}px`,
-            bgcolor: i % 3 === 0 ? '#FFF3E0' : i % 3 === 1 ? '#FAFAFA' : '#ECEFF1', // light orange / white / light grey
+            bgcolor: i % 3 === 0 ? '#FFEBEE' : i % 3 === 1 ? '#E3F2FD' : '#ECEFF1', // light red / light blue / light grey
             color: '#111',
-            border: '1px solid #FFE0B2',
+            border: i % 3 === 0 ? '1px solid #FFCDD2' : '1px solid #ECEFF1',
           }}
         />
       ))}

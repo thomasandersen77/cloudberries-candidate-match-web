@@ -13,10 +13,13 @@ interface SkillWithDuration {
  * @returns Array of skill names sorted by experience duration (highest first)
  */
 export function getTopSkills(consultant: ConsultantWithCvDto, limit: number = 3): string[] {
+  // Prefer backend-provided top 3 skills when available
+  if (consultant.skills && consultant.skills.length > 0) {
+    return consultant.skills.slice(0, limit);
+  }
   const activeCv = consultant.cvs?.find(cv => cv.active);
   if (!activeCv || !activeCv.skillCategories) {
-    // Fallback to consultant.skills if no detailed CV data
-    return consultant.skills.slice(0, limit);
+    return [];
   }
 
   const skillsWithDuration: SkillWithDuration[] = [];
@@ -38,7 +41,7 @@ export function getTopSkills(consultant: ConsultantWithCvDto, limit: number = 3)
 
   // If no skills with duration found, fallback to consultant.skills
   if (skillsWithDuration.length === 0) {
-    return consultant.skills.slice(0, limit);
+    return [];
   }
 
   // Sort by duration (highest first), then by name for consistency
@@ -61,11 +64,22 @@ export function getTopSkills(consultant: ConsultantWithCvDto, limit: number = 3)
  * @returns Array of all skill names
  */
 export function getAllSkills(consultant: ConsultantWithCvDto): string[] {
-  const topSkills = getTopSkills(consultant, 100); // Get all skills
-  
-  // Merge with basic skills list to ensure we don't miss any
-  const allSkills = new Set([...topSkills, ...consultant.skills]);
-  return Array.from(allSkills);
+  // Try to extract full list from CV categories when available
+  const activeCv = consultant.cvs?.find(cv => cv.active);
+  const names: string[] = [];
+  if (activeCv && activeCv.skillCategories) {
+    activeCv.skillCategories.forEach(cat => {
+      cat.skills?.forEach(s => {
+        if (s.name) names.push(s.name);
+      });
+    });
+  }
+  if (names.length > 0) {
+    // normalize & unique
+    return Array.from(new Set(names.map(n => n.trim()).filter(Boolean)));
+  }
+  // Fallback to backend-provided top skills (may already be capped at 3)
+  return consultant.skills;
 }
 
 /**

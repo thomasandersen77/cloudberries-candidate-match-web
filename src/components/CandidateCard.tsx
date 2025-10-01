@@ -61,9 +61,8 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ consultant, matchPercenta
                         variant="contained" 
                         size="small"
                         onClick={handleViewDetails}
+                        color="success"
                         sx={{
-                            backgroundColor: '#f4856f',
-                            '&:hover': {backgroundColor: '#f26a52'},
                             borderRadius: '20px',
                             textTransform: 'none',
                             fontWeight: 'bold'
@@ -92,7 +91,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ consultant, matchPercenta
                     variant="determinate"
                     value={matchPercentage || qualityScore}
                     size={60}
-                    sx={{color: '#f4856f'}}
+                    sx={{ color: 'primary.main' }}
                 />
                 <Box
                     sx={{

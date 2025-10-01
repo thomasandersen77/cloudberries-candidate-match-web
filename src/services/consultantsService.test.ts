@@ -12,8 +12,20 @@ import {
 import apiClient from './apiClient';
 
 // Mock the apiClient
-vi.mock('./apiClient');
+vi.mock('./apiClient', () => {
+  return {
+    default: {
+      get: vi.fn(),
+      post: vi.fn(),
+    },
+    aiScoringClient: {
+      get: vi.fn(),
+      post: vi.fn(),
+    },
+  };
+});
 const mockedApiClient = vi.mocked(apiClient);
+const { aiScoringClient: mockedAiClient } = await import('./apiClient');
 
 describe('consultantsService', () => {
   beforeEach(() => {
@@ -163,7 +175,7 @@ describe('consultantsService', () => {
   });
 
   describe('search endpoints', () => {
-    it('searchConsultantsRelational posts request with paging and returns page dto', async () => {
+    it('searchConsultantsRelational posts body with pagination and returns page dto', async () => {
       const pagePayload = {
         content: [
           { userId: 'u1', name: 'Alice', cvId: 'cv1', skills: [], cvs: [{ active: true }] }
@@ -177,23 +189,22 @@ describe('consultantsService', () => {
         sort: {},
         pageable: {}
       };
-      mockedApiClient.post.mockResolvedValueOnce({ data: pagePayload });
+      (mockedApiClient.post as any).mockResolvedValueOnce({ data: pagePayload });
 
       const res = await searchConsultantsRelational({
-        request: { name: 'Alice', skillsAll: ['JAVA'], skillsAny: [], onlyActiveCv: true },
+        request: { name: 'Alice', skillsAll: ['JAVA'], skillsAny: [], onlyActiveCv: true } as any,
         page: 0,
         size: 10
       });
 
       expect(mockedApiClient.post).toHaveBeenCalledWith(
         '/api/consultants/search',
-        { name: 'Alice', skillsAll: ['JAVA'], skillsAny: [], onlyActiveCv: true },
-        { params: { page: 0, size: 10, sort: undefined } }
+        { name: 'Alice', skillsAll: ['JAVA'], skillsAny: [], onlyActiveCv: true, pagination: { page: 0, size: 10 } }
       );
       expect(res).toEqual(pagePayload);
     });
 
-    it('searchConsultantsSemantic posts request with paging and returns page dto', async () => {
+    it('searchConsultantsSemantic posts body with pagination and returns page dto (aiScoringClient)', async () => {
       const pagePayload = {
         content: [],
         number: 0,
@@ -205,18 +216,17 @@ describe('consultantsService', () => {
         sort: {},
         pageable: {}
       };
-      mockedApiClient.post.mockResolvedValueOnce({ data: pagePayload });
+      (mockedAiClient.post as any).mockResolvedValueOnce({ data: pagePayload });
 
       const res = await searchConsultantsSemantic({
-        request: { text: 'Senior Java developer', topK: 10, onlyActiveCv: true },
+        request: { text: 'Senior Java developer', topK: 10, onlyActiveCv: true } as any,
         page: 0,
         size: 20
       });
 
-      expect(mockedApiClient.post).toHaveBeenCalledWith(
+      expect((mockedAiClient.post as any)).toHaveBeenCalledWith(
         '/api/consultants/search/semantic',
-        { text: 'Senior Java developer', topK: 10, onlyActiveCv: true },
-        { params: { page: 0, size: 20, sort: undefined } }
+        { text: 'Senior Java developer', topK: 10, onlyActiveCv: true, pagination: { page: 0, size: 20 } }
       );
       expect(res).toEqual(pagePayload);
     });

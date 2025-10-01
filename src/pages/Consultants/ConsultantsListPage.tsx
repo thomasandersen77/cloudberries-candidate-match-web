@@ -38,7 +38,7 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Box sx={{ position: 'relative', display: 'inline-flex', mb: 0.5 }}>
-              <CircularProgress variant="determinate" value={quality} size={32} sx={{ color: '#f4856f' }} />
+              <CircularProgress variant="determinate" value={quality} size={32} sx={{ color: 'primary.main' }} />
               <Box sx={{
                 top: 0, left: 0, bottom: 0, right: 0,
                 position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -73,9 +73,8 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
             variant="contained" 
             size="small"
             onClick={onDetailsClick}
+            color="success"
             sx={{
-              backgroundColor: '#f4856f',
-              '&:hover': {backgroundColor: '#f26a52'},
               borderRadius: '20px', textTransform: 'none', fontWeight: 'bold',
               flex: 1
             }}
@@ -314,7 +313,7 @@ const ConsultantsListPage: React.FC = () => {
         />
         <Button 
           variant="contained" 
-          color="primary" 
+          color="success" 
           onClick={performSearch}
           sx={{ minWidth: isMobile ? 'auto' : 100 }}
           fullWidth={isMobile}
@@ -443,7 +442,7 @@ const ConsultantsListPage: React.FC = () => {
                                     variant="determinate" 
                                     value={quality} 
                                     size={isTablet ? 28 : 36} 
-                                    sx={{ color: '#f4856f' }} 
+                                    sx={{ color: 'primary.main' }} 
                                   />
                                   <Box sx={{
                                     top: 0, left: 0, bottom: 0, right: 0,
@@ -476,9 +475,8 @@ const ConsultantsListPage: React.FC = () => {
                                   variant="contained" 
                                   size="small"
                                   onClick={() => gotoDetails(c.userId)}
+                                  color="success"
                                   sx={{
-                                    backgroundColor: '#f4856f',
-                                    '&:hover': {backgroundColor: '#f26a52'},
                                     borderRadius: '20px', 
                                     textTransform: 'none', 
                                     fontWeight: 'bold',

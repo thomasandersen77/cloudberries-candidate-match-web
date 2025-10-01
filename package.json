@@ -44,7 +44,8 @@
     "@testing-library/user-event": "^14.6.1",
     "@testing-library/jest-dom": "^6.5.0",
     "jsdom": "^25.0.1",
-    "@playwright/test": "^1.48.2"
+    "@playwright/test": "^1.55.1",
+    "playwright": "^1.55.1"
   },
   "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
   "main": "eslint.config.js",
