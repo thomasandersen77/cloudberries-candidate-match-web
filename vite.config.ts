@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     host: true, // Required for Docker container port mapping
     port: 5174,
+    strictPort: true, // Fail if port is already in use instead of trying next port
     watch: {
       usePolling: true, // Helps with file change detection in Docker
     },

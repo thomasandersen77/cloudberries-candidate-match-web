@@ -1,23 +1,16 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
-// The updated URL to your backend's health endpoint
-const API_URL = 'http://localhost:8080/api/health';
+// Interface for den detaljerte helsestatusen til hver avhengighet
+import type {HealthResponse as HealthStatus} from '../types/api';
 
-// Interface for the detailed health check status of each component
 export interface HealthDetails {
-    database: string;
-    flowcase: string;
-    genAI_operational: string;
-    genAI_configured: string;
+    database?: 'UP' | 'DOWN';
+    flowcase?: 'UP' | 'DOWN';
+    genAI_operational?: 'UP' | 'DOWN';
+    genAI_configured?: 'UP' | 'DOWN';
 }
 
-// Interface for the overall health status response
-export interface HealthStatus {
-    status: 'UP' | 'DOWN';
-    details: HealthDetails;
-}
-
-// A default "DOWN" status to be used in case of an error
+// En standard "NEDE"-status som brukes ved feil.
 const defaultDownStatus: HealthStatus = {
     status: 'DOWN',
     details: {
@@ -26,24 +19,63 @@ const defaultDownStatus: HealthStatus = {
         genAI_operational: 'DOWN',
         genAI_configured: 'DOWN',
     },
+} as unknown as HealthStatus;
+
+/**
+ * Henter den detaljerte helsestatusen fra backend.
+ * @returns En Promise som resolverer til et HealthStatus-objekt.
+ */
+export const getHealthStatus = async (): Promise<HealthStatus> => {
+    // Try primary path from OpenAPI
+    try {
+        const response = await apiClient.get<HealthStatus>('/api/health');
+        if (response.data && response.data.status) {
+            return response.data;
+        }
+    } catch (error) {
+        // fall through to fallback paths
+    }
+
+    // Fallback to Spring Boot Actuator
+    try {
+        const {data} = await apiClient.get<any>('/actuator/health');
+        if (data && data.status) {
+            const details = data.details ?? data.components ?? {};
+            return {status: data.status, details} as HealthStatus;
+        }
+    } catch (error) {
+        // continue
+    }
+
+
+    return defaultDownStatus;
 };
 
 /**
- * Fetches the detailed health status from the backend.
- * @returns A promise that resolves to a HealthStatus object.
+ * Fetches the health status from the backend API.
+ * This is a mock implementation. Replace with a real API call.
  */
-export const getHealthStatus = async (): Promise<HealthStatus> => {
-    try {
-        const response = await axios.get<HealthStatus>(API_URL);
-        // Validate that the response contains the expected structure
-        if (response.data && response.data.status && response.data.details) {
-            return response.data;
+export const getHealthStatusMock = async (): Promise<{
+    status: string;
+    details: { database: boolean; flowcase: boolean; genAI_operational: boolean; genAI_configured: boolean }
+}> => {
+    // Simulating a network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Mock data matching your server's response format
+    const mockResponse = {
+        status: "UP",
+        details: {
+            database: true,
+            flowcase: true,
+            genAI_operational: false,
+            genAI_configured: true
         }
-        // Return a default "DOWN" status if the response is malformed
-        return defaultDownStatus;
-    } catch (error) {
-        console.error('Error fetching health status:', error);
-        // Return a default "DOWN" status if the request fails
-        return defaultDownStatus;
-    }
+    };
+
+    // In a real application, you would use axios here:
+    // const response = await axios.get<HealthStatus>('/api/health');
+    // return response.data;
+
+    return mockResponse;
 };

@@ -1,0 +1,84 @@
+# Azure DevOps pipeline: build Docker image, push to ACR, deploy to Azure Web App for Containers
+# Set required variables in the pipeline UI or variable groups:
+# - azureSubscription: Azure service connection name
+# - registryServiceConnection: Docker registry service connection to ACR
+# - acrLoginServer: e.g., myregistry.azurecr.io
+# - appServiceName: Azure Web App for Containers name
+# - imageName: e.g., candidate-match-web
+# - VITE_API_BASE_URL: e.g., https://my-backend-app.azurewebsites.net
+# Optional:
+# - imageTag: defaults to $(Build.BuildId)
+
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  imageTag: '$(Build.BuildId)'
+
+stages:
+- stage: BuildAndPush
+  displayName: Build and Push
+  jobs:
+  - job: Build
+    displayName: Build Docker and Push to ACR
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+
+    - task: Docker@2
+      displayName: Build and Push
+      inputs:
+        command: buildAndPush
+        containerRegistry: '$(registryServiceConnection)'
+        repository: '$(acrLoginServer)/$(imageName)'
+        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(imageTag)
+        buildArguments: |
+          VITE_API_BASE_URL=$(VITE_API_BASE_URL)
+
+- stage: Deploy
+  displayName: Deploy to Azure Web App for Containers
+  dependsOn: BuildAndPush
+  jobs:
+  - job: Deploy
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureWebAppContainer@1
+      displayName: Deploy container image
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        appName: '$(appServiceName)'
+        containers: '$(acrLoginServer)/$(imageName):$(imageTag)'
+
+- stage: DeployACA
+  displayName: Deploy to Azure Container Apps (optional)
+  dependsOn: BuildAndPush
+  condition: and(succeeded(), ne(variables['acaName'], ''), ne(variables['acaResourceGroup'], ''))
+  jobs:
+  - job: DeployACAJob
+    displayName: Update ACA image
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureCLI@2
+      displayName: Update Container App image
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          set -euo pipefail
+          IMAGE="$(acrLoginServer)/$(imageName):$(imageTag)"
+          echo "Deploying image: $IMAGE to ACA $(acaName) in RG $(acaResourceGroup)"
+          az containerapp update \
+            --name "$(acaName)" \
+            --resource-group "$(acaResourceGroup)" \
+            --image "$IMAGE" \
+            --output table
+        failOnStandardError: false
