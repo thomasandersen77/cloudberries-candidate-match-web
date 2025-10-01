@@ -513,9 +513,15 @@ const ChatSearchTab = () => {
                         <AccordionDetails>
                             <Stack spacing={1}>
                                 <Typography variant="body2">Modus: <b>{response.mode}</b></Typography>
-                                {}
-                                {(
-                                    <Typography variant="body2">latencyMs (server): {response.latencyMs} ms</Typography>
+                                <Typography variant="body2">latencyMs (server): {response.latencyMs} ms</Typography>
+                                {response.mode === 'HYBRID' && scoring && (
+                                    <Box sx={{ mt: 1 }}>
+                                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>HYBRID scoring</Typography>
+                                        {scoring.formula && (
+                                            <Typography variant="body2" sx={{ mb: 0.5 }}>Formel: {String(scoring.formula)}</Typography>
+                                        )}
+                                        <pre style={{ margin: 0 }}>{JSON.stringify(scoring, null, 2)}</pre>
+                                    </Box>
                                 )}
                                 {debug?.interpretation && (
                                     <Box>

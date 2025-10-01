@@ -2,29 +2,40 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Chip, CircularProgress, Container, IconButton, Link as MuiLink, Paper, Stack, Tooltip, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { listProjectRequestsPaged, getProjectRequestSuggestions } from '../../services/projectRequestsService';
-import type { AISuggestionDto, PagedProjectRequestResponseDto } from '../../types/api';
+import { listMatchRequests, getTopConsultantsForRequest, type PagedMatchRequestList, type TopConsultantDto, type CoverageStatus } from '../../services/matchesRequestsService';
 import { Link as RouterLink } from 'react-router-dom';
 
 // Helper to decide coverage color/status from count
-function getCoverage(count: number | undefined) {
+function getCoverageFromStatus(status?: CoverageStatus | null, label?: string | null, hitCount?: number | null) {
+  if (status) {
+    const map: Record<Exclude<CoverageStatus, 'NEUTRAL'> | 'NEUTRAL', string | undefined> = {
+      GREEN: 'success.light',
+      YELLOW: 'warning.light',
+      RED: 'error.light',
+      NEUTRAL: undefined,
+    };
+    return { color: map[status] as string | undefined, label: label || (status === 'GREEN' ? 'God dekning' : status === 'YELLOW' ? 'Begrenset dekning' : status === 'RED' ? 'Lav dekning' : 'Nøytral') };
+  }
+  // Fallback to thresholds if status not provided
+  const count = typeof hitCount === 'number' ? hitCount : undefined;
   if (typeof count !== 'number') return { color: undefined as string | undefined, label: 'Ukjent dekning' };
   if (count >= 10) return { color: 'success.light', label: 'God dekning' };
   if (count <= 2) return { color: 'error.light', label: 'Lav dekning' };
   if (count >= 5) return { color: 'warning.light', label: 'Begrenset dekning' };
-  return { color: undefined, label: 'Moderat dekning' }; // 3–4
+  return { color: undefined, label: 'Moderat dekning' };
 }
 
 const MatchesPage: React.FC = () => {
-  const [page, setPage] = useState<PagedProjectRequestResponseDto | null>(null);
+  const [page, setPage] = useState<PagedMatchRequestList | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
-  const [suggestions, setSuggestions] = useState<Record<number, AISuggestionDto[] | 'loading' | 'error'>>({});
+  const [top5, setTop5] = useState<Record<number, TopConsultantDto[] | 'loading' | 'error'>>({});
+  const [pageSize, setPageSize] = useState<number>(20);
 
   const loadPage = async (pageIndex: number) => {
     setLoading(true);
     try {
-      const p = await listProjectRequestsPaged({ page: pageIndex, size: page?.pageSize ?? 20, sort: 'uploadedAt,desc' });
+      const p = await listMatchRequests({ page: pageIndex, size: pageSize, sort: 'date,desc' });
       setPage(p);
     } finally {
       setLoading(false);
@@ -34,39 +45,24 @@ const MatchesPage: React.FC = () => {
   useEffect(() => {
     loadPage(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pageSize]);
 
-  // Prefetch coverage counts in background for visible page
+  // No longer prefetching; coverage comes from list item (hitCount/coverageStatus)
   useEffect(() => {
-    const content = page?.content ?? [];
-    const firstTen = content.slice(0, 10);
-    firstTen.forEach((pr, idx) => {
-      const id = pr.id as number | undefined;
-      if (!id || suggestions[id]) return;
-      setTimeout(async () => {
-        setSuggestions(prev => ({ ...prev, [id]: 'loading' }));
-        try {
-          const s = await getProjectRequestSuggestions(id);
-          setSuggestions(prev => ({ ...prev, [id]: s }));
-        } catch {
-          setSuggestions(prev => ({ ...prev, [id]: 'error' }));
-        }
-      }, idx * 100);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setTop5({});
   }, [page?.currentPage]);
 
   const rows = useMemo(() => page?.content ?? [], [page]);
 
   const toggleExpand = async (id: number) => {
     setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
-    if (!suggestions[id]) {
-      setSuggestions(prev => ({ ...prev, [id]: 'loading' }));
+    if (!top5[id]) {
+      setTop5(prev => ({ ...prev, [id]: 'loading' }));
       try {
-        const s = await getProjectRequestSuggestions(id);
-        setSuggestions(prev => ({ ...prev, [id]: s }));
+        const s = await getTopConsultantsForRequest(id, 5);
+        setTop5(prev => ({ ...prev, [id]: s }));
       } catch {
-        setSuggestions(prev => ({ ...prev, [id]: 'error' }));
+        setTop5(prev => ({ ...prev, [id]: 'error' }));
       }
     }
   };
@@ -74,6 +70,15 @@ const MatchesPage: React.FC = () => {
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Matcher</Typography>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between" sx={{ mb: 1 }}>
+        <Typography variant="caption">Sortering: nyeste først</Typography>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography variant="caption">Størrelse</Typography>
+          <Button size="small" variant={pageSize === 10 ? 'contained' : 'outlined'} onClick={() => setPageSize(10)}>10</Button>
+          <Button size="small" variant={pageSize === 20 ? 'contained' : 'outlined'} onClick={() => setPageSize(20)}>20</Button>
+          <Button size="small" variant={pageSize === 50 ? 'contained' : 'outlined'} onClick={() => setPageSize(50)}>50</Button>
+        </Stack>
+      </Stack>
 
       {loading && (
         <Box sx={{ p: 4, textAlign: 'center' }}>
@@ -91,9 +96,8 @@ const MatchesPage: React.FC = () => {
       <Stack spacing={1}>
         {rows.map((pr) => {
           const id = pr.id as number | undefined;
-          const sugg = id ? suggestions[id] : undefined;
-          const count = Array.isArray(sugg) ? sugg.length : undefined;
-          const coverage = getCoverage(count);
+          const count = pr.hitCount ?? undefined;
+          const coverage = getCoverageFromStatus(pr.coverageStatus, pr.coverageLabel, count);
           const bg = coverage.color ? { bgcolor: coverage.color } : {};
 
           return (
@@ -105,7 +109,7 @@ const MatchesPage: React.FC = () => {
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {pr.customerName ? `${pr.customerName} • ` : ''}
-                    {pr.uploadedAt ? new Date(pr.uploadedAt).toLocaleString('no-NO') : ''}
+                    {pr.date ? new Date(pr.date).toLocaleString('no-NO') : ''}
                   </Typography>
                 </Box>
 
@@ -125,18 +129,18 @@ const MatchesPage: React.FC = () => {
 
               {expanded[id!] && (
                 <Box sx={{ mt: 1.5, pl: 0.5 }}>
-                  {sugg === 'loading' && (
+                  {top5[id!] === 'loading' && (
                     <Stack direction="row" spacing={1} alignItems="center">
                       <CircularProgress size={16} />
-                      <Typography variant="body2">Henter forslag…</Typography>
+                      <Typography variant="body2">Henter topp 5…</Typography>
                     </Stack>
                   )}
-                  {sugg === 'error' && (
-                    <Typography variant="body2" color="error.main">Kunne ikke hente forslag.</Typography>
+                  {top5[id!] === 'error' && (
+                    <Typography variant="body2" color="error.main">Kunne ikke hente topp 5.</Typography>
                   )}
-                  {Array.isArray(sugg) && (
+                  {Array.isArray(top5[id!]) && (
                     <Stack spacing={1}>
-                      {(sugg
+                      {((top5[id!] as TopConsultantDto[])
                         .slice()
                         .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
                         .slice(0, 5)
