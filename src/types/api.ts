@@ -70,3 +70,4 @@ export type DebugInfo = components['schemas']['DebugInfo'];
 export type QueryInterpretation = components['schemas']['QueryInterpretation'];
 export type StructuredCriteria = components['schemas']['StructuredCriteria'];
 export type ConfidenceScores = components['schemas']['ConfidenceScores'];
+export type ScoringInfo = components['schemas']['ScoringInfo'];

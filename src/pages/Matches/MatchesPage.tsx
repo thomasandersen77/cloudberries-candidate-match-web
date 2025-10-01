@@ -1,98 +1,173 @@
-import React, { useState } from 'react';
-import { Box, Button, Container, Paper, Stack, Tab, Tabs, TextField, Typography, Table, TableHead, TableRow, TableCell, TableBody, Chip } from '@mui/material';
-import { findMatches, uploadCvAndMatch, findMatchesBySkills } from '../../services/matchesService';
-import type { CandidateMatchResponse } from '../../types/api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Box, Chip, CircularProgress, Container, IconButton, Link as MuiLink, Paper, Stack, Typography } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { listProjectRequestsPaged, getProjectRequestSuggestions } from '../../services/projectRequestsService';
+import type { AISuggestionDto, PagedProjectRequestResponseDto } from '../../types/api';
+import { Link as RouterLink } from 'react-router-dom';
+
+// Helper to decide coverage color/status from count
+function getCoverage(count: number | undefined) {
+  if (typeof count !== 'number') return { color: undefined as string | undefined, label: 'Ukjent dekning' };
+  if (count >= 10) return { color: 'success.light', label: 'God dekning' };
+  if (count <= 2) return { color: 'error.light', label: 'Lav dekning' };
+  if (count >= 5) return { color: 'warning.light', label: 'Begrenset dekning' };
+  return { color: undefined, label: 'Moderat dekning' }; // 3–4
+}
 
 const MatchesPage: React.FC = () => {
-  const [tab, setTab] = useState(0);
-  const [text, setText] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [results, setResults] = useState<CandidateMatchResponse[] | null>(null);
-  const [skillsInput, setSkillsInput] = useState('');
+  const [page, setPage] = useState<PagedProjectRequestResponseDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const [suggestions, setSuggestions] = useState<Record<number, AISuggestionDto[] | 'loading' | 'error'>>({});
 
-  const onSubmitText = async () => {
-    const res = await findMatches({ projectRequestText: text });
-    setResults(res);
-  };
-  const onSubmitUpload = async () => {
-    if (!file) return;
-    const res = await uploadCvAndMatch(file, text);
-    setResults(res);
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const p = await listProjectRequestsPaged({ page: 0, size: 20, sort: 'uploadedAt,desc' });
+        setPage(p);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Prefetch coverage counts in background for first page (optional)
+  useEffect(() => {
+    const content = page?.content ?? [];
+    // Limit parallel fetches to avoid overload
+    const firstTen = content.slice(0, 10);
+    firstTen.forEach((pr, idx) => {
+      const id = pr.id as number | undefined;
+      if (!id || suggestions[id]) return;
+      // Stagger to avoid burst
+      setTimeout(async () => {
+        setSuggestions(prev => ({ ...prev, [id]: 'loading' }));
+        try {
+          const s = await getProjectRequestSuggestions(id);
+          setSuggestions(prev => ({ ...prev, [id]: s }));
+        } catch {
+          setSuggestions(prev => ({ ...prev, [id]: 'error' }));
+        }
+      }, idx * 100);
+    });
+  }, [page]);
+
+  const rows = useMemo(() => page?.content ?? [], [page]);
+
+  const toggleExpand = async (id: number) => {
+    setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+    if (!suggestions[id]) {
+      setSuggestions(prev => ({ ...prev, [id]: 'loading' }));
+      try {
+        const s = await getProjectRequestSuggestions(id);
+        setSuggestions(prev => ({ ...prev, [id]: s }));
+      } catch {
+        setSuggestions(prev => ({ ...prev, [id]: 'error' }));
+      }
+    }
   };
 
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Matcher</Typography>
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-          <Tab label="Prosjektbeskrivelse" />
-          <Tab label="Last opp forespørsel (PDF)" />
-          <Tab label="Kvalifikasjoner" />
-        </Tabs>
-        {tab === 0 && (
-          <Box sx={{ mt: 2 }}>
-            <TextField label="Prosjektbeskrivelse" multiline minRows={4} fullWidth value={text} onChange={(e) => setText(e.target.value)} />
-            <Button variant="contained" sx={{ mt: 1 }} onClick={onSubmitText}>Finn matcher</Button>
-          </Box>
-        )}
-        {tab === 1 && (
-          <Box sx={{ mt: 2 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <Button variant="outlined" component="label">
-                Velg PDF
-                <input type="file" hidden accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-              </Button>
-              <TextField label="Prosjektbeskrivelse" fullWidth value={text} onChange={(e) => setText(e.target.value)} />
-            </Stack>
-            <Button variant="contained" sx={{ mt: 1 }} onClick={onSubmitUpload} disabled={!file}>Last opp og match</Button>
-          </Box>
-        )}
-        {tab === 2 && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Oppgi kvalifikasjoner/ferdigheter (komma-separert). Vi matcher disse mot konsulenter.
-            </Typography>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField label="Kvalifikasjoner" fullWidth placeholder="java, azure, react" value={skillsInput} onChange={(e) => setSkillsInput(e.target.value)} />
-              <Button variant="contained" onClick={async () => {
-                const skills = skillsInput.split(',').map(s => s.trim()).filter(Boolean);
-                if (skills.length === 0) return;
-                const res = await findMatchesBySkills(skills);
-                setResults(res);
-              }}>Søk konsulenter</Button>
-            </Stack>
-            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {skillsInput.split(',').map(s => s.trim()).filter(Boolean).map((s, i) => (
-                <Chip key={i} label={s} size="small" />
-              ))}
-            </Box>
-          </Box>
-        )}
-      </Paper>
 
-      {results && results.length > 0 && (
+      {loading && (
+        <Box sx={{ p: 4, textAlign: 'center' }}>
+          <CircularProgress />
+          <Typography variant="body2" sx={{ mt: 1 }}>Laster prosjektforespørsler…</Typography>
+        </Box>
+      )}
+
+      {!loading && rows.length === 0 && (
         <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Resultater</Typography>
-          <Table size="small" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell>Score</TableCell>
-                <TableCell>Oppsummering</TableCell>
-                <TableCell>Tid (s)</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {results.map((r, idx) => (
-                <TableRow key={idx}>
-                  <TableCell>{r.totalScore}</TableCell>
-                  <TableCell>{r.summary}</TableCell>
-                  <TableCell>{r.matchTimeSeconds ?? '-'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Typography variant="body1">Ingen prosjektforespørsler funnet.</Typography>
         </Paper>
       )}
+
+      <Stack spacing={1}>
+        {rows.map((pr) => {
+          const id = pr.id as number | undefined;
+          const sugg = id ? suggestions[id] : undefined;
+          const count = Array.isArray(sugg) ? sugg.length : undefined;
+          const coverage = getCoverage(count);
+          const bg = coverage.color ? { bgcolor: coverage.color } : {};
+
+          return (
+            <Paper key={id ?? Math.random()} sx={{ p: 1.5, ...bg }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between">
+                <Box sx={{ flex: 1, minWidth: 260 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    {pr.title || pr.summary || pr.originalFilename || `Forespørsel #${id}`}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {pr.customerName ? `${pr.customerName} • ` : ''}
+                    {pr.uploadedAt ? new Date(pr.uploadedAt).toLocaleString('no-NO') : ''}
+                  </Typography>
+                </Box>
+
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip size="small" label={coverage.label} />
+                  <Chip size="small" color="primary" variant="outlined" label={`Treff: ${typeof count === 'number' ? count : '–'}`} />
+                  {id && (
+                    <MuiLink component={RouterLink} to={`/project-requests/${id}`} underline="hover">
+                      Detaljer
+                    </MuiLink>
+                  )}
+                  <IconButton aria-label={expanded[id!] ? 'Lukk' : 'Utvid'} onClick={() => id && toggleExpand(id)}>
+                    {expanded[id!] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  </IconButton>
+                </Stack>
+              </Stack>
+
+              {expanded[id!] && (
+                <Box sx={{ mt: 1.5, pl: 0.5 }}>
+                  {sugg === 'loading' && (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <CircularProgress size={16} />
+                      <Typography variant="body2">Henter forslag…</Typography>
+                    </Stack>
+                  )}
+                  {sugg === 'error' && (
+                    <Typography variant="body2" color="error.main">Kunne ikke hente forslag.</Typography>
+                  )}
+                  {Array.isArray(sugg) && (
+                    <Stack spacing={1}>
+                      {(sugg
+                        .slice() // copy before sort
+                        .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
+                        .slice(0, 5)
+                      ).map((s, i) => (
+                        <Paper key={i} sx={{ p: 1 }}>
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ sm: 'center' }}>
+                            <Typography variant="body2">
+                              <b>{s.consultantName}</b>{typeof s.matchScore === 'number' ? ` • score ${s.matchScore.toFixed(1)}` : ''}
+                            </Typography>
+                            <Stack direction="row" spacing={1}>
+                              {s.userId && (
+                                <MuiLink component={RouterLink} to={`/consultants/${s.userId}`} underline="hover">Se konsulent</MuiLink>
+                              )}
+                              {s.userId && (
+                                <MuiLink component={RouterLink} to={`/cv/${s.userId}`} underline="hover">Se CV</MuiLink>
+                              )}
+                            </Stack>
+                          </Stack>
+                          {s.justification && (
+                            <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }} color="text.secondary">
+                              {s.justification}
+                            </Typography>
+                          )}
+                        </Paper>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+              )}
+            </Paper>
+          );
+        })}
+      </Stack>
     </Container>
   );
 };

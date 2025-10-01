@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/api/industries/backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Backfill industry tags for all CVs */
+        post: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Backfill processed count */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            processed?: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/skills": {
         parameters: {
             query?: never;
@@ -1432,6 +1472,7 @@ export interface components {
             languages?: components["schemas"]["LanguageDto"][];
             skillCategories?: components["schemas"]["SkillCategoryDto"][];
             attachments?: components["schemas"]["AttachmentDto"][];
+            industries?: string[];
         };
         KeyQualificationDto: {
             label?: string | null;
@@ -1732,6 +1773,7 @@ export interface components {
             debug?: components["schemas"]["DebugInfo"];
             /** @description Conversation ID for follow-up queries */
             conversationId?: string;
+            scoring?: components["schemas"]["ScoringInfo"];
         };
         SearchResult: {
             /**
@@ -1795,6 +1837,21 @@ export interface components {
             extra?: {
                 [key: string]: unknown;
             };
+        };
+        /** @description HYBRID scoring weights and formula */
+        ScoringInfo: {
+            /**
+             * Format: double
+             * @example 0.7
+             */
+            semanticWeight?: number;
+            /**
+             * Format: double
+             * @example 0.3
+             */
+            qualityWeight?: number;
+            /** @example combined = semanticWeight * semanticScore + qualityWeight * qualityScore */
+            formula?: string;
         };
         QueryInterpretation: {
             /**

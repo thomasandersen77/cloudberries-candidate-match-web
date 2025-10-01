@@ -25,7 +25,8 @@ export async function getProjectRequestById(id: number): Promise<ProjectRequestR
 
 // New: paged listing
 export async function listProjectRequestsPaged(params: { page?: number; size?: number; sort?: string } = {}): Promise<PagedProjectRequestResponseDto> {
-  const { page = 0, size = 20, sort = 'id,desc' } = params;
+  // Sort by uploadedAt desc by default (nyeste først)
+  const { page = 0, size = 20, sort = 'uploadedAt,desc' } = params;
   const { data } = await apiClient.get<PagedProjectRequestResponseDto>(`/api/project-requests`, {
     params: { page, size, sort },
   });

@@ -33,6 +33,26 @@ tags:
     description: Customer project request management and analysis
 
 paths:
+  /api/industries/backfill:
+    post:
+      tags: [ Admin ]
+      summary: Backfill industry tags for all CVs
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Backfill processed count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processed:
+                    type: integer
   /api/skills:
     get:
       tags: [ Skills ]
@@ -1075,6 +1095,10 @@ components:
         attachments:
           type: array
           items: { $ref: '#/components/schemas/AttachmentDto' }
+        industries:
+          type: array
+          items:
+            type: string
 
     KeyQualificationDto:
       type: object
@@ -1578,6 +1602,8 @@ components:
         conversationId:
           type: string
           description: Conversation ID for follow-up queries
+        scoring:
+          $ref: '#/components/schemas/ScoringInfo'
 
     SearchResult:
       type: object
@@ -1659,6 +1685,22 @@ components:
           type: object
           additionalProperties: true
           description: Additional debug data
+
+    ScoringInfo:
+      type: object
+      description: HYBRID scoring weights and formula
+      properties:
+        semanticWeight:
+          type: number
+          format: double
+          example: 0.7
+        qualityWeight:
+          type: number
+          format: double
+          example: 0.3
+        formula:
+          type: string
+          example: "combined = semanticWeight * semanticScore + qualityWeight * qualityScore"
 
     QueryInterpretation:
       type: object
