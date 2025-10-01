@@ -34,7 +34,6 @@ const ChatAnalyzePage: React.FC = () => {
     } catch {
       // ignore
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     try {
@@ -87,7 +86,7 @@ const ChatAnalyzePage: React.FC = () => {
       setMessages(prev => prev.map(msg => 
         msg.id === answerIdTemp ? answerMessage : msg
       ));
-    } catch (error) {
+    } catch {
       // Replace loading message with error
       const errorMessage: ChatMessage = {
         id: answerIdTemp,

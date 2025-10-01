@@ -131,7 +131,7 @@ const ChatSearchTab = () => {
                 }
             } catch { /* empty */ }
         })();
-    }, [selectedConsultant, rememberSelection]);
+    }, [selectedConsultant, rememberSelection, selectedCvId]);
 
     useEffect(() => {
         try { sessionStorage.setItem('chat.target.cvId', selectedCvId || ''); } catch { /* empty */ }

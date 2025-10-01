@@ -18,7 +18,11 @@ const ChatPage: React.FC = () => {
 
   const onChange = (_: React.SyntheticEvent, value: number) => {
     setTab(value);
-    try { sessionStorage.setItem(TAB_KEY, String(value)); } catch {}
+    try { 
+      sessionStorage.setItem(TAB_KEY, String(value)); 
+    } catch {
+      // Ignore sessionStorage errors
+    }
   };
 
   return (

@@ -14,10 +14,121 @@ import {
   Stack,
 } from '@mui/material';
 
+// TypeScript interfaces for CV data structure
+interface CvSkill {
+  name?: string;
+}
+
+interface CvSkillCategory {
+  name?: string;
+  skills?: CvSkill[];
+}
+
+interface CvQualification {
+  description?: string;
+  text?: string;
+  title?: string;
+}
+
+interface CvEducation {
+  institution?: string;
+  school?: string;
+  university?: string;
+  degree?: string;
+  title?: string;
+  start?: string;
+  startYear?: string;
+  from?: string;
+  end?: string;
+  endYear?: string;
+  to?: string;
+  period?: {
+    start?: string;
+    end?: string;
+  };
+}
+
+interface CvWorkExperience {
+  employer?: string;
+  company?: string;
+  client?: string;
+  role?: string;
+  position?: string;
+  title?: string;
+  start?: string;
+  startDate?: string;
+  from?: string;
+  end?: string;
+  endDate?: string;
+  to?: string;
+  period?: {
+    start?: string;
+    end?: string;
+  };
+  description?: string;
+  summary?: string;
+}
+
+interface CvProject {
+  projectName?: string;
+  title?: string;
+  name?: string;
+  customer?: string;
+  client?: string;
+  role?: string;
+  roles?: Array<{ name?: string }>;
+  skills?: Array<{ name?: string }>;
+  technologies?: Array<{ name?: string }>;
+  start?: string;
+  startDate?: string;
+  from?: string;
+  end?: string;
+  endDate?: string;
+  to?: string;
+}
+
+interface CvCertification {
+  name?: string;
+  title?: string;
+  issuer?: string;
+  organization?: string;
+  year?: string;
+  date?: string;
+}
+
+// Flexible CV data structure to handle various formats
+interface CvData {
+  keyQualifications?: CvQualification[];
+  cvKeyQualifications?: CvQualification[];
+  qualifications?: CvQualification[];
+  key_qualifications?: CvQualification[];
+  education?: CvEducation[];
+  cvEducation?: CvEducation[];
+  educations?: CvEducation[];
+  workExperiences?: CvWorkExperience[];
+  workExperience?: CvWorkExperience[];
+  cvWorkExperiences?: CvWorkExperience[];
+  cvWorkExperience?: CvWorkExperience[];
+  experience?: CvWorkExperience[];
+  experiences?: CvWorkExperience[];
+  projectExperiences?: CvProject[];
+  projectExperience?: CvProject[];
+  cvProjectExperiences?: CvProject[];
+  cvProjectExperience?: CvProject[];
+  projects?: CvProject[];
+  certifications?: CvCertification[];
+  cvCertifications?: CvCertification[];
+  certs?: CvCertification[];
+  skillCategories?: CvSkillCategory[];
+  skillsByCategory?: CvSkillCategory[];
+  cvSkillCategories?: CvSkillCategory[];
+  [key: string]: unknown; // Allow for additional unknown properties
+}
+
 // Best-effort CV renderer into sectioned tables.
 // Tries to detect common sections from Flowcase CV JSON, but tolerates arbitrary shapes.
 export interface CvSectionsTableProps {
-  cv: any;
+  cv: CvData | null | undefined;
 }
 
 const sectionTitleSx = { mt: 3, mb: 1 } as const;
@@ -25,14 +136,12 @@ const sectionTitleSx = { mt: 3, mb: 1 } as const;
 export default function CvSectionsTable({ cv }: CvSectionsTableProps) {
   if (!cv) return <Typography>Ingen CV-data.</Typography>;
 
-  const anyCv = cv as any;
-
-  const keyQualifications = pickArray(anyCv, ['keyQualifications', 'cvKeyQualifications', 'qualifications', 'key_qualifications']);
-  const education = pickArray(anyCv, ['education', 'cvEducation', 'educations']);
-  const work = pickArray(anyCv, ['workExperiences', 'workExperience', 'cvWorkExperiences', 'cvWorkExperience', 'experience', 'experiences']);
-  const projects = pickArray(anyCv, ['projectExperiences', 'projectExperience', 'cvProjectExperiences', 'cvProjectExperience', 'projects']);
-  const certifications = pickArray(anyCv, ['certifications', 'cvCertifications', 'certs']);
-  const skillCategories = pickArray(anyCv, ['skillCategories', 'skillsByCategory', 'cvSkillCategories']);
+  const keyQualifications = pickArray(cv, ['keyQualifications', 'cvKeyQualifications', 'qualifications', 'key_qualifications']) as CvQualification[] | null;
+  const education = pickArray(cv, ['education', 'cvEducation', 'educations']) as CvEducation[] | null;
+  const work = pickArray(cv, ['workExperiences', 'workExperience', 'cvWorkExperiences', 'cvWorkExperience', 'experience', 'experiences']) as CvWorkExperience[] | null;
+  const projects = pickArray(cv, ['projectExperiences', 'projectExperience', 'cvProjectExperiences', 'cvProjectExperience', 'projects']) as CvProject[] | null;
+  const certifications = pickArray(cv, ['certifications', 'cvCertifications', 'certs']) as CvCertification[] | null;
+  const skillCategories = pickArray(cv, ['skillCategories', 'skillsByCategory', 'cvSkillCategories']) as CvSkillCategory[] | null;
 
   return (
     <Box>
@@ -42,7 +151,7 @@ export default function CvSectionsTable({ cv }: CvSectionsTableProps) {
           <Typography variant="h6" sx={sectionTitleSx}>Nøkkelkvalifikasjoner</Typography>
           <TableSimple
             headers={[ 'Tekst' ]}
-            rows={keyQualifications.map((q: any) => [stringy(q?.description ?? q?.text ?? q?.title ?? q)])}
+            rows={keyQualifications.map((q) => [stringy(q?.description ?? q?.text ?? q?.title ?? q)])}
           />
         </SectionPaper>
       )}
@@ -51,12 +160,12 @@ export default function CvSectionsTable({ cv }: CvSectionsTableProps) {
       {Array.isArray(skillCategories) && skillCategories.length > 0 && (
         <SectionPaper>
           <Typography variant="h6" sx={sectionTitleSx}>Kompetanse</Typography>
-          {skillCategories.map((cat: any, idx: number) => (
+          {skillCategories.map((cat, idx: number) => (
             <Box key={idx} sx={{ mb: 2 }}>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>{stringy(cat?.name ?? 'Kompetanse')}</Typography>
               <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                 {Array.isArray(cat?.skills)
-                  ? cat.skills.map((s: any, i: number) => (
+                  ? cat.skills.map((s, i: number) => (
                       <Chip key={i} label={stringy(s?.name ?? s)} variant="outlined" size="small" />
                     ))
                   : null}
@@ -72,7 +181,7 @@ export default function CvSectionsTable({ cv }: CvSectionsTableProps) {
           <Typography variant="h6" sx={sectionTitleSx}>Utdanning</Typography>
           <TableSimple
             headers={[ 'Institusjon', 'Grad', 'Fra', 'Til' ]}
-            rows={education.map((e: any) => [
+            rows={education.map((e) => [
               stringy(e?.institution ?? e?.school ?? e?.university),
               stringy(e?.degree ?? e?.title),
               fmtPeriodPart(e?.start ?? e?.startYear ?? e?.from ?? e?.period?.start),
@@ -88,7 +197,7 @@ export default function CvSectionsTable({ cv }: CvSectionsTableProps) {
           <Typography variant="h6" sx={sectionTitleSx}>Arbeidserfaring</Typography>
           <TableSimple
             headers={[ 'Arbeidsgiver', 'Rolle', 'Fra', 'Til', 'Beskrivelse' ]}
-            rows={work.map((w: any) => [
+            rows={work.map((w) => [
               stringy(w?.employer ?? w?.company ?? w?.client),
               stringy(w?.role ?? w?.position ?? w?.title),
               fmtPeriodPart(w?.start ?? w?.startDate ?? w?.from ?? w?.period?.start),
@@ -105,7 +214,7 @@ export default function CvSectionsTable({ cv }: CvSectionsTableProps) {
           <Typography variant="h6" sx={sectionTitleSx}>Prosjekter</Typography>
           <TableSimple
             headers={[ 'Prosjekt', 'Kunde', 'Rolle', 'Teknologi', 'Periode' ]}
-            rows={projects.map((p: any) => [
+            rows={projects.map((p) => [
               stringy(p?.projectName ?? p?.title ?? p?.name),
               stringy(p?.customer ?? p?.client),
               stringy(arrJoin(p?.roles, 'name') ?? p?.role),
@@ -122,7 +231,7 @@ export default function CvSectionsTable({ cv }: CvSectionsTableProps) {
           <Typography variant="h6" sx={sectionTitleSx}>Sertifiseringer</Typography>
           <TableSimple
             headers={[ 'Navn', 'Utsteder', 'År/Dato' ]}
-            rows={certifications.map((c: any) => [
+            rows={certifications.map((c) => [
               stringy(c?.name ?? c?.title),
               stringy(c?.issuer ?? c?.organization),
               stringy(c?.year ?? c?.date),
@@ -176,7 +285,7 @@ function TableSimple({ headers, rows }: { headers: string[]; rows: (string | Rea
   );
 }
 
-function pickArray(obj: any, keys: string[]): any[] | null {
+function pickArray(obj: CvData, keys: string[]): unknown[] | null {
   for (const k of keys) {
     const found = obj?.[k];
     if (Array.isArray(found)) return found;
@@ -184,34 +293,44 @@ function pickArray(obj: any, keys: string[]): any[] | null {
   return null;
 }
 
-function stringy(v: any): string {
+function stringy(v: unknown): string {
   if (v == null) return '';
   if (typeof v === 'string') return v;
   if (typeof v === 'number') return String(v);
   if (Array.isArray(v)) return v.map(stringy).filter(Boolean).join(', ');
-  return v?.toString?.() ?? JSON.stringify(v);
+  if (typeof v === 'object' && v !== null) {
+    return 'toString' in v && typeof v.toString === 'function' ? v.toString() : JSON.stringify(v);
+  }
+  return String(v);
 }
 
-function arrJoin(arr: any, key?: string): string | null {
+function arrJoin(arr: unknown, key?: string): string | null {
   if (!Array.isArray(arr)) return null;
-  if (key) return arr.map((x) => stringy(x?.[key] ?? x)).filter(Boolean).join(', ');
+  if (key) {
+    return arr.map((x) => {
+      if (x && typeof x === 'object' && key in x) {
+        return stringy((x as Record<string, unknown>)[key] ?? x);
+      }
+      return stringy(x);
+    }).filter(Boolean).join(', ');
+  }
   return arr.map(stringy).filter(Boolean).join(', ');
 }
 
-function fmtPeriodPart(val: any): string {
+function fmtPeriodPart(val: unknown): string {
   if (!val) return '';
   const s = String(val);
   // Trim timestamps to date or year
   return s.length > 10 ? s.slice(0, 10) : s;
 }
 
-function period(from: any, to: any): string {
+function period(from: unknown, to: unknown): string {
   const a = fmtPeriodPart(from);
   const b = fmtPeriodPart(to) || 'nå';
   return [a, b].filter(Boolean).join(' - ');
 }
 
-function takeFirstLine(v: any): string {
+function takeFirstLine(v: unknown): string {
   const s = stringy(v);
   return s.split(/\n/)[0] ?? s;
 }
