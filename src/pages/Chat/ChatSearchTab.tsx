@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Accordion,
     AccordionDetails,
@@ -19,8 +19,13 @@ import {
     Typography,
     FormControlLabel,
     Switch,
+    Fade,
+    useTheme,
+    useMediaQuery,
 } from '@mui/material';
+import ReactMarkdown from 'react-markdown';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Send as SendIcon, SmartToy as AiIcon, Person as PersonIcon } from '@mui/icons-material';
 import {searchChat} from '../../services/chatService';
 import { listConsultants, listConsultantCvs, getConsultantByUserId } from '../../services/consultantsService';
 import type {ChatSearchRequest, ChatSearchResponse, DebugInfo, SearchResult, ConsultantSummaryDto, ScoringInfo} from '../../types/api';
@@ -53,6 +58,15 @@ const buildCvLink = (userId?: string) => (userId ? `/cv/${userId}` : undefined);
 
 type ForceMode = 'AUTO' | 'STRUCTURED' | 'SEMANTIC' | 'HYBRID' | 'RAG';
 
+interface ConversationMessage {
+    id: string;
+    type: 'question' | 'answer';
+    content: string;
+    timestamp: Date;
+    loading?: boolean;
+    searchResponse?: ChatSearchResponse;
+}
+
 const ChatSearchTab = () => {
     const [text, setText] = useState('');
     const [forceMode, setForceMode] = useState<ForceMode>('AUTO');
@@ -64,6 +78,11 @@ const ChatSearchTab = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSpinner, setShowSpinner] = useState(false);
     const [latency, setLatency] = useState<number | null>(null);
+    
+    // Conversation history
+    const [messages, setMessages] = useState<ConversationMessage[]>([]);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // Consultant targeting
     const [consultantQuery, setConsultantQuery] = useState('');
@@ -75,6 +94,9 @@ const ChatSearchTab = () => {
     const [rememberSelection, setRememberSelection] = useState<boolean>(false);
     const [useActiveCv, setUseActiveCv] = useState<boolean>(false);
     const spinnerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    
+    // Conversation persistence
+    const CONVERSATION_SESSION_KEY = 'chatSearchMessages';
 
     // load saved conversation and persisted prefs
     useEffect(() => {
@@ -214,6 +236,30 @@ const ChatSearchTab = () => {
             } catch { /* empty */ }
         })();
     }, [rememberSelection]);
+    
+    // Load conversation history
+    useEffect(() => {
+        try {
+            const raw = sessionStorage.getItem(CONVERSATION_SESSION_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw) as Array<Omit<ConversationMessage, 'timestamp'> & { timestamp: string }>;
+                const restored: ConversationMessage[] = parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }));
+                setMessages(restored);
+            }
+        } catch {
+            // ignore
+        }
+    }, []);
+    
+    // Save conversation history
+    useEffect(() => {
+        try {
+            const serializable = messages.map(m => ({ ...m, timestamp: m.timestamp.toISOString() }));
+            sessionStorage.setItem(CONVERSATION_SESSION_KEY, JSON.stringify(serializable));
+        } catch {
+            // ignore
+        }
+    }, [messages]);
 // ... existing code ...
     const validateInput = (text: string, isSubmitting: boolean): string | null => {
         const trimmed = text.trim();
@@ -269,9 +315,32 @@ const ChatSearchTab = () => {
         setLatency(res.latencyMs);
     };
 
-    const onSubmit = async () => {
+    const onSubmit = useCallback(async () => {
         const trimmedText = validateInput(text, isSubmitting);
         if (!trimmedText) return;
+
+        const questionId = Date.now().toString();
+        const answerIdTemp = questionId + '_answer';
+        
+        // Add question message
+        const questionMessage: ConversationMessage = {
+            id: questionId,
+            type: 'question',
+            content: trimmedText,
+            timestamp: new Date()
+        };
+        
+        // Add loading answer message
+        const loadingMessage: ConversationMessage = {
+            id: answerIdTemp,
+            type: 'answer',
+            content: '',
+            timestamp: new Date(),
+            loading: true
+        };
+        
+        setMessages(prev => [questionMessage, loadingMessage, ...prev]);
+        setText(''); // Clear input
 
         setError(null);
         setResponse(null);
@@ -283,22 +352,175 @@ const ChatSearchTab = () => {
             const payload = buildSearchPayload(trimmedText, conversationId, forceMode);
             const res = await searchChat(payload);
             handleSearchSuccess(res, setResponse, setConversationId, setLatency);
+            
+            // Create answer content
+            let answerContent = '';
+            if (res.mode === 'RAG' && res.answer) {
+                answerContent = res.answer;
+            } else if (res.results && res.results.length > 0) {
+                answerContent = `Found ${res.results.length} consultant${res.results.length === 1 ? '' : 's'} matching your query:`;
+            } else {
+                answerContent = 'No results found for your query.';
+            }
+            
+            // Replace loading message with actual answer
+            const answerMessage: ConversationMessage = {
+                id: answerIdTemp,
+                type: 'answer',
+                content: answerContent,
+                timestamp: new Date(),
+                loading: false,
+                searchResponse: res
+            };
+            
+            setMessages(prev => prev.map(msg => 
+                msg.id === answerIdTemp ? answerMessage : msg
+            ));
 
         } catch (e) {
-            console.log(e)
+            console.log(e);
+            setError(e instanceof Error ? e.message : 'An error occurred');
+            
+            // Replace loading message with error
+            const errorMessage: ConversationMessage = {
+                id: answerIdTemp,
+                type: 'answer',
+                content: 'Sorry, there was an error processing your request. Please try again.',
+                timestamp: new Date(),
+                loading: false
+            };
+            
+            setMessages(prev => prev.map(msg => 
+                msg.id === answerIdTemp ? errorMessage : msg
+            ));
+        } finally {
+            setIsSubmitting(false);
+            setShowSpinner(false);
+            if (spinnerTimer.current) {
+                clearTimeout(spinnerTimer.current);
+                spinnerTimer.current = null;
+            }
         }
-    };
+    }, [text, isSubmitting, conversationId, forceMode, topK, selectedConsultant, selectedCvId, useActiveCv]);
 
-    const onNewConversation = () => {
+    const onNewConversation = useCallback(() => {
         setConversationId(undefined);
         setResponse(null);
         setError(null);
         setLatency(null);
         setText('');
+        setMessages([]);
         try {
             sessionStorage.removeItem(CHAT_SEARCH_CONV_KEY);
+            sessionStorage.removeItem(CONVERSATION_SESSION_KEY);
         } catch { /* empty */
         }
+    }, []);
+
+    const handleKeyPress = useCallback((event: React.KeyboardEvent) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            onSubmit();
+        }
+    }, [onSubmit]);
+    
+    const formatTimestamp = (date: Date) => {
+        return date.toLocaleTimeString('no-NO', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+    };
+    
+    const MessageBubble: React.FC<{ message: ConversationMessage }> = ({ message }) => {
+        const isQuestion = message.type === 'question';
+        
+        return (
+            <Fade in={true} timeout={300}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: isQuestion ? 'flex-end' : 'flex-start',
+                        mb: 2,
+                        alignItems: 'flex-start'
+                    }}
+                >
+                    {!isQuestion && (
+                        <Box sx={{ mr: 1, mt: 0.5 }}>
+                            <AiIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                        </Box>
+                    )}
+                    
+                    <Box
+                        sx={{
+                            maxWidth: isMobile ? '85%' : '70%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: isQuestion ? 'flex-end' : 'flex-start'
+                        }}
+                    >
+                        <Paper
+                            elevation={1}
+                            sx={{
+                                p: 2,
+                                backgroundColor: isQuestion ? 'primary.main' : 'grey.100',
+                                color: isQuestion ? 'primary.contrastText' : 'text.primary',
+                                borderRadius: 2,
+                                borderTopRightRadius: isQuestion ? 0.5 : 2,
+                                borderTopLeftRadius: isQuestion ? 2 : 0.5,
+                                position: 'relative',
+                                wordBreak: 'break-word'
+                            }}
+                        >
+                            {message.loading ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <CircularProgress size={16} />
+                                    <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+                                        Searching consultants...
+                                    </Typography>
+                                </Box>
+                            ) : (
+                                <Box sx={{
+                                    '& p': { fontSize: '1rem', lineHeight: 1.5, margin: '0.5em 0' },
+                                    '& h1, & h2, & h3, & h4, & h5, & h6': { margin: '1em 0 0.5em 0' },
+                                    '& ul, & ol': { paddingLeft: '1.5em', margin: '0.5em 0' },
+                                    '& li': { margin: '0.25em 0' },
+                                    '& code': { backgroundColor: 'rgba(0,0,0,0.04)', padding: '0.2em 0.4em', borderRadius: '3px' },
+                                    '& pre': { backgroundColor: 'rgba(0,0,0,0.04)', padding: '1em', borderRadius: '4px', overflow: 'auto' },
+                                    '& blockquote': { borderLeft: '4px solid #ccc', margin: '1em 0', paddingLeft: '1em', fontStyle: 'italic' },
+                                    fontSize: isMobile ? '0.9rem' : '1rem'
+                                }}>
+                                    {isQuestion ? (
+                                        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                                            {message.content}
+                                        </Typography>
+                                    ) : (
+                                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                                    )}
+                                </Box>
+                            )}
+                        </Paper>
+                        
+                        <Chip
+                            label={formatTimestamp(message.timestamp)}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                                mt: 0.5,
+                                height: 20,
+                                fontSize: '0.7rem',
+                                opacity: 0.7
+                            }}
+                        />
+                    </Box>
+                    
+                    {isQuestion && (
+                        <Box sx={{ ml: 1, mt: 0.5 }}>
+                            <PersonIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                        </Box>
+                    )}
+                </Box>
+            </Fade>
+        );
     };
 
 
@@ -354,7 +576,9 @@ const ChatSearchTab = () => {
                             minRows={2}
                             value={text}
                             onChange={(e) => setText(e.target.value)}
+                            onKeyDown={handleKeyPress}
                             disabled={isSubmitting}
+                            variant="outlined"
                         />
                         <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
                             {sampleQueries.map(q => (
@@ -452,6 +676,7 @@ const ChatSearchTab = () => {
                                 disabled={isSubmitting || !text.trim() || (forceMode === 'RAG' && !selectedConsultant)}
                                 data-testid="send-btn"
                                 sx={{minWidth: 100}}
+                                startIcon={<SendIcon />}
                             >
                                 {isSubmitting ? 'Sender…' : 'Send'}
                             </Button>
@@ -487,6 +712,20 @@ const ChatSearchTab = () => {
                     )}
                 </Stack>
             </Paper>
+            
+            {/* Conversation History */}
+            {messages.length > 0 && (
+                <Paper sx={{ p: 2, mb: 2 }}>
+                    <Typography variant="h6" gutterBottom>
+                        Conversation History
+                    </Typography>
+                    <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
+                        {messages.map((message) => (
+                            <MessageBubble key={message.id} message={message} />
+                        ))}
+                    </Box>
+                </Paper>
+            )}
 
             {showSpinner && (
                 <Box sx={{p: 4, textAlign: 'center'}}>
@@ -580,9 +819,17 @@ const ChatSearchTab = () => {
                                 <Chip size="small" color="warning" label="Eksperimentell"/>
                                 <Typography variant="subtitle1">RAG-svar</Typography>
                             </Stack>
-                            <Typography variant="body1" sx={{whiteSpace: 'pre-wrap'}} data-testid="rag-answer">
-                                {response.answer || 'Ingen svartekst'}
-                            </Typography>
+                            <Box sx={{ 
+                                '& p': { fontSize: '1rem', lineHeight: 1.5, margin: '0.5em 0' },
+                                '& h1, & h2, & h3, & h4, & h5, & h6': { margin: '1em 0 0.5em 0' },
+                                '& ul, & ol': { paddingLeft: '1.5em', margin: '0.5em 0' },
+                                '& li': { margin: '0.25em 0' },
+                                '& code': { backgroundColor: 'rgba(0,0,0,0.04)', padding: '0.2em 0.4em', borderRadius: '3px' },
+                                '& pre': { backgroundColor: 'rgba(0,0,0,0.04)', padding: '1em', borderRadius: '4px', overflow: 'auto' },
+                                '& blockquote': { borderLeft: '4px solid #ccc', margin: '1em 0', paddingLeft: '1em', fontStyle: 'italic' }
+                            }} data-testid="rag-answer">
+                                <ReactMarkdown>{response.answer || 'Ingen svartekst'}</ReactMarkdown>
+                            </Box>
 
                             {response.sources && response.sources.length > 0 && (
                                 <Box sx={{mt: 2}}>
