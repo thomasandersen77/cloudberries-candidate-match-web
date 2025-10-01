@@ -161,11 +161,11 @@ describe('consultantsService', () => {
         }
       };
 
-      mockedApiClient.post.mockResolvedValue(mockResponse);
+      (mockedAiClient.post as any).mockResolvedValue(mockResponse);
 
       const result = await runConsultantSync(100);
 
-      expect(mockedApiClient.post).toHaveBeenCalledWith(
+      expect((mockedAiClient.post as any)).toHaveBeenCalledWith(
         '/api/consultants/sync/run',
         null,
         { params: { batchSize: 100 } }
@@ -250,11 +250,11 @@ describe('consultantsService', () => {
         }
       };
 
-      mockedApiClient.post.mockResolvedValue(mockResponse);
+      (mockedAiClient.post as any).mockResolvedValue(mockResponse);
 
       const result = await syncSingleConsultant('123', 'cv123');
 
-      expect(mockedApiClient.post).toHaveBeenCalledWith(
+      expect((mockedAiClient.post as any)).toHaveBeenCalledWith(
         '/api/consultants/sync/123/cv123'
       );
       expect(result).toEqual(mockResponse.data);
@@ -262,7 +262,7 @@ describe('consultantsService', () => {
 
     it('should handle sync failure', async () => {
       const mockError = new Error('Sync failed');
-      mockedApiClient.post.mockRejectedValue(mockError);
+      (mockedAiClient.post as any).mockRejectedValue(mockError);
 
       await expect(syncSingleConsultant('123', 'cv123')).rejects.toThrow('Sync failed');
     });

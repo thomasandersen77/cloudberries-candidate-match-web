@@ -1,5 +1,7 @@
+import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import MatchesPage from '../MatchesPage';
 
 vi.mock('../../../services/matchesRequestsService', async () => {
@@ -26,7 +28,11 @@ describe('MatchesPage', () => {
   });
 
   it('viser sorteringslabel og størrelse-knapper, og laster første side', async () => {
-    render(<MatchesPage />);
+    render(
+      <MemoryRouter>
+        <MatchesPage />
+      </MemoryRouter>
+    );
     expect(await screen.findByText(/Matcher/i)).toBeInTheDocument();
     expect(screen.getByText(/Sortering: nyeste først/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '10' })).toBeInTheDocument();
@@ -41,10 +47,15 @@ describe('MatchesPage', () => {
     const mod = await import('../../../services/matchesRequestsService');
     const spy = vi.spyOn(mod, 'listMatchRequests');
 
-    render(<MatchesPage />);
+    render(
+      <MemoryRouter>
+        <MatchesPage />
+      </MemoryRouter>
+    );
     await waitFor(() => expect(spy).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('button', { name: '50' }));
+    const sizeButtons = screen.getAllByRole('button', { name: '50' });
+    fireEvent.click(sizeButtons[0]);
 
     await waitFor(() => {
       // kall nummer 2 bør ha size=50

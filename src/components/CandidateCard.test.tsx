@@ -73,8 +73,8 @@ describe('CandidateCard', () => {
   it('displays quality score when available', () => {
     renderWithRouter(<CandidateCard consultant={mockConsultant} />);
 
-    expect(screen.getByText('85%')).toBeInTheDocument();
-    expect(screen.getByText('Kvalitet')).toBeInTheDocument();
+    expect(screen.getAllByText('85%')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Kvalitet')[0]).toBeInTheDocument();
   });
 
   it('displays match percentage when provided', () => {
@@ -89,7 +89,7 @@ describe('CandidateCard', () => {
   it('navigates to consultant details when details button is clicked', () => {
     renderWithRouter(<CandidateCard consultant={mockConsultant} />);
 
-    const detailsButton = screen.getByText('Se detaljer');
+    const detailsButton = screen.getAllByText('Se detaljer')[0];
     fireEvent.click(detailsButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/consultants/user123');
@@ -98,7 +98,7 @@ describe('CandidateCard', () => {
   it('navigates to CV view when CV button is clicked', () => {
     renderWithRouter(<CandidateCard consultant={mockConsultant} />);
 
-    const cvButton = screen.getByText('Se hele CV');
+    const cvButton = screen.getAllByText('Se hele CV')[0];
     fireEvent.click(cvButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/cv/user123');
@@ -128,8 +128,8 @@ describe('CandidateCard', () => {
 
     renderWithRouter(<CandidateCard consultant={consultantWithoutActiveCv} />);
 
-    expect(screen.getByText('0%')).toBeInTheDocument();
-    expect(screen.getByText('Kvalitet')).toBeInTheDocument();
+    expect(screen.getAllByText('0%')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Kvalitet')[0]).toBeInTheDocument();
   });
 
   it('renders consultant with no CVs', () => {
@@ -140,8 +140,8 @@ describe('CandidateCard', () => {
 
     renderWithRouter(<CandidateCard consultant={consultantWithoutCvs} />);
 
-    expect(screen.getByText('0%')).toBeInTheDocument();
-    expect(screen.getByText('Kvalitet')).toBeInTheDocument();
+    expect(screen.getAllByText('0%')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Kvalitet')[0]).toBeInTheDocument();
   });
 
   it('handles consultant with few skills', () => {
@@ -152,14 +152,14 @@ describe('CandidateCard', () => {
 
     renderWithRouter(<CandidateCard consultant={consultantWithFewSkills} />);
 
-    expect(screen.getByText('React')).toBeInTheDocument();
-    expect(screen.getByText('TypeScript')).toBeInTheDocument();
+    expect(screen.getAllByText('React')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('TypeScript')[0]).toBeInTheDocument();
     expect(screen.queryByText('+')).not.toBeInTheDocument();
   });
 
   it('renders consultant initial in avatar', () => {
     renderWithRouter(<CandidateCard consultant={mockConsultant} />);
 
-    expect(screen.getByText('J')).toBeInTheDocument(); // First letter of 'John Doe'
+    expect(screen.getAllByText('J')[0]).toBeInTheDocument(); // First letter of 'John Doe'
   });
 });

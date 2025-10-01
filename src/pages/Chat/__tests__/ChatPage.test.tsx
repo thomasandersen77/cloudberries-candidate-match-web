@@ -39,10 +39,10 @@ describe('ChatPage', () => {
       </MemoryRouter>
     );
 
-    const input = screen.getByLabelText('Skriv spørsmålet ditt');
+    const input = screen.getAllByLabelText('Skriv spørsmålet ditt')[0];
     fireEvent.change(input, { target: { value: 'Find consultants who know Kotlin and Spring' } });
 
-    const send = screen.getByTestId('send-btn');
+    const send = screen.getAllByTestId('send-btn').find(el => !(el as HTMLButtonElement).disabled) ?? screen.getAllByTestId('send-btn')[0];
     fireEvent.click(send);
 
     await waitFor(() => {

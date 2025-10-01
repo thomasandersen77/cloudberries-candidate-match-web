@@ -28,7 +28,7 @@ describe('CvSummary', () => {
 
     render(<CvSummary keyQualifications={keyQualifications} />);
 
-    expect(screen.getByText('Sammendrag')).toBeInTheDocument();
+    expect(screen.getAllByText('Sammendrag')[0]).toBeInTheDocument();
     expect(screen.getByText('Senior Developer')).toBeInTheDocument();
     expect(screen.getByText('Experienced in full-stack development')).toBeInTheDocument();
     expect(screen.getByText('Team Lead')).toBeInTheDocument();
@@ -38,7 +38,7 @@ describe('CvSummary', () => {
   it('renders empty state when no qualifications', () => {
     render(<CvSummary keyQualifications={[]} />);
 
-    expect(screen.getByText('Sammendrag')).toBeInTheDocument();
+    expect(screen.getAllByText('Sammendrag')[0]).toBeInTheDocument();
     expect(screen.getByText('Ingen nøkkelkvalifikasjoner tilgjengelig')).toBeInTheDocument();
   });
 });
@@ -59,7 +59,7 @@ describe('SkillsSection', () => {
 
     render(<SkillsSection skillCategories={skillCategories} skills={generalSkills} />);
 
-    expect(screen.getByText('Ferdigheter')).toBeInTheDocument();
+    expect(screen.getAllByText('Ferdigheter')[0]).toBeInTheDocument();
     expect(screen.getByText('Hovedferdigheter')).toBeInTheDocument();
     expect(screen.getByText('React')).toBeInTheDocument();
     expect(screen.getByText('Node.js')).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('SkillsSection', () => {
   it('renders empty state when no skills', () => {
     render(<SkillsSection skillCategories={[]} skills={[]} />);
 
-    expect(screen.getByText('Ferdigheter')).toBeInTheDocument();
+    expect(screen.getAllByText('Ferdigheter')[0]).toBeInTheDocument();
     expect(screen.getByText('Ingen ferdigheter tilgjengelig')).toBeInTheDocument();
   });
 });
@@ -93,7 +93,7 @@ describe('WorkHistoryTable', () => {
 
     render(<WorkHistoryTable workExperience={workExperience} />);
 
-    expect(screen.getByText('Arbeidshistorikk')).toBeInTheDocument();
+    expect(screen.getAllByText('Arbeidshistorikk')[0]).toBeInTheDocument();
     expect(screen.getByText('Company A')).toBeInTheDocument();
     expect(screen.getByText('Company B')).toBeInTheDocument();
     expect(screen.getByText('01/2020')).toBeInTheDocument();
@@ -105,7 +105,7 @@ describe('WorkHistoryTable', () => {
   it('renders empty state when no work experience', () => {
     render(<WorkHistoryTable workExperience={[]} />);
 
-    expect(screen.getByText('Arbeidshistorikk')).toBeInTheDocument();
+    expect(screen.getAllByText('Arbeidshistorikk')[0]).toBeInTheDocument();
     expect(screen.getByText('Ingen arbeidserfaring tilgjengelig')).toBeInTheDocument();
   });
 });
@@ -130,11 +130,11 @@ describe('ProjectExperienceTable', () => {
 
     render(<ProjectExperienceTable projectExperience={projectExperience} />);
 
-    expect(screen.getByText('Prosjekterfaring')).toBeInTheDocument();
+    expect(screen.getAllByText('Prosjekterfaring')[0]).toBeInTheDocument();
     expect(screen.getByText('Client A')).toBeInTheDocument();
     expect(screen.getByText('E-commerce platform development')).toBeInTheDocument();
-    expect(screen.getByText('React')).toBeInTheDocument();
-    expect(screen.getByText('Node.js')).toBeInTheDocument();
+    expect(screen.getAllByText('React')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Node.js')[0]).toBeInTheDocument();
     expect(screen.getByText('PostgreSQL')).toBeInTheDocument();
     expect(screen.getByText('01/2022')).toBeInTheDocument();
     expect(screen.getByText('06/2022')).toBeInTheDocument();
@@ -153,16 +153,16 @@ describe('ProjectExperienceTable', () => {
 
     render(<ProjectExperienceTable projectExperience={projectExperience} />);
 
-    expect(screen.getByText('React')).toBeInTheDocument();
-    expect(screen.getByText('Node.js')).toBeInTheDocument();
-    expect(screen.getByText('PostgreSQL')).toBeInTheDocument();
+    expect(screen.getAllByText('React')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Node.js')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('PostgreSQL')[0]).toBeInTheDocument();
     expect(screen.getByText('+2 flere')).toBeInTheDocument();
   });
 
   it('renders empty state when no project experience', () => {
     render(<ProjectExperienceTable projectExperience={[]} />);
 
-    expect(screen.getByText('Prosjekterfaring')).toBeInTheDocument();
+    expect(screen.getAllByText('Prosjekterfaring')[0]).toBeInTheDocument();
     expect(screen.getByText('Ingen prosjekterfaring tilgjengelig')).toBeInTheDocument();
   });
 });

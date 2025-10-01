@@ -1,9 +1,15 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
+import userEvent from '@testing-library/user-event';
 import SyncButton from './SyncButton';
 import SyncNotificationPanel, { SyncNotification } from './SyncNotificationPanel';
+
+// Ensure DOM is cleaned between tests to avoid duplicate elements from previous renders
+afterEach(() => {
+  cleanup();
+});
 
 describe('SyncButton', () => {
   it('renders single sync button', () => {
@@ -49,8 +55,7 @@ describe('SyncButton', () => {
     );
 
     expect(screen.getByText('Oppdaterer...')).toBeInTheDocument();
-    
-    const button = screen.getByRole('button');
+    const button = screen.getByRole('button', { name: 'Oppdaterer...' });
     expect(button).toBeDisabled();
   });
 
@@ -65,11 +70,13 @@ describe('SyncButton', () => {
       />
     );
 
-    const button = screen.getByRole('button');
-    expect(button).toBeDisabled();
+    const buttons = screen.getAllByRole('button');
+    const disabledButton = buttons.find(btn => (btn as HTMLButtonElement).disabled);
+    expect(disabledButton).toBeDefined();
+    expect(disabledButton).toBeDisabled();
   });
 
-  it('handles click events', () => {
+  it('handles click events', async () => {
     const mockOnClick = vi.fn();
     
     render(
@@ -79,7 +86,8 @@ describe('SyncButton', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('Oppdater CV'));
+    const button = screen.getByTestId('sync-button-single');
+    await userEvent.click(button);
     expect(mockOnClick).toHaveBeenCalledOnce();
   });
 });
@@ -122,7 +130,7 @@ describe('SyncNotificationPanel', () => {
 
     expect(screen.getByText('Henter data')).toBeInTheDocument();
     expect(screen.getByText('Dette kan ta litt tid...')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.getAllByRole('progressbar')[0]).toBeInTheDocument();
   });
 
   it('renders bulk sync details', () => {

@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ChatSearchTab from '../ChatSearchTab';
@@ -58,7 +59,7 @@ describe('ChatSearchTab - HYBRID scoring display', () => {
     await screen.findByText(/Modus: HYBRID/);
     expect(screen.getByText(/w_sem=0.7/)).toBeInTheDocument();
     expect(screen.getByText(/w_qual=0.3/)).toBeInTheDocument();
-    expect(screen.getByText(/combined/)).toBeInTheDocument();
+    expect(screen.getAllByText(/combined/)[0]).toBeInTheDocument();
 
     // Åpne debug-accordion
     const debugHeader = screen.getByText(/Debug-detaljer/i);

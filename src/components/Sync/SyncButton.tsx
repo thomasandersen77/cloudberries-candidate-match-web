@@ -33,6 +33,7 @@ const SyncButton: React.FC<SyncButtonProps> = ({
     >
       <span>
         <Button
+          data-testid={`sync-button-${isAllSync ? 'all' : 'single'}`}
           variant="outlined"
           color="primary"
           size={size}
