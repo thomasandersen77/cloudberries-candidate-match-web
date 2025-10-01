@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Chip, CircularProgress, Container, IconButton, Link as MuiLink, Paper, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, CircularProgress, Container, IconButton, Link as MuiLink, Paper, Stack, Tooltip, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { listProjectRequestsPaged, getProjectRequestSuggestions } from '../../services/projectRequestsService';
@@ -21,27 +21,28 @@ const MatchesPage: React.FC = () => {
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [suggestions, setSuggestions] = useState<Record<number, AISuggestionDto[] | 'loading' | 'error'>>({});
 
+  const loadPage = async (pageIndex: number) => {
+    setLoading(true);
+    try {
+      const p = await listProjectRequestsPaged({ page: pageIndex, size: page?.pageSize ?? 20, sort: 'uploadedAt,desc' });
+      setPage(p);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const p = await listProjectRequestsPaged({ page: 0, size: 20, sort: 'uploadedAt,desc' });
-        setPage(p);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    loadPage(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Prefetch coverage counts in background for first page (optional)
+  // Prefetch coverage counts in background for visible page
   useEffect(() => {
     const content = page?.content ?? [];
-    // Limit parallel fetches to avoid overload
     const firstTen = content.slice(0, 10);
     firstTen.forEach((pr, idx) => {
       const id = pr.id as number | undefined;
       if (!id || suggestions[id]) return;
-      // Stagger to avoid burst
       setTimeout(async () => {
         setSuggestions(prev => ({ ...prev, [id]: 'loading' }));
         try {
@@ -52,7 +53,8 @@ const MatchesPage: React.FC = () => {
         }
       }, idx * 100);
     });
-  }, [page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page?.currentPage]);
 
   const rows = useMemo(() => page?.content ?? [], [page]);
 
@@ -135,7 +137,7 @@ const MatchesPage: React.FC = () => {
                   {Array.isArray(sugg) && (
                     <Stack spacing={1}>
                       {(sugg
-                        .slice() // copy before sort
+                        .slice()
                         .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
                         .slice(0, 5)
                       ).map((s, i) => (
@@ -153,10 +155,17 @@ const MatchesPage: React.FC = () => {
                               )}
                             </Stack>
                           </Stack>
+                          <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
+                            {(s.skills ?? []).map((sk, skIdx) => (
+                              <Chip key={skIdx} size="small" label={sk} variant="outlined" />
+                            ))}
+                          </Stack>
                           {s.justification && (
-                            <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }} color="text.secondary">
-                              {s.justification}
-                            </Typography>
+                            <Tooltip title={s.justification} placement="bottom-start">
+                              <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }} color="text.secondary">
+                                {s.justification.length > 140 ? s.justification.slice(0, 140) + '…' : s.justification}
+                              </Typography>
+                            </Tooltip>
                           )}
                         </Paper>
                       ))}
@@ -168,6 +177,19 @@ const MatchesPage: React.FC = () => {
           );
         })}
       </Stack>
+
+      {/* Pagination controls */}
+      {page && (
+        <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end" sx={{ mt: 2 }}>
+          <Typography variant="caption">Side {typeof page.currentPage === 'number' ? page.currentPage + 1 : 1} av {page.totalPages ?? '?'}</Typography>
+          <Button size="small" variant="outlined" onClick={() => loadPage(Math.max(0, (page.currentPage ?? 0) - 1))} disabled={!page.hasPrevious}>
+            Forrige
+          </Button>
+          <Button size="small" variant="contained" onClick={() => loadPage((page.currentPage ?? 0) + 1)} disabled={!page.hasNext}>
+            Neste
+          </Button>
+        </Stack>
+      )}
     </Container>
   );
 };

@@ -146,6 +146,7 @@ const ChatSearchTab = () => {
     const isRag = response?.mode === 'RAG';
     const items: SearchResult[] = useMemo(() => response?.results ?? [], [response]);
     const debug: DebugInfo | undefined = response?.debug;
+    const scoring = response?.scoring as any;
 
     const startSpinnerTimer = () => {
         if (spinnerTimer.current) clearTimeout(spinnerTimer.current);
@@ -466,12 +467,20 @@ const ChatSearchTab = () => {
                     </Grid>
                 </Grid>
 
-                <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
                     {conversationId && (
                         <Chip size="small" label={`Samtale-ID: ${conversationId}`}/>
                     )}
                     {response?.mode && (
                         <Chip size="small" color={isRag ? 'warning' : 'default'} label={`Modus: ${response.mode}`}/>
+                    )}
+                    {response?.mode === 'HYBRID' && scoring && (
+                        <>
+                            <Chip size="small" variant="outlined" label={`w_sem=${scoring.semanticWeight ?? '?'} w_qual=${scoring.qualityWeight ?? '?'}`} />
+                            {scoring.formula && (
+                                <Chip size="small" variant="outlined" label={String(scoring.formula)} />
+                            )}
+                        </>
                     )}
                     {typeof latency === 'number' && (
                         <Chip size="small" label={`Latens: ${latency} ms`} data-testid="latency" />
