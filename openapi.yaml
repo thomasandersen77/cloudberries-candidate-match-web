@@ -1000,7 +1000,7 @@ components:
           type: integer
           minimum: 0
           maximum: 100
-          description: Minimum CV quality score
+          description: "Minimum CV quality score (0–100). Candidates without a score are treated as 0 for filtering."
         onlyActiveCv:
           type: boolean
           default: false
@@ -1033,7 +1033,7 @@ components:
           type: integer
           minimum: 0
           maximum: 100
-          description: Minimum CV quality score
+          description: "Minimum CV quality score (0–100). Candidates without a score are treated as 0 for filtering."
         onlyActiveCv:
           type: boolean
           default: false
@@ -1177,6 +1177,9 @@ components:
         qualityScore:
           type: integer
           nullable: true
+          minimum: 0
+          maximum: 100
+          description: "CV quality score (0–100); populated from cv_score.score_percent. May be null when no score exists."
         active:
           type: boolean
         keyQualifications:

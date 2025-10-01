@@ -166,6 +166,11 @@ Se mer detaljer i `openapi.yaml` i dette repoet.
 ### Miljøvariabler
 - `VITE_API_BASE_URL` (default: `http://localhost:8080`)
 
+#### CV Quality Score Architecture
+- **CV quality scores** are now **server-provided** through the backend's unified `cv_score.score_percent` integration
+- **minQualityScore filtering** is performed **server-side** for optimal performance
+- Client-side fallback enrichment has been removed - search results contain quality scores directly from the backend
+
 ### Kjøre lokalt
 ````bash path=null start=null
 npm install

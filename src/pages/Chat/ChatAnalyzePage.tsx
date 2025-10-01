@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Container, Typography, TextField, Button, Paper, CircularProgress, Stack, 
   Box, Fade, Chip, useTheme, useMediaQuery 
 } from '@mui/material';
 import { Send as SendIcon, SmartToy as AiIcon, Person as PersonIcon } from '@mui/icons-material';
+import ReactMarkdown from 'react-markdown';
 import { analyzeContent } from '../../services/chatService';
 
 interface ChatMessage {
@@ -44,7 +45,7 @@ const ChatAnalyzePage: React.FC = () => {
     }
   }, [messages]);
 
-  const onAnalyze = async () => {
+  const onAnalyze = useCallback(async () => {
     if (!content.trim() || loading) return;
     
     const questionId = Date.now().toString();
@@ -102,14 +103,14 @@ const ChatAnalyzePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [content, loading]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onAnalyze();
     }
-  };
+  }, [onAnalyze]);
 
   const formatTimestamp = (date: Date) => {
     return date.toLocaleTimeString('no-NO', { 
@@ -166,15 +167,29 @@ const ChatAnalyzePage: React.FC = () => {
                   </Typography>
                 </Box>
               ) : (
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
-                    whiteSpace: 'pre-wrap',
-                    fontSize: isMobile ? '0.9rem' : '1rem'
-                  }}
-                >
-                  {message.content}
-                </Typography>
+                <Box sx={{
+                  '& p': { fontSize: isMobile ? '0.9rem' : '1rem', lineHeight: 1.5, margin: '0.5em 0' },
+                  '& h1, & h2, & h3, & h4, & h5, & h6': { margin: '1em 0 0.5em 0' },
+                  '& ul, & ol': { paddingLeft: '1.5em', margin: '0.5em 0' },
+                  '& li': { margin: '0.25em 0' },
+                  '& code': { backgroundColor: 'rgba(0,0,0,0.04)', padding: '0.2em 0.4em', borderRadius: '3px' },
+                  '& pre': { backgroundColor: 'rgba(0,0,0,0.04)', padding: '1em', borderRadius: '4px', overflow: 'auto' },
+                  '& blockquote': { borderLeft: '4px solid #ccc', margin: '1em 0', paddingLeft: '1em', fontStyle: 'italic' }
+                }}>
+                  {isQuestion ? (
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        whiteSpace: 'pre-wrap',
+                        fontSize: isMobile ? '0.9rem' : '1rem'
+                      }}
+                    >
+                      {message.content}
+                    </Typography>
+                  ) : (
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  )}
+                </Box>
               )}
             </Paper>
             
@@ -217,7 +232,7 @@ const ChatAnalyzePage: React.FC = () => {
           fullWidth 
           value={content} 
           onChange={(e) => setContent(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           placeholder="F.eks: Kan du analysere denne CV-teksten og gi meg et sammendrag?"
           disabled={loading}
         />

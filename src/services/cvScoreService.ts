@@ -1,6 +1,10 @@
 import apiClient from './apiClient';
 import type { CandidateDTO, CvScoreDto } from '../types/api';
 
+// NOTE: This service is used for CV scoring management pages only.
+// Search components should NOT use this service for enrichment;
+// they should rely on server-provided qualityScore in search results.
+
 export async function getAllCandidates(): Promise<CandidateDTO[]> {
   const { data } = await apiClient.get<CandidateDTO[]>('/api/cv-score/all');
   return data;

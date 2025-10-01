@@ -126,6 +126,7 @@ const SemanticSearchPage: React.FC = () => {
         ...(embeddingInfo?.enabled ? { provider: embeddingInfo.provider, model: embeddingInfo.model } : {}),
       } as SemanticSearchRequest;
       const data = await searchConsultantsSemantic({ request: body, page: 0, size: topK });
+
       setResult(data);
     } catch (e) {
       setError('Semantisk søk feilet. Prøv igjen.');

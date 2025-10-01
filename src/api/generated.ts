@@ -1479,7 +1479,7 @@ export interface components {
             skillsAll?: string[];
             /** @description Skills where ANY can be present (OR condition) */
             skillsAny?: string[];
-            /** @description Minimum CV quality score */
+            /** @description Minimum CV quality score (0–100). Candidates without a score are treated as 0 for filtering. */
             minQualityScore?: number;
             /**
              * @description Only include active CVs
@@ -1506,7 +1506,7 @@ export interface components {
              * @default 10
              */
             topK: number;
-            /** @description Minimum CV quality score */
+            /** @description Minimum CV quality score (0–100). Candidates without a score are treated as 0 for filtering. */
             minQualityScore?: number;
             /**
              * @description Only include active CVs
@@ -1584,6 +1584,7 @@ export interface components {
             /** Format: int64 */
             id?: number | null;
             versionTag?: string | null;
+            /** @description CV quality score (0–100); populated from cv_score.score_percent. May be null when no score exists. */
             qualityScore?: number | null;
             active: boolean;
             keyQualifications?: components["schemas"]["KeyQualificationDto"][];

@@ -20,7 +20,7 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
   consultant, onDetailsClick, onCvClick 
 }) => {
   const activeCv = consultant.cvs?.find(cv => cv.active);
-  const quality = activeCv?.qualityScore ?? 0;
+  const quality = activeCv?.qualityScore ?? null;
   const { displaySkills, remainingCount } = getSkillsDisplay(consultant, 3);
 
   return (
@@ -37,18 +37,31 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Box sx={{ position: 'relative', display: 'inline-flex', mb: 0.5 }}>
-              <CircularProgress variant="determinate" value={quality} size={32} sx={{ color: 'primary.main' }} />
-              <Box sx={{
-                top: 0, left: 0, bottom: 0, right: 0,
-                position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.65rem' }}>{quality}%</Typography>
-              </Box>
-            </Box>
-            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary', textAlign: 'center' }}>
-              CV-skår
-            </Typography>
+            {quality !== null ? (
+              <>
+                <Box sx={{ position: 'relative', display: 'inline-flex', mb: 0.5 }}>
+                  <CircularProgress 
+                    variant="determinate" 
+                    value={Math.max(0, Math.min(100, quality))} 
+                    size={32} 
+                    sx={{ color: 'primary.main' }} 
+                  />
+                  <Box sx={{
+                    top: 0, left: 0, bottom: 0, right: 0,
+                    position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.65rem' }}>{quality}%</Typography>
+                  </Box>
+                </Box>
+                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary', textAlign: 'center' }}>
+                  CV-skår
+                </Typography>
+              </>
+            ) : (
+              <Typography variant="caption" sx={{ fontSize: '0.75rem', color: 'text.secondary', textAlign: 'center' }}>
+                -
+              </Typography>
+            )}
           </Box>
         </Box>
         
@@ -209,11 +222,12 @@ const ConsultantsListPage: React.FC = () => {
     return filteredConsultants.slice(start, start + rowsPerPage);
   }, [filteredConsultants, page, rowsPerPage]);
 
+
   const fetchData = async () => {
     setLoading(true);
     
     // Show loading animation if data fetching takes longer than 0.5 seconds
-    let loadingTimer: NodeJS.Timeout = setTimeout(() => {}, 500);
+    const loadingTimer: NodeJS.Timeout = setTimeout(() => {}, 500);
     
     try {
       const res = await listConsultantsWithCv(true); // Only active CVs
@@ -232,7 +246,7 @@ const ConsultantsListPage: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchData(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { fetchData(); }, []);
 
   // Actions
   const performSearch = () => {
@@ -437,7 +451,7 @@ const ConsultantsListPage: React.FC = () => {
                     <TableBody>
                     {pagedConsultants.map((c) => {
                       const activeCv = c.cvs?.find(cv => cv.active);
-                      const quality = activeCv?.qualityScore ?? 0;
+                      const quality = activeCv?.qualityScore ?? null;
                       const { displaySkills: topSkills, remainingCount } = getSkillsDisplay(c, 3);
                       const { displaySkills: tabletSkills, remainingCount: tabletRemaining } = getSkillsDisplay(c, 2);
                       
@@ -479,31 +493,37 @@ const ConsultantsListPage: React.FC = () => {
                           )}
                             <TableCell align="center">
                               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <Box sx={{position: 'relative', display: 'inline-flex', mb: 0.5}}>
-                                  <CircularProgress 
-                                    variant="determinate" 
-                                    value={quality} 
-                                    size={isTablet ? 28 : 36} 
-                                    sx={{ color: 'primary.main' }} 
-                                  />
-                                  <Box sx={{
-                                    top: 0, left: 0, bottom: 0, right: 0,
-                                    position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                  }}>
+                                {quality !== null ? (
+                                  <>
+                                    <Box sx={{position: 'relative', display: 'inline-flex', mb: 0.5}}>
+                                      <CircularProgress 
+                                        variant="determinate" 
+                                        value={Math.max(0, Math.min(100, quality))} 
+                                        size={isTablet ? 28 : 36} 
+                                        sx={{ color: 'primary.main' }} 
+                                      />
+                                      <Box sx={{
+                                        top: 0, left: 0, bottom: 0, right: 0,
+                                        position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                      }}>
+                                        <Typography 
+                                          variant="caption" 
+                                          sx={{ fontWeight: 'bold', fontSize: isTablet ? '0.65rem' : '0.75rem' }}
+                                        >
+                                          {quality}%
+                                        </Typography>
+                                      </Box>
+                                    </Box>
                                     <Typography 
                                       variant="caption" 
-                                      sx={{ fontWeight: 'bold', fontSize: isTablet ? '0.65rem' : '0.75rem' }}
+                                      sx={{ fontSize: isTablet ? '0.6rem' : '0.65rem', color: 'text.secondary', textAlign: 'center' }}
                                     >
-                                      {quality}%
+                                      CV-skår
                                     </Typography>
-                                  </Box>
-                                </Box>
-                                <Typography 
-                                  variant="caption" 
-                                  sx={{ fontSize: isTablet ? '0.6rem' : '0.65rem', color: 'text.secondary', textAlign: 'center' }}
-                                >
-                                  CV-skår
-                                </Typography>
+                                  </>
+                                ) : (
+                                  <Typography variant="body2" color="text.secondary">-</Typography>
+                                )}
                               </Box>
                             </TableCell>
                             <TableCell align="right">

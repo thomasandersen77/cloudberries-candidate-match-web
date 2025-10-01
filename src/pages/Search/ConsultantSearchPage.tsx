@@ -243,6 +243,7 @@ const ConsultantSearchPage: React.FC = () => {
         onlyActiveCv: rOnlyActive,
       };
       const data = await searchConsultantsRelational({ request: body, page, size });
+
       setRResult(data);
     } catch (e) {
       setRError('Søk feilet. Kontroller kriterier og prøv igjen.');
@@ -303,6 +304,7 @@ const ConsultantSearchPage: React.FC = () => {
           : {}),
       } as SemanticSearchRequest;
       const data = await searchConsultantsSemantic({ request: body, page, size });
+
       setSResult(data);
     } catch (e) {
       setSError('Semantisk søk feilet. Prøv igjen.');
