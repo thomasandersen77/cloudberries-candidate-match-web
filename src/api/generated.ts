@@ -1899,10 +1899,7 @@ export interface components {
             scoring?: components["schemas"]["ScoringInfo"];
         };
         SearchResult: {
-            /**
-             * Format: uuid
-             * @description Consultant ID
-             */
+            /** @description Consultant userId */
             consultantId: string;
             /**
              * @description Consultant name
@@ -1923,17 +1920,11 @@ export interface components {
             };
         };
         RAGSource: {
-            /**
-             * Format: uuid
-             * @description Consultant ID
-             */
+            /** @description Consultant userId */
             consultantId: string;
             /** @description Consultant name */
             consultantName: string;
-            /**
-             * Format: uuid
-             * @description Chunk ID
-             */
+            /** @description Chunk identifier */
             chunkId: string;
             /** @description Source text excerpt */
             text: string;
