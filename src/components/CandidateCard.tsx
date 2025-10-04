@@ -1,5 +1,6 @@
 import React from 'react';
-import {Avatar, Box, Button, Card, CardContent, CircularProgress, Typography, Chip} from '@mui/material';
+import {Avatar, Box, Button, Card, CardContent, Typography, Chip} from '@mui/material';
+import CvScoreBadge from './CvScoreBadge';
 import { useNavigate } from 'react-router-dom';
 import type { ConsultantWithCvDto } from '../types/api';
 
@@ -85,31 +86,14 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ consultant, matchPercenta
                 </Box>
             </CardContent>
 
-            {/* Quality score or match percentage indicator */}
-            <Box sx={{position: 'relative', display: 'inline-flex', mr: 3}}>
-                <CircularProgress
-                    variant="determinate"
-                    value={matchPercentage || qualityScore}
-                    size={60}
-                    sx={{ color: 'primary.main' }}
+{/* Quality score or match percentage indicator */}
+            <Box sx={{ mr: 3 }}>
+                <CvScoreBadge
+                    score={(matchPercentage ?? qualityScore) as number}
+                    sizePx={60}
+                    subLabel={matchPercentage ? 'Match' : 'Kvalitet'}
+                    ariaLabel={matchPercentage ? `Match score ${(matchPercentage ?? 0)} av 100` : `CV score ${(qualityScore ?? 0)} av 100`}
                 />
-                <Box
-                    sx={{
-                        top: 0, left: 0, bottom: 0, right: 0,
-                        position: 'absolute',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <Typography variant="caption" component="div" color="text.primary" sx={{fontWeight: 'bold'}}>
-                        {`${matchPercentage || qualityScore}%`}
-                    </Typography>
-                    <Typography variant="body2" sx={{fontSize: '0.6rem', lineHeight: 1}}>
-                        {matchPercentage ? 'Match' : 'Kvalitet'}
-                    </Typography>
-                </Box>
             </Box>
         </Card>
     );

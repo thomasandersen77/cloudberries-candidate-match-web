@@ -26,6 +26,8 @@ import { getSkillsDisplay } from '../../utils/skillUtils';
 
 const DELAYED_SPINNER_MS = 500;
 
+import { compareByQualityThenName } from '../../utils/scoreUtils';
+
 const ResultsTable: React.FC<{
   items: ConsultantWithCvDto[];
   onDetails: (userId: string) => void;
@@ -42,7 +44,7 @@ const ResultsTable: React.FC<{
         </TableRow>
       </TableHead>
       <TableBody>
-        {items.map((c) => {
+        {items.slice().sort(compareByQualityThenName).map((c) => {
           const activeCv = c.cvs?.find(cv => cv.active);
           const quality = activeCv?.qualityScore ?? null;
           const { displaySkills, remainingCount } = getSkillsDisplay(c, 3);

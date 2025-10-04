@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { 
   Box, Container, Typography, TextField, Paper, Stack, Button, Chip,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination,
-  Avatar, CircularProgress, Card, CardContent, Skeleton, useTheme, useMediaQuery,
+  Avatar, Card, CardContent, Skeleton, useTheme, useMediaQuery,
   Divider
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +13,8 @@ import SyncNotificationPanel from '../../components/Sync/SyncNotificationPanel';
 import type { SyncNotification } from '../../components/Sync/SyncNotificationPanel';
 import ScoringOverlay from '../../components/ScoringOverlay';
 import { getSkillsDisplay } from '../../utils/skillUtils';
-import { sortConsultantsByLastName } from '../../utils/nameUtils';
+import { compareByQualityThenName } from '../../utils/scoreUtils';
+import CvScoreBadge from '../../components/CvScoreBadge';
 
 // Mobile consultant card component
 const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetailsClick: () => void; onCvClick: () => void }> = ({ 
@@ -39,20 +40,7 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {quality !== null ? (
               <>
-                <Box sx={{ position: 'relative', display: 'inline-flex', mb: 0.5 }}>
-                  <CircularProgress 
-                    variant="determinate" 
-                    value={Math.max(0, Math.min(100, quality))} 
-                    size={32} 
-                    sx={{ color: 'primary.main' }} 
-                  />
-                  <Box sx={{
-                    top: 0, left: 0, bottom: 0, right: 0,
-                    position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
-                    <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.65rem' }}>{quality}%</Typography>
-                  </Box>
-                </Box>
+<CvScoreBadge score={quality} size="md" />
                 <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary', textAlign: 'center' }}>
                   CV-skår
                 </Typography>
@@ -154,7 +142,7 @@ const MobileSkeleton: React.FC<{ cards?: number }> = ({ cards = 5 }) => (
               <Skeleton width="60%" height={24} sx={{ mb: 0.5 }} />
               <Skeleton width="40%" height={16} />
             </Box>
-            <Skeleton variant="circular" width={32} height={32} />
+<Skeleton variant="circular" width={44} height={44} />
           </Box>
           <Skeleton width="100%" height={16} sx={{ mb: 1 }} />
           <Box sx={{ display: 'flex', gap: 0.5, mb: 2 }}>
@@ -217,13 +205,17 @@ const ConsultantsListPage: React.FC = () => {
     });
   }, [consultants, nameFilter, selectedIndustries]);
 
+const sortedFilteredConsultants = useMemo(() => {
+    return filteredConsultants.slice().sort(compareByQualityThenName);
+  }, [filteredConsultants]);
+
   const pagedConsultants = useMemo(() => {
     const start = page * rowsPerPage;
-    return filteredConsultants.slice(start, start + rowsPerPage);
-  }, [filteredConsultants, page, rowsPerPage]);
+    return sortedFilteredConsultants.slice(start, start + rowsPerPage);
+  }, [sortedFilteredConsultants, page, rowsPerPage]);
 
 
-  const fetchData = async () => {
+const fetchData = async () => {
     setLoading(true);
     
     // Show loading animation if data fetching takes longer than 0.5 seconds
@@ -231,8 +223,8 @@ const ConsultantsListPage: React.FC = () => {
     
     try {
       const res = await listConsultantsWithCv(true); // Only active CVs
-      const sortedConsultants = sortConsultantsByLastName(res);
-      setConsultants(sortedConsultants);
+      // Do not sort here; sorting happens on the filtered view to ensure consistency with filters
+      setConsultants(res);
     } catch (error) {
       console.error('Failed to fetch consultants:', error);
       setNotification({
@@ -495,25 +487,7 @@ const ConsultantsListPage: React.FC = () => {
                               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                 {quality !== null ? (
                                   <>
-                                    <Box sx={{position: 'relative', display: 'inline-flex', mb: 0.5}}>
-                                      <CircularProgress 
-                                        variant="determinate" 
-                                        value={Math.max(0, Math.min(100, quality))} 
-                                        size={isTablet ? 28 : 36} 
-                                        sx={{ color: 'primary.main' }} 
-                                      />
-                                      <Box sx={{
-                                        top: 0, left: 0, bottom: 0, right: 0,
-                                        position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                      }}>
-                                        <Typography 
-                                          variant="caption" 
-                                          sx={{ fontWeight: 'bold', fontSize: isTablet ? '0.65rem' : '0.75rem' }}
-                                        >
-                                          {quality}%
-                                        </Typography>
-                                      </Box>
-                                    </Box>
+<CvScoreBadge score={quality} size={isTablet ? 'md' : 'lg'} />
                                     <Typography 
                                       variant="caption" 
                                       sx={{ fontSize: isTablet ? '0.6rem' : '0.65rem', color: 'text.secondary', textAlign: 'center' }}

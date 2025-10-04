@@ -11,6 +11,7 @@ import SkillsOverviewPage from './pages/Skills/SkillsOverviewPage';
 import EmbeddingsPage from './pages/Embeddings/EmbeddingsPage';
 import ChatPage from './pages/Chat/ChatPage';
 import HealthPage from './pages/Health/HealthPage';
+import StatsPage from './pages/Analytics/StatsPage';
 import ProjectRequestUploadPage from './pages/ProjectRequests/ProjectRequestUploadPage';
 import ProjectRequestDetailPage from './pages/ProjectRequests/ProjectRequestDetailPage';
 import ProjectRequestCreatePage from './pages/ProjectRequests/ProjectRequestCreatePage';
@@ -36,6 +37,7 @@ function App() {
           <Route path="/skills" element={<SkillsOverviewPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/health" element={<HealthPage />} />
+          <Route path="/stats" element={<StatsPage />} />
           <Route path="/project-requests/upload" element={<ProjectRequestUploadPage />} />
           <Route path="/project-requests/new" element={<ProjectRequestCreatePage />} />
           <Route path="/project-requests/:id" element={<ProjectRequestDetailPage />} />

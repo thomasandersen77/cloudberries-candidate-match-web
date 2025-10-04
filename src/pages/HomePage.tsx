@@ -12,6 +12,7 @@ const HomePage: React.FC = () => {
     { to: '/project-requests/upload', title: 'Last opp kundeforspørsel', desc: 'Last opp PDF, analyser og lagre i databasen' },
     { to: '/chat', title: 'Chat Analyze', desc: 'Analyser tekst med AI' },
     { to: '/health', title: 'Helse', desc: 'Systemstatus' },
+    { to: '/stats', title: 'Statistikk', desc: 'Programmeringsspråk og roller' },
   ];
 
   return (

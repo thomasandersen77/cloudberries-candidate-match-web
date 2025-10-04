@@ -4,6 +4,89 @@
  */
 
 export interface paths {
+    "/api/analytics/programming-languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Programming language statistics
+         * @description Returns counts, percentages, and aggregated experience years per language.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Optional list of languages to include (defaults to Kotlin, Java, C#, Python) */
+                    languages?: string[];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Language stats */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProgrammingLanguageStat"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consultant roles statistics
+         * @description Percentage of consultants with experience as System Developer, Data Engineer, or Project Manager.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Role stats */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RoleStat"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/industries/backfill": {
         parameters: {
             query?: never;
@@ -1438,6 +1521,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ProgrammingLanguageStat: {
+            language: string;
+            consultantCount: number;
+            /** Format: double */
+            percentage: number;
+            /** @description Sum of duration years (from consultant_skill and cv_skill_in_category) */
+            aggregatedYears: number;
+        };
+        RoleStat: {
+            role: string;
+            consultantCount: number;
+            /** Format: double */
+            percentage: number;
+        };
         /** @enum {string} */
         CoverageStatus: "GREEN" | "YELLOW" | "RED" | "NEUTRAL";
         MatchesListItemDto: {
@@ -1539,6 +1636,11 @@ export interface components {
             konsulenter: components["schemas"]["ConsultantSummaryDto"][];
         };
         AIAnalysisRequest: {
+            /**
+             * Format: uuid
+             * @description Optional conversation id to maintain multi-turn context
+             */
+            conversationId?: string | null;
             /** @description Content to analyze */
             content: string;
         };
