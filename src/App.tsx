@@ -1,36 +1,53 @@
-import {Box, createTheme, CssBaseline, ThemeProvider} from '@mui/material';
-import CandidateListPage from './pages/CandidateListPage';
+import { Box } from '@mui/material';
+import { Routes, Route } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import ConsultantsListPage from './pages/Consultants/ConsultantsListPage';
+import ConsultantDetailPage from './pages/Consultants/ConsultantDetailPage';
+import CvViewPage from './pages/CV/CvViewPage';
+import CvScoreListPage from './pages/CvScore/CvScoreListPage';
+import CvScoreDetailPage from './pages/CvScore/CvScoreDetailPage';
+import MatchesPage from './pages/Matches/MatchesPage';
+import SkillsOverviewPage from './pages/Skills/SkillsOverviewPage2';
+import EmbeddingsPage from './pages/Embeddings/EmbeddingsPage';
+import ChatPage from './pages/Chat/ChatPage';
+import HealthPage from './pages/Health/HealthPage';
+import StatsPage from './pages/Analytics/StatsPage';
+import ProjectRequestUploadPage from './pages/ProjectRequests/ProjectRequestUploadPage';
+import ProjectRequestDetailPage from './pages/ProjectRequests/ProjectRequestDetailPage';
+import ProjectRequestCreatePage from './pages/ProjectRequests/ProjectRequestCreatePage';
+import ConsultantSearchPage from './pages/Search/ConsultantSearchPage';
+import SemanticSearchPage from './pages/Search/SemanticSearchPage';
+import Header from './components/Header';
 
-const theme = createTheme({
-    typography: {
-        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    },
-});
 
 function App() {
-    return (
-        <ThemeProvider theme={theme}>
-            <CssBaseline/>
-            <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                width: '100%',
-                minHeight: '100vh'
-            }}>
-                <Box sx={{
-                    width: '100%',
-                    maxWidth: '1200px',
-                    margin: '0 auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                }}>
-                    <CandidateListPage/>
-                </Box>
-            </Box>
-        </ThemeProvider>
-    );
+  return (
+    <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
+      <Header />
+      <Box sx={{ px: 2, py: 2 }}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/consultants" element={<ConsultantsListPage />} />
+          <Route path="/consultants/:userId" element={<ConsultantDetailPage />} />
+          <Route path="/cv/:userId" element={<CvViewPage />} />
+          <Route path="/cv-score" element={<CvScoreListPage />} />
+          <Route path="/cv-score/:candidateId" element={<CvScoreDetailPage />} />
+          <Route path="/matches" element={<MatchesPage />} />
+          <Route path="/embeddings" element={<EmbeddingsPage />} />
+          <Route path="/skills" element={<SkillsOverviewPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/health" element={<HealthPage />} />
+          <Route path="/stats" element={<StatsPage />} />
+          <Route path="/project-requests/upload" element={<ProjectRequestUploadPage />} />
+          <Route path="/project-requests/new" element={<ProjectRequestCreatePage />} />
+          <Route path="/project-requests/:id" element={<ProjectRequestDetailPage />} />
+          <Route path="/search" element={<ConsultantSearchPage />} />
+          <Route path="/search/semantic" element={<SemanticSearchPage />} />
+          <Route path="*" element={<div style={{ padding: 24 }}><a href="/">Gå til forsiden</a></div>} />
+        </Routes>
+      </Box>
+    </Box>
+  );
 }
 
 export default App;

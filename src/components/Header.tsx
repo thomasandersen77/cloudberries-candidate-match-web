@@ -1,98 +1,68 @@
-import React, {useEffect, useState} from 'react';
-import {AppBar, Avatar, Box, IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
+import React, { useState } from 'react';
+import {AppBar, Avatar, IconButton, Toolbar, Typography, Menu, MenuItem, Divider} from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import MenuIcon from '@mui/icons-material/Menu';
-import {getHealthStatus, type HealthStatus} from '../services/healthService';
-
-// Initial state before the first health check
-const initialHealthStatus: HealthStatus = {
-    status: 'DOWN',
-    details: {
-        database: 'Checking...',
-        flowcase: 'Checking...',
-        genAI_operational: 'Checking...',
-        genAI_configured: 'Checking...',
-    },
-};
+import HealthCheckIndicator from './HealthCheckIndicator'; // <--- 1. Importer
 
 const Header: React.FC = () => {
-    const [healthStatus, setHealthStatus] = useState<HealthStatus>(initialHealthStatus);
+    const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+    const open = Boolean(menuAnchor);
 
-    useEffect(() => {
-        const fetchStatus = async () => {
-            const health = await getHealthStatus();
-            setHealthStatus(health);
-        };
-
-        fetchStatus(); // Initial fetch
-        const intervalId = setInterval(fetchStatus, 30000); // Poll every 30 seconds
-
-        return () => clearInterval(intervalId); // Cleanup on component unmount
-    }, []);
-
-    const statusColor = healthStatus.status === 'UP' ? 'success.main' : 'error.main';
-
-    // Helper function to format the keys from the backend for better readability
-    const formatDetailKey = (key: string) => {
-        return key
-            .replace(/_/g, ' ')
-            .replace(/genAI/g, 'GenAI')
-            .replace(/\b\w/g, char => char.toUpperCase());
-    };
-
-    // Component to render the detailed status in the tooltip
-    const renderHealthDetails = () => (
-        <Box sx={{p: 0.5}}>
-            <Typography variant="body2" sx={{fontWeight: 'bold', mb: 1}}>
-                Overall Status: {healthStatus.status}
-            </Typography>
-            {Object.entries(healthStatus.details).map(([key, value]) => (
-                <Box key={key} sx={{display: 'flex', alignItems: 'center', mb: 0.5}}>
-                    <Box
-                        sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            // Show status of each individual component
-                            backgroundColor: String(value).toUpperCase() === 'UP' ? 'success.main' : 'error.main',
-                            mr: 1,
-                        }}
-                    />
-                    <Typography variant="caption">{`${formatDetailKey(key)}: ${value}`}</Typography>
-                </Box>
-            ))}
-        </Box>
-    );
+    const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setMenuAnchor(e.currentTarget);
+    const handleMenuClose = () => setMenuAnchor(null);
 
     return (
         <AppBar position="static" color="transparent" elevation={0} sx={{borderBottom: '1px solid #e0e0e0'}}>
             <Toolbar>
-                <Avatar sx={{bgcolor: '#8e44ad', mr: 1}}>CB</Avatar>
+                <Avatar sx={{bgcolor: 'primary.main', mr: 2}}>TA</Avatar>
                 <Typography variant="h6" component="div" sx={{flexGrow: 1}}>
-                    CLOUDBERRIES <span style={{fontWeight: '300'}}>Inter</span>
+                    Cloudberries<br/>
+                    <span style={{fontWeight: '300'}}>Intelligent Skill Search and Matching Platform</span>
                 </Typography>
 
-                <Tooltip title={renderHealthDetails()} arrow placement="bottom-end">
-                    <Box sx={{display: 'flex', alignItems: 'center', mr: 2, cursor: 'pointer'}}>
-                        <Box
-                            sx={{
-                                width: 12,
-                                height: 12,
-                                borderRadius: '50%',
-                                backgroundColor: statusColor,
-                                boxShadow: `0 0 5px ${statusColor}`,
-                                transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
-                            }}
-                        />
-                    </Box>
-                </Tooltip>
+                <HealthCheckIndicator/>
 
-                <IconButton color="inherit">
+                <IconButton color="inherit" aria-label="profil">
                     <PersonOutlineIcon/>
                 </IconButton>
-                <IconButton color="inherit">
+                <IconButton
+                    color="inherit"
+                    aria-label="meny"
+                    aria-controls={open ? 'main-menu' : undefined}
+                    aria-haspopup="true"
+                    aria-expanded={open ? 'true' : undefined}
+                    onClick={handleMenuOpen}
+                >
                     <MenuIcon/>
                 </IconButton>
+                <Menu
+                    id="main-menu"
+                    anchorEl={menuAnchor}
+                    open={open}
+                    onClose={handleMenuClose}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                >
+                    <MenuItem component={RouterLink} to="/" onClick={handleMenuClose}>Forside</MenuItem>
+                    <Divider />
+                    <MenuItem component={RouterLink} to="/consultants" onClick={handleMenuClose}>Konsulenter</MenuItem>
+                    <MenuItem component={RouterLink} to="/cv-score" onClick={handleMenuClose}>CV-Score</MenuItem>
+                    <MenuItem component={RouterLink} to="/matches" onClick={handleMenuClose}>Matcher</MenuItem>
+                    <MenuItem component={RouterLink} to="/embeddings" onClick={handleMenuClose}>Embeddings</MenuItem>
+                    <MenuItem component={RouterLink} to="/chat" onClick={handleMenuClose}>Chat Analyze</MenuItem>
+                    <MenuItem component={RouterLink} to="/health" onClick={handleMenuClose}>Helse</MenuItem>
+                    <MenuItem component={RouterLink} to="/stats" onClick={handleMenuClose}>Statistikk</MenuItem>
+                    <MenuItem component={RouterLink} to="/search" onClick={handleMenuClose}>Søk</MenuItem>
+                    <MenuItem component={RouterLink} to="/search/semantic" onClick={handleMenuClose}>Semantisk Søk</MenuItem>
+                    <Divider />
+                    <MenuItem component={RouterLink} to="/project-requests/upload" onClick={handleMenuClose}>
+                        Last opp kundeforspørsel (PDF)
+                    </MenuItem>
+                    <MenuItem component={RouterLink} to="/project-requests/new" onClick={handleMenuClose}>
+                        Ny kundeforspørsel
+                    </MenuItem>
+                </Menu>
             </Toolbar>
         </AppBar>
     );

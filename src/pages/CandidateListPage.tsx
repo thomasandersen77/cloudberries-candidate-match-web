@@ -3,6 +3,7 @@ import {Box, Container, Typography} from '@mui/material';
 import CandidateCard from '../components/CandidateCard.tsx';
 import Header from '../components/Header.tsx';
 import {mockCandidates} from '../data/mockCandidates.ts';
+import type { ConsultantWithCvDto } from '../types/api';
 
 const CandidateListPage: React.FC = () => {
     return (
@@ -46,7 +47,11 @@ const CandidateListPage: React.FC = () => {
                     gap: 2
                 }}>
                     {mockCandidates.map((candidate) => (
-                        <CandidateCard key={candidate.id} candidate={candidate}/>
+                        <CandidateCard
+                            key={candidate.id}
+                            consultant={{ userId: String(candidate.id), name: candidate.name, skills: [], cvs: [] } as unknown as ConsultantWithCvDto}
+                            matchPercentage={candidate.matchPercentage}
+                        />
                     ))}
                 </Box>
             </Container>
