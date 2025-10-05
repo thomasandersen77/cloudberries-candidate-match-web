@@ -49,12 +49,13 @@ const SkillsOverviewPage2: React.FC = () => {
     });
 
     // Paginated summary (react-query)
-    const summaryQuery = useInfiniteQuery({
+    const summaryQuery = useInfiniteQuery<PageSkillSummaryDto>({
         queryKey: ['skills-summary', q],
-        queryFn: async ({pageParam = 0}) => {
+        queryFn: async ({ pageParam }) => {
+            const page = typeof pageParam === 'number' ? pageParam : 0;
             const res: PageSkillSummaryDto = await listSkillSummary({
                 q: q || undefined,
-                page: pageParam,
+                page,
                 size: SUMMARY_PAGE_SIZE,
                 sort: 'consultantCount,desc'
             });
@@ -62,25 +63,16 @@ const SkillsOverviewPage2: React.FC = () => {
         },
         initialPageParam: 0,
         getNextPageParam: (lastPage) => {
-            const page = (lastPage as any).number ?? (lastPage as any).page ?? 0;
-            const totalPages = (lastPage as any).totalPages ?? 0;
+            const page = lastPage.number ?? 0;
+            const totalPages = lastPage.totalPages ?? 0;
             return page + 1 < totalPages ? page + 1 : undefined;
         },
     });
 
     const items: SkillSummaryDto[] = useMemo(() => {
         const pages = summaryQuery.data?.pages ?? [];
-        return pages.flatMap((p: any) => p.content ?? []);
+        return pages.flatMap((p) => p.content ?? []);
     }, [summaryQuery.data]);
-
-    // Auto-expand when a unique suggestion is selected and results contain it
-    useEffect(() => {
-        if (!selectedSuggestion) return;
-        const found = items.find(s => s.name.toUpperCase() === selectedSuggestion.toUpperCase());
-        if (found) {
-            toggleLoadConsultants(found.name);
-        }
-    }, [items, selectedSuggestion]);
 
     // Per-skill consultants cache (expanded)
     const [consultantsBySkill, setConsultantsBySkill] = useState<Record<string, {
@@ -91,7 +83,7 @@ const SkillsOverviewPage2: React.FC = () => {
     const [top3BySkill, setTop3BySkill] = useState<Record<string, ConsultantSummaryDto[]>>({});
     const [loadingTop, setLoadingTop] = useState<Record<string, boolean>>({});
 
-    const toggleLoadConsultants = async (skill: string) => {
+    const toggleLoadConsultants = React.useCallback(async (skill: string) => {
         const key = skill.toUpperCase();
         const current = consultantsBySkill[key];
         if (current && current.items.length > 0) {
@@ -104,7 +96,17 @@ const SkillsOverviewPage2: React.FC = () => {
             ...prev,
             [key]: {items: res.content ?? [], page: res.number ?? 0, last: res.last ?? true}
         }));
-    };
+    }, [consultantsBySkill]);
+
+    // Auto-expand when a unique suggestion is selected and results contain it
+    useEffect(() => {
+        if (!selectedSuggestion) return;
+        const found = items.find(s => s.name.toUpperCase() === selectedSuggestion.toUpperCase());
+        if (found) {
+            toggleLoadConsultants(found.name);
+        }
+    }, [items, selectedSuggestion, toggleLoadConsultants]);
+
 
     const loadMoreConsultants = async (skill: string) => {
         const key = skill.toUpperCase();
