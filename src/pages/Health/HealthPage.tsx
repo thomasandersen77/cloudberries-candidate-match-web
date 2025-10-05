@@ -15,7 +15,7 @@ import { getHealthStatus } from '../../services/healthService';
 import type { HealthResponse } from '../../types/api';
 
 // A new component to render status with specific text and colors as requested.
-const StatusIndicator: React.FC<{ status: any; serviceName: string }> = ({ status, serviceName }) => {
+const StatusIndicator: React.FC<{ status: unknown; serviceName: string }> = ({ status, serviceName }) => {
   // Normalize status to a boolean `isUp`.
   const isUp = String(status).toUpperCase() === 'UP' || String(status).toUpperCase() === 'TRUE';
 
@@ -37,7 +37,7 @@ const HealthPage: React.FC = () => {
     getHealthStatus().then(setHealth);
   }, []);
 
-  const details = (health?.details ?? {}) as Record<string, any>;
+  const details = (health?.details ?? {}) as Record<string, unknown>;
 
   return (
     <Container sx={{ py: 4 }}>

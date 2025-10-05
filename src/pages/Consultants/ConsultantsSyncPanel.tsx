@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Paper, Stack, TextField, Button, Typography } from '@mui/material';
 import { runConsultantSync } from '../../services/consultantsService';
+import type { ConsultantSyncResponse } from '../../services/consultantsService';
 
 const ConsultantsSyncPanel: React.FC = () => {
   const [batchSize, setBatchSize] = useState<number>(100);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ConsultantSyncResponse | null>(null);
 
   const onRun = async () => {
     const res = await runConsultantSync(batchSize);

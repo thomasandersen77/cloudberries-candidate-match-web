@@ -21,7 +21,7 @@ const SkillsOverviewPage: React.FC = () => {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingMoreRef = useRef(false);
 
-  const loadPage = async (nextPage: number, reset: boolean = false) => {
+  const loadPage = React.useCallback(async (nextPage: number, reset: boolean = false) => {
     if (loadingMoreRef.current) return;
     loadingMoreRef.current = true;
     setLoading(true);
@@ -35,7 +35,7 @@ const SkillsOverviewPage: React.FC = () => {
       setLoading(false);
       loadingMoreRef.current = false;
     }
-  };
+  }, [q, size]);
 
   useEffect(() => {
     // initial load
@@ -43,7 +43,7 @@ const SkillsOverviewPage: React.FC = () => {
     setPage(0);
     setHasMore(true);
     loadPage(0, true);
-  }, [q]);
+  }, [q, loadPage]);
 
   useEffect(() => {
     // load skill names for autocomplete
@@ -68,7 +68,7 @@ const SkillsOverviewPage: React.FC = () => {
     });
     observerRef.current.observe(sentinelRef.current);
     return () => observerRef.current?.disconnect();
-  }, [sentinelRef.current, page, hasMore, loading]);
+  }, [page, hasMore, loading, loadPage]);
 
   const toggleLoadConsultants = async (skill: string) => {
     const current = consultantsBySkill[skill];

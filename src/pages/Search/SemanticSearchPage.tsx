@@ -130,7 +130,7 @@ const SemanticSearchPage: React.FC = () => {
       const data = await searchConsultantsSemantic({ request: body, page: 0, size: topK });
 
       setResult(data);
-    } catch (e) {
+    } catch {
       setError('Semantisk søk feilet. Prøv igjen.');
     } finally {
       clearTimeout(timer);

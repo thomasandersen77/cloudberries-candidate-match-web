@@ -1,8 +1,8 @@
 import apiClient from './apiClient';
 import type { LanguageStat, RoleStat } from '../types/analytics';
 
-// For backward compatibility, also export the interfaces
-export interface ProgrammingLanguageStat extends LanguageStat {}
+// For backward compatibility alias
+export type ProgrammingLanguageStat = LanguageStat;
 export type { RoleStat };
 
 export async function getLanguageStats(languages?: string[]): Promise<LanguageStat[]> {

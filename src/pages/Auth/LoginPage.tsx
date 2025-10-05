@@ -15,7 +15,7 @@ const LoginPage: React.FC = () => {
     try {
       await login(username.trim(), password);
       navigate('/', { replace: true });
-    } catch (err: any) {
+    } catch {
       setError('Ugyldig brukernavn eller passord');
     }
   };

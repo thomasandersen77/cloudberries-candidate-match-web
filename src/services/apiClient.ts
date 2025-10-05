@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getToken } from './authService';
 
-const BASE_URL = (import.meta as any)?.env?.VITE_API_BASE_URL ?? '/api';
+const BASE_URL = import.meta.env?.VITE_API_BASE_URL ?? '/api';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -14,8 +14,8 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   const token = getToken();
   if (token) {
-    config.headers = config.headers ?? {} as any;
-    (config.headers as any)['Authorization'] = `Bearer ${token}`;
+    config.headers = config.headers ?? {};
+    (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
   return config;
 });
@@ -31,8 +31,8 @@ export const aiScoringClient = axios.create({
 aiScoringClient.interceptors.request.use((config) => {
   const token = getToken();
   if (token) {
-    config.headers = config.headers ?? {} as any;
-    (config.headers as any)['Authorization'] = `Bearer ${token}`;
+    config.headers = config.headers ?? {};
+    (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
   return config;
 });

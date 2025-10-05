@@ -32,18 +32,18 @@ export const getHealthStatus = async (): Promise<HealthStatus> => {
         if (response.data && response.data.status) {
             return response.data;
         }
-    } catch (error) {
+    } catch {
         // fall through to fallback paths
     }
 
     // Fallback to Spring Boot Actuator
     try {
-        const {data} = await apiClient.get<any>('/actuator/health');
-        if (data && data.status) {
-            const details = data.details ?? data.components ?? {};
-            return {status: data.status, details} as HealthStatus;
+        const {data} = await apiClient.get<unknown>('/actuator/health');
+        if (data && (data as { status?: unknown }).status) {
+            const details = (data as { details?: unknown; components?: unknown }).details ?? (data as { components?: unknown }).components ?? {};
+            return {status: String((data as { status: unknown }).status), details} as HealthStatus;
         }
-    } catch (error) {
+    } catch {
         // continue
     }
 

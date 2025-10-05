@@ -15,13 +15,14 @@ const CvScoreDetailPage: React.FC = () => {
     if (candidateId) getCvScore(candidateId).then((dto) => {
       setScore(dto);
       // Forsøk å lese tidspunkt hvis backend leverer det (evaluatedAt/scoredAt/updatedAt)
-      const anyDto = dto as any;
-      const iso = anyDto?.evaluatedAt ?? anyDto?.scoredAt ?? anyDto?.updatedAt ?? null;
+      type MaybeIso = Partial<Record<'evaluatedAt' | 'scoredAt' | 'updatedAt', string>>;
+      const withIso = dto as unknown as MaybeIso;
+      const iso = withIso.evaluatedAt ?? withIso.scoredAt ?? withIso.updatedAt ?? null;
       if (typeof iso === 'string') {
         try {
           const d = new Date(iso);
           if (!isNaN(d.getTime())) setLastEvaluatedAt(d.toLocaleString());
-        } catch {}
+        } catch {/* intentionally empty */}
       }
     });
   }, [candidateId]);
@@ -47,16 +48,17 @@ const CvScoreDetailPage: React.FC = () => {
                     setRunning(true);
                     const updated = await runScoreForCandidate(candidateId);
                     setScore(updated);
-                    const anyDto = updated as any;
-                    const iso = anyDto?.evaluatedAt ?? anyDto?.scoredAt ?? anyDto?.updatedAt ?? null;
+                    type MaybeIso = Partial<Record<'evaluatedAt' | 'scoredAt' | 'updatedAt', string>>;
+                    const withIso = updated as unknown as MaybeIso;
+                    const iso = withIso.evaluatedAt ?? withIso.scoredAt ?? withIso.updatedAt ?? null;
                     if (typeof iso === 'string') {
                       try {
                         const d = new Date(iso);
                         if (!isNaN(d.getTime())) setLastEvaluatedAt(d.toLocaleString());
-                      } catch {}
+                      } catch {/* intentionally empty */}
                     }
                     setSnack({ open: true, message: 'Scoring fullført', severity: 'success' });
-                  } catch (e) {
+        } catch {
                     setSnack({ open: true, message: 'Scoring feilet', severity: 'error' });
                   } finally {
                     setRunning(false);

@@ -10,18 +10,24 @@ import type {
     ConsultantSummaryDto,
 } from '../types/api';
 
-function normalizePageDto(data: any): PageConsultantSummaryDto {
+type LegacyPageShape = {
+    content?: ConsultantSummaryDto[];
+    page?: { number?: number; size?: number; totalElements?: number; totalPages?: number };
+};
+
+function normalizePageDto(data: unknown): PageConsultantSummaryDto {
     // Supports both legacy top-level page fields and Spring Data Web VIA_DTO format (page: { ... })
     if (data && typeof data === 'object' && 'page' in data) {
-        const p = (data as any).page ?? {};
+        const legacy = data as LegacyPageShape;
+        const p = legacy.page ?? {};
         const number = Number(p.number ?? 0);
-        const size = Number(p.size ?? (Array.isArray((data as any).content) ? (data as any).content.length : 0));
+        const size = Number(p.size ?? (Array.isArray(legacy.content) ? legacy.content.length : 0));
         const totalElements = Number(p.totalElements ?? 0);
         const totalPages = Number(p.totalPages ?? (size > 0 ? Math.ceil(totalElements / size) : 0));
         const first = number === 0;
         const last = totalPages ? number >= totalPages - 1 : false;
         return {
-            content: (data as any).content ?? [],
+            content: legacy.content ?? [],
             number,
             size,
             totalElements,
@@ -42,7 +48,7 @@ export async function listConsultants(params: {
     sort?: string[]
 } = {}): Promise<PageConsultantSummaryDto> {
     const {name, page = 0, size = 100, sort} = params;
-    const {data} = await apiClient.get('consultants', {
+    const {data} = await apiClient.get<PageConsultantSummaryDto>('consultants', {
         params: {name, page, size, sort}
     });
     return normalizePageDto(data);
@@ -62,7 +68,7 @@ export async function runConsultantSync(batchSize = 120): Promise<ConsultantSync
 
 // New CV-related endpoints
 export async function listConsultantsWithCv(onlyActiveCv = false): Promise<ConsultantWithCvDto[]> {
-    const {data} = await apiClient.get('consultants/with-cv', {
+    const {data} = await apiClient.get<ConsultantWithCvDto[]>('consultants/with-cv', {
         params: {onlyActiveCv}
     });
     return data;
@@ -75,20 +81,20 @@ export async function listConsultantsWithCvPaged(params: {
     sort?: string[]
 } = {}): Promise<PageConsultantWithCvDto> {
     const {onlyActiveCv = false, page = 0, size = 20, sort} = params;
-    const {data} = await apiClient.get('consultants/with-cv/paged', {
+    const {data} = await apiClient.get<PageConsultantWithCvDto>('consultants/with-cv/paged', {
         params: {onlyActiveCv, page, size, sort}
     });
     return data;
 }
 
 export async function listConsultantCvs(userId: string): Promise<ConsultantCvDto[]> {
-    const { data } = await apiClient.get(`consultants/${encodeURIComponent(userId)}/cvs`);
-    return data as ConsultantCvDto[];
+    const { data } = await apiClient.get<ConsultantCvDto[]>(`consultants/${encodeURIComponent(userId)}/cvs`);
+    return data;
 }
 
 export async function getConsultantByUserId(userId: string): Promise<ConsultantSummaryDto> {
-    const { data } = await apiClient.get(`consultants/${encodeURIComponent(userId)}`);
-    return data as ConsultantSummaryDto;
+    const { data } = await apiClient.get<ConsultantSummaryDto>(`consultants/${encodeURIComponent(userId)}`);
+    return data;
 }
 
 export interface ConsultantSyncSingleResponse {
@@ -104,10 +110,10 @@ export async function searchConsultantsRelational(params: {
     page?: number;
     size?: number;
     sort?: string[]
-} = { request: {} as RelationalSearchRequest }): Promise<PageConsultantWithCvDto> {
+}): Promise<PageConsultantWithCvDto> {
     const { request, page = 0, size = 20, sort } = params;
-    const body = {
-        ...(request as any),
+    const body: RelationalSearchRequest = {
+        ...request,
         pagination: {
             page,
             size,
@@ -125,14 +131,14 @@ export async function searchConsultantsSemantic(params: {
     sort?: string[];
 }): Promise<PageConsultantWithCvDto> {
     const { request, page = 0, size = 20, sort } = params;
-    const body = {
-        ...(request as any),
+    const body: SemanticSearchRequest = {
+        ...request,
         pagination: {
             page,
             size,
             ...(sort ? { sort } : {})
         }
-    };
+    } as SemanticSearchRequest;
     const { data } = await aiScoringClient.post<PageConsultantWithCvDto>(
         'consultants/search/semantic',
         body

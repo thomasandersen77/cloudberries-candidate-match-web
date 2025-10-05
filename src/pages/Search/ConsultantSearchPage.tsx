@@ -196,7 +196,7 @@ const ConsultantSearchPage: React.FC = () => {
       try {
         const names = await listSkillNames(undefined, 200);
         setSkillOptions(names);
-      } catch (e) {
+      } catch {
         setSkillsError('Kunne ikke hente ferdigheter');
       } finally {
         setSkillsLoading(false);
@@ -243,7 +243,7 @@ const ConsultantSearchPage: React.FC = () => {
       const data = await searchConsultantsRelational({ request: body, page, size });
 
       setRResult(data);
-    } catch (e) {
+    } catch {
       setRError('Søk feilet. Kontroller kriterier og prøv igjen.');
     } finally {
       clearTimeout(timer);
@@ -273,7 +273,7 @@ const ConsultantSearchPage: React.FC = () => {
       try {
         const info = await getEmbeddingInfo();
         setEmbeddingInfo(info);
-      } catch (e) {
+    } catch {
         // Hvis vi ikke klarer å hente info, tillat søk uansett (backend bruker default-konfig).
         setEmbeddingInfo(null);
       }
@@ -304,7 +304,7 @@ const ConsultantSearchPage: React.FC = () => {
       const data = await searchConsultantsSemantic({ request: body, page, size });
 
       setSResult(data);
-    } catch (e) {
+    } catch {
       setSError('Semantisk søk feilet. Prøv igjen.');
     } finally {
       clearTimeout(timer);

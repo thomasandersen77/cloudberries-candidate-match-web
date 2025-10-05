@@ -268,7 +268,7 @@ const ChatSearchTab = () => {
         return trimmed;
     };
 
-    const buildSearchPayload = (
+    const buildSearchPayload = useCallback((
         trimmedText: string,
         conversationId: string | undefined,
         forceMode: ForceMode
@@ -294,7 +294,7 @@ const ChatSearchTab = () => {
         }
 
         return payload;
-    };
+    }, [topK, selectedConsultant, selectedCvId, useActiveCv]);
 
     const handleSearchSuccess = (
         res: ChatSearchResponse,
@@ -401,7 +401,7 @@ const ChatSearchTab = () => {
                 spinnerTimer.current = null;
             }
         }
-    }, [text, isSubmitting, conversationId, forceMode, topK, selectedConsultant, selectedCvId, useActiveCv]);
+    }, [text, isSubmitting, conversationId, forceMode, buildSearchPayload]);
 
     const onNewConversation = useCallback(() => {
         setConversationId(undefined);

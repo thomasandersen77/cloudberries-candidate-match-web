@@ -13,13 +13,19 @@ export const getToken = (): string | null => {
 export const setToken = (token: string) => {
   try {
     localStorage.setItem(TOKEN_KEY, token);
-  } catch {}
+  } catch {
+    // Intentionally ignore localStorage write errors (e.g., disabled/private mode)
+    void 0;
+  }
 };
 
 export const clearToken = () => {
   try {
     localStorage.removeItem(TOKEN_KEY);
-  } catch {}
+  } catch {
+    // Intentionally ignore localStorage remove errors
+    void 0;
+  }
 };
 
 export const login = async (username: string, password: string) => {

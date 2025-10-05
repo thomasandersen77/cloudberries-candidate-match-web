@@ -45,8 +45,9 @@ const ProjectRequestUploadPage: React.FC = () => {
       } finally {
         setLoadingList(false);
       }
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Ukjent feil ved opplasting/analyse';
+    } catch (err: unknown) {
+      const anyErr = err as { response?: { data?: { message?: string } } ; message?: string };
+      const msg = anyErr?.response?.data?.message || anyErr?.message || 'Ukjent feil ved opplasting/analyse';
       setError(String(msg));
     } finally {
       setUploading(false);
@@ -61,7 +62,7 @@ const ProjectRequestUploadPage: React.FC = () => {
         setLoadingList(true);
         const page = await listProjectRequestsPaged({ page: 0, size: 50, sort: 'id,desc' });
         setExisting(page.content ?? []);
-      } catch (e) {
+      } catch {
         // silently ignore list errors
       } finally {
         setLoadingList(false);

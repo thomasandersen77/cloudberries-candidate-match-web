@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import type { SkillInCompanyDto, PageSkillSummaryDto, PageConsultantSummaryDto, ConsultantSummaryDto } from '../types/api';
+import type { SkillInCompanyDto, PageSkillSummaryDto, PageConsultantSummaryDto, ConsultantSummaryDto, RelationalSearchRequest } from '../types/api';
 
 // Legacy (deprecated) full aggregate. Prefer summary + consultants endpoints.
 export async function listSkills(filters?: string[]): Promise<SkillInCompanyDto[]> {
@@ -13,11 +13,11 @@ export async function listSkills(filters?: string[]): Promise<SkillInCompanyDto[
 }
 
 export async function listSkillSummary(opts?: { q?: string; page?: number; size?: number; sort?: string }): Promise<PageSkillSummaryDto> {
-  const params: Record<string, any> = {};
-  if (opts?.q) params.q = opts.q;
-  if (opts?.page !== undefined) params.page = opts.page;
-  if (opts?.size !== undefined) params.size = opts.size;
-  if (opts?.sort) params.sort = opts.sort;
+  const params: Record<string, unknown> = {};
+  if (opts?.q) (params as Record<string, unknown>).q = opts.q;
+  if (opts?.page !== undefined) (params as Record<string, unknown>).page = opts.page;
+  if (opts?.size !== undefined) (params as Record<string, unknown>).size = opts.size;
+  if (opts?.sort) (params as Record<string, unknown>).sort = opts.sort;
   const { data } = await apiClient.get<PageSkillSummaryDto>('skills/summary', { params });
   return data;
 }
@@ -33,18 +33,19 @@ export async function listConsultantsBySkill(skill: string, opts?: { page?: numb
   if (needsFallback) {
     try {
       const { searchConsultantsRelational } = await import('./consultantsService');
+      const request: RelationalSearchRequest = { skillsAll: [skill], onlyActiveCv: false } as RelationalSearchRequest;
       const res = await searchConsultantsRelational({
-        request: { skillsAll: [skill], onlyActiveCv: false } as any,
+        request,
         page,
         size,
       });
-      const content = (res.content ?? []).map((c: any) => ({
+      const content: ConsultantSummaryDto[] = (res.content ?? []).map((c) => ({
         userId: c.userId,
         name: c.name,
         email: '',
         bornYear: 0,
         defaultCvId: c.cvId,
-      })) as any[];
+      }));
       return {
         content,
         number: res.number ?? page,
@@ -56,20 +57,20 @@ export async function listConsultantsBySkill(skill: string, opts?: { page?: numb
         sort: {},
         pageable: {},
       } as PageConsultantSummaryDto;
-    } catch (e) {
+    } catch {
       // If fallback fails, continue to try the direct endpoint (may still work)
     }
   }
 
-  const params: Record<string, any> = { page, size };
-  if (sort) params.sort = sort;
+  const params: Record<string, unknown> = { page, size };
+  if (sort) (params as Record<string, unknown>).sort = sort;
   const { data } = await apiClient.get<PageConsultantSummaryDto>(`skills/${encodeURIComponent(skill)}/consultants`, { params });
   return data;
 }
 
 export async function listSkillNames(prefix?: string, limit: number = 100): Promise<string[]> {
-  const params: Record<string, any> = { limit };
-  if (prefix) params.prefix = prefix;
+  const params: Record<string, unknown> = { limit };
+  if (prefix) (params as Record<string, unknown>).prefix = prefix;
   const { data } = await apiClient.get<string[]>('skills/names', { params });
   return data;
 }
@@ -80,18 +81,19 @@ export async function listTopConsultantsBySkill(skill: string, limit: number = 3
   if (needsFallback) {
     try {
       const { searchConsultantsRelational } = await import('./consultantsService');
+      const request: RelationalSearchRequest = { skillsAll: [skill], onlyActiveCv: false } as RelationalSearchRequest;
       const res = await searchConsultantsRelational({
-        request: { skillsAll: [skill], onlyActiveCv: false } as any,
+        request,
         page: 0,
         size: Math.max(1, limit),
       });
-      return (res.content ?? []).slice(0, limit).map((c: any) => ({
+      return (res.content ?? []).slice(0, limit).map((c) => ({
         userId: c.userId,
         name: c.name,
         email: '',
         bornYear: 0,
         defaultCvId: c.cvId,
-      })) as any[];
+      }));
     } catch {
       // fall through to endpoint attempt
     }

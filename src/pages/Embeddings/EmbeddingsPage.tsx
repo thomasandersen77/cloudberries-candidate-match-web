@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Box, Button, Container, Paper, Stack, TextField, Typography } from '@mui/material';
 import { runJason, runForUserCv, runMissing } from '../../services/embeddingsService';
+import type { EmbeddingJasonRunResponse, EmbeddingRunMissingResponse, EmbeddingUserCvRunResponse } from '../../types/api';
+
+type EmbeddingResult = EmbeddingJasonRunResponse | EmbeddingUserCvRunResponse | EmbeddingRunMissingResponse;
 
 const EmbeddingsPage: React.FC = () => {
   const [userId, setUserId] = useState('');
   const [cvId, setCvId] = useState('');
   const [batchSize, setBatchSize] = useState<number>(50);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<EmbeddingResult | null>(null);
 
   return (
     <Container sx={{ py: 4 }}>

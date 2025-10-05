@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom';
+import type { RouteObject } from 'react-router-dom';
 import AppLayout from './AppLayout';
 import HomePage from '../pages/HomePage';
 import ConsultantsListPage from '../pages/Consultants/ConsultantsListPage';
@@ -19,7 +20,7 @@ import ConsultantSearchPage from '../pages/Search/ConsultantSearchPage';
 import SemanticSearchPage from '../pages/Search/SemanticSearchPage';
 import LoginPage from '../pages/Auth/LoginPage';
 
-const routes = [
+const routes: RouteObject[] = [
   {
     element: <AppLayout />,
     children: [
@@ -46,11 +47,11 @@ const routes = [
   }
 ];
 
-const options: any = {
+const options = {
   future: {
     v7_startTransition: true,
     v7_relativeSplatPath: true,
   },
-};
+} as const;
 
-export const router = createBrowserRouter(routes as any, options);
+export const router = createBrowserRouter(routes, options);

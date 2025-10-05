@@ -16,11 +16,11 @@ export function extractSkills(cv: unknown): string[] {
     }
   };
 
-  const walk = (obj: any) => {
+  const walk = (obj: unknown) => {
     if (!obj) return;
     if (Array.isArray(obj)) return obj.forEach(walk);
     if (typeof obj !== 'object') return;
-    for (const [k, v] of Object.entries(obj)) {
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
       const key = k.toLowerCase();
       if (key.includes('skill') || key.includes('kompetanse') || key.includes('technology')) {
         pushValue(v);

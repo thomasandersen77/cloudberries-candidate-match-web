@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { RelationalSearchRequest, SemanticSearchRequest } from '../types/api';
 import { 
   listConsultants,
   listConsultantsWithCv,
@@ -161,11 +162,11 @@ describe('consultantsService', () => {
         }
       };
 
-      (mockedAiClient.post as any).mockResolvedValue(mockResponse);
+(mockedAiClient.post as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       const result = await runConsultantSync(100);
 
-      expect((mockedAiClient.post as any)).toHaveBeenCalledWith(
+expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
         '/api/consultants/sync/run',
         null,
         { params: { batchSize: 100 } }
@@ -189,15 +190,16 @@ describe('consultantsService', () => {
         sort: {},
         pageable: {}
       };
-      (mockedApiClient.post as any).mockResolvedValueOnce({ data: pagePayload });
+(mockedApiClient.post as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: pagePayload });
 
+      const relReq: RelationalSearchRequest = { name: 'Alice', skillsAll: ['JAVA'], skillsAny: [], onlyActiveCv: true };
       const res = await searchConsultantsRelational({
-        request: { name: 'Alice', skillsAll: ['JAVA'], skillsAny: [], onlyActiveCv: true } as any,
+        request: relReq,
         page: 0,
         size: 10
       });
 
-      expect(mockedApiClient.post).toHaveBeenCalledWith(
+expect(mockedApiClient.post).toHaveBeenCalledWith(
         '/api/consultants/search',
         { name: 'Alice', skillsAll: ['JAVA'], skillsAny: [], onlyActiveCv: true, pagination: { page: 0, size: 10 } }
       );
@@ -216,15 +218,16 @@ describe('consultantsService', () => {
         sort: {},
         pageable: {}
       };
-      (mockedAiClient.post as any).mockResolvedValueOnce({ data: pagePayload });
+(mockedAiClient.post as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: pagePayload });
 
+      const semReq: SemanticSearchRequest = { text: 'Senior Java developer', topK: 10, onlyActiveCv: true };
       const res = await searchConsultantsSemantic({
-        request: { text: 'Senior Java developer', topK: 10, onlyActiveCv: true } as any,
+        request: semReq,
         page: 0,
         size: 20
       });
 
-      expect((mockedAiClient.post as any)).toHaveBeenCalledWith(
+expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
         '/api/consultants/search/semantic',
         { text: 'Senior Java developer', topK: 10, onlyActiveCv: true, pagination: { page: 0, size: 20 } }
       );
@@ -250,11 +253,11 @@ describe('consultantsService', () => {
         }
       };
 
-      (mockedAiClient.post as any).mockResolvedValue(mockResponse);
+(mockedAiClient.post as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       const result = await syncSingleConsultant('123', 'cv123');
 
-      expect((mockedAiClient.post as any)).toHaveBeenCalledWith(
+expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
         '/api/consultants/sync/123/cv123'
       );
       expect(result).toEqual(mockResponse.data);
@@ -262,7 +265,7 @@ describe('consultantsService', () => {
 
     it('should handle sync failure', async () => {
       const mockError = new Error('Sync failed');
-      (mockedAiClient.post as any).mockRejectedValue(mockError);
+      (mockedAiClient.post as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(mockError);
 
       await expect(syncSingleConsultant('123', 'cv123')).rejects.toThrow('Sync failed');
     });

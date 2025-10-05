@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { isAxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -66,8 +67,13 @@ const ProjectRequestCreatePage: React.FC = () => {
       if (created.id != null) {
         navigate(`/project-requests/${created.id}`);
       }
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || 'Feil ved opprettelse.';
+    } catch (e: unknown) {
+      let msg: string = 'Feil ved opprettelse.';
+      if (isAxiosError(e)) {
+        msg = e.response?.data?.message ?? e.message ?? msg;
+      } else if (e instanceof Error) {
+        msg = e.message ?? msg;
+      }
       setError(String(msg));
     } finally {
       setLoading(false);

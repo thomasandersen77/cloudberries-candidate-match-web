@@ -22,7 +22,7 @@ const CvScoreListPage: React.FC = () => {
             try {
               const dto: CvScoreDto = await getCvScore(c.id);
               return { id: c.id, name: c.name, scorePercent: dto.scorePercent ?? 0, summary: dto.summary ?? '' };
-            } catch (e) {
+    } catch {
               return { id: c.id, name: c.name, scorePercent: 0, summary: '' };
             }
           })
@@ -64,7 +64,7 @@ const CvScoreListPage: React.FC = () => {
               refreshed.sort((a, b) => (b.scorePercent ?? 0) - (a.scorePercent ?? 0));
               setRows(refreshed);
               setSnack({ open: true, message: `Scoring fullført – prosesserte ${processedCount}`, severity: 'success' });
-            } catch (e) {
+      } catch {
               setSnack({ open: true, message: 'Scoring feilet', severity: 'error' });
             } finally {
               setRunning(false);

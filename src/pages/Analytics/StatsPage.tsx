@@ -99,8 +99,8 @@ const StatsPage: React.FC = () => {
       setLanguages(langData);
       setRoles(roleData);
       setLastUpdated(new Date());
-    } catch (e: any) {
-      setError(e?.message ?? 'Kunne ikke hente statistikk');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Kunne ikke hente statistikk');
     } finally {
       setLoading(false);
     }
