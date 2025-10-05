@@ -1,14 +1,8 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
 /**
- * Oppretter en sentralisert axios-klient.
- * Dette gjør det enkelt å sette felles konfigurasjon som baseURL,
- * timeout, og fremtidige interceptors for f.eks. autentisering.
+ * Henter helsestatus fra backend (shared apiClient uses base '/api' and Vite proxy in dev).
  */
-const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
-    timeout: 5000, // 5 sekunder timeout
-});
 
 /**
  * Henter helsestatus fra backend.
@@ -17,7 +11,7 @@ const apiClient = axios.create({
  * @throws {Error} kastes hvis nettverkskallet feiler eller status ikke er 'UP'.
  */
 export const getHealthStatus = async (): Promise<string> => {
-    const response = await apiClient.get('/api/health');
+    const response = await apiClient.get('health');
     if (response.status !== 200 || response.data?.status !== 'UP') {
         throw new Error('Backend service is not healthy');
     }

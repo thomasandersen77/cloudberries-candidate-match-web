@@ -25,7 +25,7 @@ import {
   Typography,
   Grid,
 } from '@mui/material';
-import { listSkills } from '../../services/skillsService';
+import { listSkillNames } from '../../services/skillsService';
 import {
   searchConsultantsRelational,
   searchConsultantsSemantic,
@@ -194,8 +194,8 @@ const ConsultantSearchPage: React.FC = () => {
       setSkillsLoading(true);
       setSkillsError(null);
       try {
-        const skills = await listSkills();
-        setSkillOptions(skills.map(s => s.name));
+        const names = await listSkillNames(undefined, 200);
+        setSkillOptions(names);
       } catch (e) {
         setSkillsError('Kunne ikke hente ferdigheter');
       } finally {

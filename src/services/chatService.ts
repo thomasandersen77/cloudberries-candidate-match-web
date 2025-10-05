@@ -11,12 +11,12 @@ function getOrCreateConversationId(): string {
 export async function analyzeContent(payload: AIAnalysisRequest): Promise<AIResponseModel> {
     const cid = getOrCreateConversationId();
     const body: AIAnalysisRequest = { ...payload, conversationId: cid };
-    const {data} = await apiClient.post<AIResponseModel>('/api/chatbot/analyze', body);
+    const {data} = await apiClient.post<AIResponseModel>('chatbot/analyze', body);
     return data;
 }
 
 // AI-powered consultant search
 export async function searchChat(payload: ChatSearchRequest): Promise<ChatSearchResponse> {
-    const {data} = await aiScoringClient.post<ChatSearchResponse>('/api/chatbot/search', payload);
+    const {data} = await aiScoringClient.post<ChatSearchResponse>('chatbot/search', payload);
     return data;
 }

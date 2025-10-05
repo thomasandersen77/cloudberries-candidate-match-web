@@ -42,7 +42,7 @@ export async function listConsultants(params: {
     sort?: string[]
 } = {}): Promise<PageConsultantSummaryDto> {
     const {name, page = 0, size = 100, sort} = params;
-    const {data} = await apiClient.get('/api/consultants', {
+    const {data} = await apiClient.get('consultants', {
         params: {name, page, size, sort}
     });
     return normalizePageDto(data);
@@ -56,13 +56,13 @@ export interface ConsultantSyncResponse {
 }
 
 export async function runConsultantSync(batchSize = 120): Promise<ConsultantSyncResponse> {
-    const {data} = await aiScoringClient.post<ConsultantSyncResponse>('/api/consultants/sync/run', null, {params: {batchSize}});
+    const {data} = await aiScoringClient.post<ConsultantSyncResponse>('consultants/sync/run', null, {params: {batchSize}});
     return data;
 }
 
 // New CV-related endpoints
 export async function listConsultantsWithCv(onlyActiveCv = false): Promise<ConsultantWithCvDto[]> {
-    const {data} = await apiClient.get('/api/consultants/with-cv', {
+    const {data} = await apiClient.get('consultants/with-cv', {
         params: {onlyActiveCv}
     });
     return data;
@@ -75,19 +75,19 @@ export async function listConsultantsWithCvPaged(params: {
     sort?: string[]
 } = {}): Promise<PageConsultantWithCvDto> {
     const {onlyActiveCv = false, page = 0, size = 20, sort} = params;
-    const {data} = await apiClient.get('/api/consultants/with-cv/paged', {
+    const {data} = await apiClient.get('consultants/with-cv/paged', {
         params: {onlyActiveCv, page, size, sort}
     });
     return data;
 }
 
 export async function listConsultantCvs(userId: string): Promise<ConsultantCvDto[]> {
-    const { data } = await apiClient.get(`/api/consultants/${encodeURIComponent(userId)}/cvs`);
+    const { data } = await apiClient.get(`consultants/${encodeURIComponent(userId)}/cvs`);
     return data as ConsultantCvDto[];
 }
 
 export async function getConsultantByUserId(userId: string): Promise<ConsultantSummaryDto> {
-    const { data } = await apiClient.get(`/api/consultants/${encodeURIComponent(userId)}`);
+    const { data } = await apiClient.get(`consultants/${encodeURIComponent(userId)}`);
     return data as ConsultantSummaryDto;
 }
 
@@ -114,7 +114,7 @@ export async function searchConsultantsRelational(params: {
             ...(sort ? { sort } : {})
         }
     };
-    const { data } = await apiClient.post<PageConsultantWithCvDto>('/api/consultants/search', body);
+    const { data } = await apiClient.post<PageConsultantWithCvDto>('consultants/search', body);
     return data;
 }
 
@@ -134,14 +134,14 @@ export async function searchConsultantsSemantic(params: {
         }
     };
     const { data } = await aiScoringClient.post<PageConsultantWithCvDto>(
-        '/api/consultants/search/semantic',
+        'consultants/search/semantic',
         body
     );
     return data;
 }
 
 export async function getEmbeddingInfo(): Promise<EmbeddingProviderInfo> {
-    const { data } = await apiClient.get<EmbeddingProviderInfo>('/api/consultants/search/embedding-info');
+    const { data } = await apiClient.get<EmbeddingProviderInfo>('consultants/search/embedding-info');
     return data;
 }
 
@@ -152,7 +152,7 @@ export async function syncSingleConsultant(
     cvId: string
 ): Promise<ConsultantSyncSingleResponse> {
     const {data} = await aiScoringClient.post<ConsultantSyncSingleResponse>(
-        `/api/consultants/sync/${userId}/${cvId}`
+        `consultants/sync/${userId}/${cvId}`
     );
     return data;
 }

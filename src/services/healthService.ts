@@ -28,7 +28,7 @@ const defaultDownStatus: HealthStatus = {
 export const getHealthStatus = async (): Promise<HealthStatus> => {
     // Try primary path from OpenAPI
     try {
-        const response = await apiClient.get<HealthStatus>('/api/health');
+        const response = await apiClient.get<HealthStatus>('health');
         if (response.data && response.data.status) {
             return response.data;
         }

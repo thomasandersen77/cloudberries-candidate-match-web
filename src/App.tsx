@@ -7,7 +7,7 @@ import CvViewPage from './pages/CV/CvViewPage';
 import CvScoreListPage from './pages/CvScore/CvScoreListPage';
 import CvScoreDetailPage from './pages/CvScore/CvScoreDetailPage';
 import MatchesPage from './pages/Matches/MatchesPage';
-import SkillsOverviewPage from './pages/Skills/SkillsOverviewPage';
+import SkillsOverviewPage from './pages/Skills/SkillsOverviewPage2';
 import EmbeddingsPage from './pages/Embeddings/EmbeddingsPage';
 import ChatPage from './pages/Chat/ChatPage';
 import HealthPage from './pages/Health/HealthPage';

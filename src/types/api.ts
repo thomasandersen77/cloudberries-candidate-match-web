@@ -37,6 +37,8 @@ export type AISuggestionDto = components['schemas']['AISuggestionDto'];
 
 // Skills aggregate
 export type SkillInCompanyDto = components['schemas']['SkillInCompanyDto'];
+export type SkillSummaryDto = components['schemas']['SkillSummaryDto'];
+export type PageSkillSummaryDto = components['schemas']['PageSkillSummaryDto'];
 
 // CV with consultants
 export type ConsultantWithCvDto = components['schemas']['ConsultantWithCvDto'];

@@ -4,6 +4,60 @@
  */
 
 export interface paths {
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log in with username and password */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        username: string;
+                        /** Format: password */
+                        password: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Login successful */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Bearer token (JWT) */
+                            token?: string;
+                        };
+                    };
+                };
+                /** @description Invalid credentials */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analytics/programming-languages": {
         parameters: {
             query?: never;
@@ -134,7 +188,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List skills across consultants */
+        /**
+         * List skills across consultants (deprecated)
+         * @deprecated
+         * @description Deprecated heavy aggregate endpoint. Use /api/skills/summary and /api/skills/{skill}/consultants instead.
+         */
         get: {
             parameters: {
                 query?: {
@@ -167,6 +225,194 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/skills/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List skills summary (paged)
+         * @description Returns paged skills with consultant counts. Supports substring filter and sorting.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Optional substring filter on skill name */
+                    q?: string;
+                    /** @description Page number (0-indexed) */
+                    page?: components["parameters"]["PageParam"];
+                    /** @description Page size */
+                    size?: components["parameters"]["SizeParam"];
+                    /** @description Sort by 'consultantCount,desc' or 'name,asc'. Default consultantCount,desc then name,asc. */
+                    sort?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Paged skill summaries */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PageSkillSummaryDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/skills/{skill}/consultants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List consultants for a skill (paged) */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number (0-indexed) */
+                    page?: components["parameters"]["PageParam"];
+                    /** @description Page size */
+                    size?: components["parameters"]["SizeParam"];
+                    /** @description Sort by 'name,asc' or 'name,desc'. Default 'name,asc'. */
+                    sort?: string;
+                };
+                header?: never;
+                path: {
+                    skill: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Paged consultants having the given skill */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PageConsultantSummaryDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/skills/{skill}/top-consultants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Top consultants for a skill
+         * @description Returns the top N consultants for the given skill, ranked by CV quality score when available, then by name.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    skill: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Top consultants for the skill */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConsultantSummaryDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/skills/names": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Skill names for autocomplete (ranked by popularity)
+         * @description Returns a list of skill names suitable for autocomplete.
+         *     - When 'prefix' is omitted, returns the top 'limit' names ranked by number of consultants with the skill (descending), then by name (ascending).
+         *     - When 'prefix' is provided, returns names starting with the prefix, ranked by popularity.
+         *     The popularity ranking merges multiple sources (normalized consultant skills, normalized project skills, and legacy CV skill tables) to reflect coverage.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Optional prefix filter for name starts-with (case-insensitive) */
+                    prefix?: string;
+                    /** @description Maximum number of names to return (default 100; 1–200) */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of ranked skill names */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": string[];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chatbot/analyze": {
         parameters: {
             query?: never;
@@ -176,7 +422,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Analyze content with AI */
+        /**
+         * Analyze content with AI
+         * @description Accepts an optional conversationId to maintain context across turns.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1521,6 +1770,25 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        SkillSummaryDto: {
+            name: string;
+            consultantCount: number;
+        };
+        PageSkillSummaryDto: {
+            content?: components["schemas"]["SkillSummaryDto"][];
+            number?: number;
+            size?: number;
+            totalElements?: number;
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
+            sort?: {
+                [key: string]: unknown;
+            };
+            pageable?: {
+                [key: string]: unknown;
+            };
+        };
         ProgrammingLanguageStat: {
             language: string;
             consultantCount: number;
