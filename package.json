@@ -48,7 +48,7 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
     "vite": "^7.0.4",
-    "vitest": "^2.1.5"
+    "vitest": "^3.2.4"
   },
   "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
   "main": "eslint.config.js",
