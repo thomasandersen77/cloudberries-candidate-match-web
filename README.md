@@ -254,51 +254,147 @@ sequenceDiagram
 
 ---
 
-## Kjøre i Azure
+## Azure Deployment
 
-### Azure DevOps (container build og deploy)
+### 🚀 Current Deployment: Azure Static Web Apps (Production)
+
+**Live URL**: https://delightful-meadow-056d48003.1.azurestaticapps.net/
+
+**Backend API**: https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/
+
+#### Architecture Overview
+```mermaid
+flowchart LR
+    User[👤 User] --> SWA[Azure Static Web Apps<br/>React Frontend]
+    SWA -->|API Proxy| ACA[Azure Container Apps<br/>Spring Boot Backend]
+    ACA --> DB[(Azure PostgreSQL)]
+    ACA --> AI[🤖 GenAI Services<br/>OpenAI/Gemini]
+    
+    SWA -.->|Static Content| CDN[Azure CDN]
+    
+    subgraph "Azure Static Web Apps"
+        SWA
+        CDN
+    end
+    
+    subgraph "Azure Container Apps"
+        ACA
+    end
+```
+
+#### Deployment Configuration
+- **Frontend**: Azure Static Web Apps with automatic GitHub Actions deployment
+- **Backend**: Azure Container Apps with Spring Boot application
+- **Database**: Azure Database for PostgreSQL (production setup)
+- **CI/CD**: GitHub Actions workflows for both frontend and backend
+
+#### GitHub Actions Workflow
+- **File**: `.github/workflows/azure-static-web-apps-delightful-meadow-056d48003.yml`
+- **Triggers**: Push to `main` branch, PRs to `main`
+- **Build**: Vite build outputting to `build/` directory
+- **Deploy**: Automatic deployment via Azure Static Web Apps GitHub Action
+
+#### Static Web Apps Configuration
+**File**: `staticwebapp.config.json`
+```json
+{
+  "routes": [
+    {
+      "route": "/api/actuator/*",
+      "rewrite": "/actuator/{*}",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/*",
+      "allowedRoles": ["anonymous"]
+    }
+  ]
+}
+```
+
+#### Vite Configuration for Azure
+**File**: `vite.config.ts`
+```typescript
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: 'build',        // Azure SWA expects 'build' directory
+    emptyOutDir: true
+  },
+  // ... rest of configuration
+});
+```
+
+### 🔧 Deployment Process
+
+#### Automatic Deployment
+1. Push changes to `main` branch
+2. GitHub Actions automatically triggers
+3. Vite builds the app to `build/` directory
+4. Azure Static Web Apps deploys the build
+5. Backend API calls are proxied through SWA configuration
+
+#### Manual Deployment Verification
+```bash
+# Local build test
+npm ci
+npm run build
+npm run preview
+
+# Verify build output
+ls -la build/
+# Should contain: index.html, assets/, vite.svg
+```
+
+#### Health Check URLs
+```bash
+# Frontend
+curl https://delightful-meadow-056d48003.1.azurestaticapps.net/
+
+# Backend (direct)
+curl https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/actuator/health
+
+# Backend (through SWA proxy)
+curl https://delightful-meadow-056d48003.1.azurestaticapps.net/api/actuator/health
+```
+
+### 🛠️ Development vs Production
+
+| Environment | Frontend URL | Backend URL | Notes |
+|-------------|-------------|-------------|-------|
+| **Local** | http://localhost:5174 | http://localhost:8080 | Vite dev server with proxy |
+| **Production** | https://delightful-meadow-056d48003.1.azurestaticapps.net/ | https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/ | Azure Static Web Apps + Container Apps |
+
+### 🔍 Troubleshooting Azure Deployment
+
+#### Frontend Issues
+- **Build fails**: Check `npm run build` locally
+- **Wrong output directory**: Ensure Vite outputs to `build/` not `dist/`
+- **API calls fail**: Verify `staticwebapp.config.json` routes
+- **404 on refresh**: SPA fallback should be handled by Static Web Apps automatically
+
+#### Backend Issues
+- **Container won't start**: Check Container Apps logs in Azure Portal
+- **API endpoints return 404**: Verify backend is running and healthy
+- **CORS issues**: Backend should allow Static Web Apps domain
+
+#### Monitoring
+- **GitHub Actions**: Monitor workflow runs at https://github.com/thomasandersen77/cloudberries-candidate-match-web/actions
+- **Azure Portal**: Check Static Web Apps and Container Apps health
+- **Application Insights**: Monitor performance and errors (if configured)
+
+### 📋 Legacy Deployment Options
+
+#### Azure DevOps (container build og deploy) - Legacy
 - Pipelinefil: `azure-pipelines.yml`
 - Bygger Docker-image fra dette repoet, pusher til Azure Container Registry (ACR) og deployer til Azure Web App for Containers.
 - Viktig: Back-end URL settes ved build via `VITE_API_BASE_URL` som Docker build-arg slik at Vite kan bake det inn i `dist`.
 
-Variabler som må settes i pipeline (Library/Variable Group eller YAML):
-- `azureSubscription`: Service connection til Azure
-- `registryServiceConnection`: Docker registry service connection til ACR
-- `acrLoginServer`: f.eks. `myregistry.azurecr.io`
-- `appServiceName`: Navn på Azure Web App (Container)
-- `imageName`: f.eks. `candidate-match-web`
-- `VITE_API_BASE_URL`: f.eks. `https://my-backend-app.azurewebsites.net`
-
-### Alternativ A: Azure Static Web Apps (anbefalt for SPA)
-- Bygger og hoster statiske filer fra `dist/`
-- Backend kan stå som egen app (for eksempel Azure App Service); sett `VITE_API_BASE_URL` til backendens offentlige URL under bygg.
-
-Steg (GUI):
-1. Opprett en «Static Web App» i Azure Portal
-2. Koble til GitHub-repoet
-3. Build presets: Custom
-   - App location: `/`
-   - API location: (tom)
-   - Output location: `dist`
-4. Legg til miljøvariabel i bygg-jobb: `VITE_API_BASE_URL=https://<din-backend-host>`
-
-Lokal verifisering før deploy:
-```bash path=null start=null
-npm ci
-npm run build
-npx serve -s dist -l 5173
-```
-
-### Alternativ B: Container + Azure App Service (Linux)
+#### Container + Azure App Service (Linux) - Alternative
 - Bygg først: `npm ci && npm run build`
-- Pakk `dist/` inn i en enkel Nginx-container, for eksempel:
-```Dockerfile path=null start=null
-FROM nginx:alpine
-COPY dist/ /usr/share/nginx/html
-# Evt. legg til en enkel fallback for SPA-ruter
-```
-- Push til ACR og bind til App Service.
-- Husk at `VITE_API_BASE_URL` må settes ved build – Vite injiserer verdier på build-tid.
+- Pakk `build/` inn i en enkel Nginx-container
+- Push til ACR og bind til App Service
+- Husk at `VITE_API_BASE_URL` må settes ved build – Vite injiserer verdier på build-tid
 
 ---
 
