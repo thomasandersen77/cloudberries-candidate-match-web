@@ -19,12 +19,14 @@ import ProjectRequestCreatePage from '../pages/ProjectRequests/ProjectRequestCre
 import ConsultantSearchPage from '../pages/Search/ConsultantSearchPage';
 import SemanticSearchPage from '../pages/Search/SemanticSearchPage';
 import LoginPage from '../pages/Auth/LoginPage';
+import DemoLoginPage from '../pages/Auth/DemoLoginPage';
 
 const routes: RouteObject[] = [
   {
     element: <AppLayout />,
     children: [
       { path: '/login', element: <LoginPage /> },
+      { path: '/demo', element: <DemoLoginPage /> },
       { path: '/health', element: <HealthPage /> },
       { path: '/', element: <HomePage /> },
       { path: '/consultants', element: <ConsultantsListPage /> },

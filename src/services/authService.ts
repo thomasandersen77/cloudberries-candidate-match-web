@@ -33,3 +33,9 @@ export const login = async (username: string, password: string) => {
   setToken(data.token);
   return data.token;
 };
+
+export const demoLogin = async () => {
+  const { data } = await apiClient.post<{ token: string }>(`/auth/demo`);
+  setToken(data.token);
+  return data.token;
+};

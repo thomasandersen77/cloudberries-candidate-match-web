@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Button, Card, CardContent, Container, TextField, Typography, Alert } from '@mui/material';
+import { Box, Button, Card, CardContent, Container, TextField, Typography, Alert, Divider } from '@mui/material';
 import { login } from '../../services/authService';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,6 +44,17 @@ const LoginPage: React.FC = () => {
             />
             {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
             <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>Logg inn</Button>
+            
+            <Divider sx={{ mt: 3, mb: 2 }}>eller</Divider>
+            
+            <Button 
+              variant="outlined" 
+              fullWidth 
+              onClick={() => navigate('/demo')}
+              sx={{ mb: 1 }}
+            >
+              Demo Login (Uten database)
+            </Button>
           </Box>
         </CardContent>
       </Card>

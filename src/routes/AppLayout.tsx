@@ -7,7 +7,7 @@ import { getToken } from '../services/authService';
 const AppLayout: React.FC = () => {
   const location = useLocation();
   const token = getToken();
-  const publicPaths = new Set<string>(['/login', '/health']);
+  const publicPaths = new Set<string>(['/login', '/demo', '/health']);
   const isPublic = publicPaths.has(location.pathname);
 
   if (!token && !isPublic) {
