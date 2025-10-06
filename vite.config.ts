@@ -4,6 +4,10 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [react()],
+    build: {
+        outDir: 'build',
+        emptyOutDir: true
+    },
     server: {
         host: true, // Required for Docker container port mapping
         port: 5174,
