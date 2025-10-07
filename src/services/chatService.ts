@@ -1,16 +1,8 @@
 import apiClient, {aiScoringClient} from './apiClient';
 import type {AIAnalysisRequest, AIResponseModel, ChatSearchRequest, ChatSearchResponse} from '../types/api';
 
-function getOrCreateConversationId(): string {
-    const key = 'cb_chat_conversation_id';
-    let id = localStorage.getItem(key);
-    if (!id) { id = crypto.randomUUID(); localStorage.setItem(key, id); }
-    return id;
-}
-
 export async function analyzeContent(payload: AIAnalysisRequest): Promise<AIResponseModel> {
-    const cid = getOrCreateConversationId();
-    const body: AIAnalysisRequest = { ...payload, conversationId: cid };
+    const body: AIAnalysisRequest = { ...payload };
     const {data} = await apiClient.post<AIResponseModel>('chatbot/analyze', body);
     return data;
 }

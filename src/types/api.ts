@@ -37,8 +37,23 @@ export type AISuggestionDto = components['schemas']['AISuggestionDto'];
 
 // Skills aggregate
 export type SkillInCompanyDto = components['schemas']['SkillInCompanyDto'];
-export type SkillSummaryDto = components['schemas']['SkillSummaryDto'];
-export type PageSkillSummaryDto = components['schemas']['PageSkillSummaryDto'];
+
+// These are frontend-only types for the skills summary endpoint which is not present in the current OpenAPI schema
+export type SkillSummaryDto = {
+  name: string;
+  consultantCount: number;
+};
+export type PageSkillSummaryDto = {
+  content?: SkillSummaryDto[];
+  number?: number;
+  size?: number;
+  totalElements?: number;
+  totalPages?: number;
+  first?: boolean;
+  last?: boolean;
+  sort?: Record<string, unknown>;
+  pageable?: Record<string, unknown>;
+};
 
 // CV with consultants
 export type ConsultantWithCvDto = components['schemas']['ConsultantWithCvDto'];
