@@ -61,7 +61,7 @@ describe('consultantsService', () => {
 
       const result = await listConsultants({ name: 'John', page: 0, size: 10 });
 
-      expect(mockedApiClient.get).toHaveBeenCalledWith('/api/consultants', {
+      expect(mockedApiClient.get).toHaveBeenCalledWith('consultants', {
         params: { name: 'John', page: 0, size: 10, sort: undefined }
       });
       expect(result).toEqual(mockResponse.data);
@@ -116,7 +116,7 @@ describe('consultantsService', () => {
 
       const result = await listConsultantsWithCv(true);
 
-      expect(mockedApiClient.get).toHaveBeenCalledWith('/api/consultants/with-cv', {
+      expect(mockedApiClient.get).toHaveBeenCalledWith('consultants/with-cv', {
         params: { onlyActiveCv: true }
       });
       expect(result).toEqual(mockResponse.data);
@@ -145,7 +145,7 @@ describe('consultantsService', () => {
         size: 20
       });
 
-      expect(mockedApiClient.get).toHaveBeenCalledWith('/api/consultants/with-cv/paged', {
+      expect(mockedApiClient.get).toHaveBeenCalledWith('consultants/with-cv/paged', {
         params: { onlyActiveCv: false, page: 0, size: 20, sort: undefined }
       });
       expect(result).toEqual(mockResponse.data);
@@ -167,7 +167,7 @@ describe('consultantsService', () => {
       const result = await runConsultantSync(100);
 
 expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
-        '/api/consultants/sync/run',
+        'consultants/sync/run',
         null,
         { params: { batchSize: 100 } }
       );
@@ -200,7 +200,7 @@ expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenC
       });
 
 expect(mockedApiClient.post).toHaveBeenCalledWith(
-        '/api/consultants/search',
+        'consultants/search',
         { name: 'Alice', skillsAll: ['JAVA'], skillsAny: [], onlyActiveCv: true, pagination: { page: 0, size: 10 } }
       );
       expect(res).toEqual(pagePayload);
@@ -228,7 +228,7 @@ expect(mockedApiClient.post).toHaveBeenCalledWith(
       });
 
 expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
-        '/api/consultants/search/semantic',
+        'consultants/search/semantic',
         { text: 'Senior Java developer', topK: 10, onlyActiveCv: true, pagination: { page: 0, size: 20 } }
       );
       expect(res).toEqual(pagePayload);
@@ -238,7 +238,7 @@ expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenC
       const payload = { enabled: true, provider: 'GOOGLE_GEMINI', model: 'text-embedding-004', dimension: 768 };
       mockedApiClient.get.mockResolvedValueOnce({ data: payload });
       const res = await getEmbeddingInfo();
-      expect(mockedApiClient.get).toHaveBeenCalledWith('/api/consultants/search/embedding-info');
+      expect(mockedApiClient.get).toHaveBeenCalledWith('consultants/search/embedding-info');
       expect(res).toEqual(payload);
     });
   });
@@ -258,7 +258,7 @@ expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenC
       const result = await syncSingleConsultant('123', 'cv123');
 
 expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
-        '/api/consultants/sync/123/cv123'
+        'consultants/sync/123/cv123'
       );
       expect(result).toEqual(mockResponse.data);
     });

@@ -12,18 +12,11 @@ servers:
   - url: http://localhost:8080
     description: Local development server
 
-security:
-  - bearerAuth: []
-
 tags:
-  - name: Auth
-    description: Authentication
   - name: Chat
     description: AI content analysis
   - name: Skills
     description: Company skills overview
-  - name: Analytics
-    description: Company statistics and analytics
   - name: Consultants
     description: Consultant search and sync
   - name: CV
@@ -40,78 +33,6 @@ tags:
     description: Customer project request management and analysis
 
 paths:
-  /api/auth/login:
-    post:
-      tags: [ Auth ]
-      summary: Log in with username and password
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [ username, password ]
-              properties:
-                username: { type: string }
-                password: { type: string, format: password }
-      responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token: { type: string, description: Bearer token (JWT) }
-        '401':
-          description: Invalid credentials
-      security: []
-
-  /api/analytics/programming-languages:
-    get:
-      tags: [ Analytics ]
-      summary: Programming language statistics
-      description: Returns counts, percentages, and aggregated experience years per language.
-      parameters:
-        - in: query
-          name: languages
-          required: false
-          description: Optional list of languages to include (defaults to Kotlin, Java, C#, Python)
-          schema:
-            type: array
-            items:
-              type: string
-          style: form
-          explode: true
-      responses:
-        '200':
-          description: Language stats
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ProgrammingLanguageStat'
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
-  /api/analytics/roles:
-    get:
-      tags: [ Analytics ]
-      summary: Consultant roles statistics
-      description: Percentage of consultants with experience as System Developer, Data Engineer, or Project Manager.
-      responses:
-        '200':
-          description: Role stats
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RoleStat'
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
   /api/industries/backfill:
     post:
       tags: [ Admin ]
@@ -135,9 +56,7 @@ paths:
   /api/skills:
     get:
       tags: [ Skills ]
-      summary: List skills across consultants (deprecated)
-      deprecated: true
-      description: Deprecated heavy aggregate endpoint. Use /api/skills/summary and /api/skills/{skill}/consultants instead.
+      summary: List skills across consultants
       parameters:
         - in: query
           name: skill
@@ -160,153 +79,16 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
-  /api/skills/summary:
-    get:
-      tags: [ Skills ]
-      summary: List skills summary (paged)
-      description: Returns paged skills with consultant counts. Supports substring filter and sorting.
-      parameters:
-        - in: query
-          name: q
-          required: false
-          description: Optional substring filter on skill name
-          schema:
-            type: string
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/SizeParam'
-        - in: query
-          name: sort
-          required: false
-          description: Sort by 'consultantCount,desc' or 'name,asc'. Default consultantCount,desc then name,asc.
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Paged skill summaries
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageSkillSummaryDto'
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
-  /api/skills/{skill}/consultants:
-    get:
-      tags: [ Skills ]
-      summary: List consultants for a skill (paged)
-      parameters:
-        - in: path
-          name: skill
-          required: true
-          schema:
-            type: string
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/SizeParam'
-        - in: query
-          name: sort
-          required: false
-          description: Sort by 'name,asc' or 'name,desc'. Default 'name,asc'.
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Paged consultants having the given skill
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageConsultantSummaryDto'
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
-  /api/skills/{skill}/top-consultants:
-    get:
-      tags: [ Skills ]
-      summary: Top consultants for a skill
-      description: Returns the top N consultants for the given skill, ranked by CV quality score when available, then by name.
-      parameters:
-        - in: path
-          name: skill
-          required: true
-          schema:
-            type: string
-        - in: query
-          name: limit
-          required: false
-          schema:
-            type: integer
-            default: 3
-            minimum: 1
-            maximum: 50
-      responses:
-        '200':
-          description: Top consultants for the skill
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ConsultantSummaryDto'
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
-  /api/skills/names:
-    get:
-      tags: [ Skills ]
-      summary: Skill names for autocomplete (ranked by popularity)
-      description: |
-        Returns a list of skill names suitable for autocomplete.
-        - When 'prefix' is omitted, returns the top 'limit' names ranked by number of consultants with the skill (descending), then by name (ascending).
-        - When 'prefix' is provided, returns names starting with the prefix, ranked by popularity.
-        The popularity ranking merges multiple sources (normalized consultant skills, normalized project skills, and legacy CV skill tables) to reflect coverage.
-      parameters:
-        - in: query
-          name: prefix
-          required: false
-          description: Optional prefix filter for name starts-with (case-insensitive)
-          schema:
-            type: string
-        - in: query
-          name: limit
-          required: false
-          description: Maximum number of names to return (default 100; 1–200)
-          schema:
-            type: integer
-            default: 100
-            minimum: 1
-            maximum: 200
-      responses:
-        '200':
-          description: List of ranked skill names
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
   /api/chatbot/analyze:
     post:
       tags: [ Chat ]
       summary: Analyze content with AI
-      description: Accepts an optional conversationId to maintain context across turns.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AIAnalysisRequest'
-            examples:
-              simple:
-                summary: Single-turn analysis
-                value:
-                  content: "Summarize this text"
-              with_conversation:
-                summary: Multi-turn with conversationId
-                value:
-                  conversationId: "d26c61a0-27be-4a59-a7b6-8a3b9e6261df"
-                  content: "Add details based on our last answer"
       responses:
         '200':
           description: Analysis result
@@ -1100,11 +882,6 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
 
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   parameters:
     PageParam:
       in: query
@@ -1143,66 +920,6 @@ components:
             $ref: '#/components/schemas/Problem'
 
   schemas:
-    SkillSummaryDto:
-      type: object
-      required: [ name, consultantCount ]
-      properties:
-        name:
-          type: string
-        consultantCount:
-          type: integer
-    PageSkillSummaryDto:
-      type: object
-      properties:
-        content:
-          type: array
-          items:
-            $ref: '#/components/schemas/SkillSummaryDto'
-        number:
-          type: integer
-        size:
-          type: integer
-        totalElements:
-          type: integer
-        totalPages:
-          type: integer
-        first:
-          type: boolean
-        last:
-          type: boolean
-        sort:
-          type: object
-          additionalProperties: true
-        pageable:
-          type: object
-          additionalProperties: true
-    ProgrammingLanguageStat:
-      type: object
-      required: [ language, consultantCount, percentage, aggregatedYears ]
-      properties:
-        language:
-          type: string
-        consultantCount:
-          type: integer
-        percentage:
-          type: number
-          format: double
-        aggregatedYears:
-          type: integer
-          description: Sum of duration years (from consultant_skill and cv_skill_in_category)
-
-    RoleStat:
-      type: object
-      required: [ role, consultantCount, percentage ]
-      properties:
-        role:
-          type: string
-        consultantCount:
-          type: integer
-        percentage:
-          type: number
-          format: double
-
     CoverageStatus:
       type: string
       enum: [ GREEN, YELLOW, RED, NEUTRAL ]
@@ -1367,11 +1084,6 @@ components:
       type: object
       required: [ content ]
       properties:
-        conversationId:
-          type: string
-          format: uuid
-          nullable: true
-          description: Optional conversation id to maintain multi-turn context
         content:
           type: string
           description: Content to analyze
