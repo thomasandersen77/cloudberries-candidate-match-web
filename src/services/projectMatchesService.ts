@@ -59,10 +59,13 @@ export class ProjectMatchesService {
     try {
       const response = await apiClient.get<MatchTop10Response>(`/matches/requests/${projectRequestId}/top`);
       return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        // No matches found, return null instead of throwing
-        return null;
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 404) {
+          // No matches found, return null instead of throwing
+          return null;
+        }
       }
       console.error(`Failed to get matches for project ${projectRequestId}:`, error);
       throw new Error(`Failed to fetch matches: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -78,9 +81,12 @@ export class ProjectMatchesService {
     try {
       const response = await apiClient.get<MatchTop10Response>(`/matches/requests/${projectRequestId}/results`);
       return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return null;
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 404) {
+          return null;
+        }
       }
       console.error(`Failed to get match results for project ${projectRequestId}:`, error);
       throw new Error(`Failed to fetch match results: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -137,7 +143,7 @@ export class ProjectMatchesService {
         if (matches && matches.matches.length > 0) {
           return matches;
         }
-      } catch (error) {
+      } catch (_err) {
         console.debug(`Polling attempt ${attempt + 1} failed, continuing...`);
       }
       
