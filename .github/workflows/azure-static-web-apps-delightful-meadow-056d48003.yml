@@ -19,6 +19,27 @@ jobs:
         with:
           submodules: true
           lfs: false
+
+      # Build app with Node so we control the artifact and can validate the SWA config
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application (Vite outDir=build)
+        run: npm run build
+
+      - name: Show SWA config in build output
+        run: |
+          ls -la build || true
+          echo "----- build/staticwebapp.config.json -----"
+          cat build/staticwebapp.config.json
+          node -e "JSON.parse(require('fs').readFileSync('build/staticwebapp.config.json','utf8'))"
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -31,6 +52,7 @@ jobs:
           app_location: "/" # App source code path
           api_location: "" # Api source code path - optional
           output_location: "build" # Built app content directory - optional
+          skip_app_build: true # Upload the already-built artifact from build/
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
