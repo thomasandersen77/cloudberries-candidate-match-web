@@ -61,7 +61,7 @@ jobs:
           
             # Bruk -w for å få http-status og body separat
             HTTP_RESPONSE=$(curl -s -w "%{http_code}" -X POST \
-              "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-latest:generateContent?key=$GEMINI_API_KEY" \
+              "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-002:generateContent?key=$GEMINI_API_KEY" \
               -H "Content-Type: application/json" \
               -d "$JSON_PAYLOAD")
           
