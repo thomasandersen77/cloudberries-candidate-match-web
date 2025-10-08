@@ -1,12 +1,25 @@
 {
   "routes": [
     {
-      "route": "/api/actuator*",
-      "allowedRoles": ["anonymous"]
+      "route": "/api/actuator/{*rest}",
+      "rewrite": "/actuator/{rest}",
+      "allowedRoles": [
+        "anonymous"
+      ]
     },
     {
-      "route": "/api*",
-      "allowedRoles": ["anonymous"]
+      "route": "/api/{*rest}",
+      "allowedRoles": [
+        "anonymous"
+      ]
     }
-  ]
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/api/*",
+      "/assets/*",
+      "/*.{png,jpg,gif,svg,ico,css,js}"
+    ]
+  }
 }
