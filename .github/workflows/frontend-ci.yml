@@ -60,32 +60,27 @@ jobs:
           JSON_PAYLOAD=$(jq -n --arg text_content "$FULL_PROMPT" \
             '{contents: [{parts: [{text: $text_content}]}]}')
 
-          # Logikk for å prøve på nytt (retry) med fallback på API-versjon
+          # Logikk for å prøve på nytt (retry) mot v1beta med modell gemini-2.5-pro
           MAX_ATTEMPTS=3
           RETRY_DELAY=5 # Sekunder
-          MODEL="${GEMINI_MODEL:-gemini-1.5-pro-002}"
+          MODEL="${GEMINI_MODEL:-gemini-2.5-pro}"
           SUCCESS=0
           for ((i=1; i<=MAX_ATTEMPTS; i++)); do
-            echo "::notice::Forsøk $i av $MAX_ATTEMPTS på å kalle Gemini API..."
-            for API_VERSION in v1 v1beta; do
-              echo "::notice::Prøver ${API_VERSION} med modell ${MODEL}..."
-              # Bruk -w for å få http-status og body separat
-              HTTP_RESPONSE=$(curl -s -w "%{http_code}" -X POST \
-                "https://generativelanguage.googleapis.com/${API_VERSION}/models/${MODEL}:generateContent?key=$GEMINI_API_KEY" \
-                -H "Content-Type: application/json" \
-                -d "$JSON_PAYLOAD")
-              HTTP_STATUS_CODE=${HTTP_RESPONSE: -3}
-              GEMINI_RESPONSE=${HTTP_RESPONSE:0:${#HTTP_RESPONSE}-3}
-              if [ "$HTTP_STATUS_CODE" -eq 200 ]; then
-                echo "::notice::Suksess fra Gemini API (${API_VERSION})."
-                SUCCESS=1
-                break
-              else
-                echo "::warning::HTTP $HTTP_STATUS_CODE fra ${API_VERSION}. Respons: $GEMINI_RESPONSE"
-              fi
-            done
-            if [ "$SUCCESS" -eq 1 ]; then
+            echo "::notice::Forsøk $i av $MAX_ATTEMPTS på å kalle Gemini API (v1beta, modell ${MODEL})..."
+            # Bruk -w for å få http-status og body separat
+            HTTP_RESPONSE=$(curl -s -w "%{http_code}" -X POST \
+              "https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent" \
+              -H "Content-Type: application/json" \
+              -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+              -d "$JSON_PAYLOAD")
+            HTTP_STATUS_CODE=${HTTP_RESPONSE: -3}
+            GEMINI_RESPONSE=${HTTP_RESPONSE:0:${#HTTP_RESPONSE}-3}
+            if [ "$HTTP_STATUS_CODE" -eq 200 ]; then
+              echo "::notice::Suksess fra Gemini API (v1beta)."
+              SUCCESS=1
               break
+            else
+              echo "::warning::HTTP $HTTP_STATUS_CODE fra v1beta. Respons: $GEMINI_RESPONSE"
             fi
             if [ "$i" -lt "$MAX_ATTEMPTS" ]; then
               echo "::notice::Prøver igjen om $RETRY_DELAY sekunder..."
