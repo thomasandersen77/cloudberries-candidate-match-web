@@ -5,7 +5,7 @@ on:
     branches:
       - main
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [ opened, synchronize, reopened, closed ]
     branches:
       - main
 
@@ -52,6 +52,8 @@ jobs:
           app_location: "/" # App source code path
           api_location: "" # Api source code path - optional
           output_location: "build" # Built app content directory - optional
+          app_artifact_location: "build" # Explicitly tell SWA where the built app lives when skip_app_build=true
+          config_file_location: "build/staticwebapp.config.json" # Validate config from the built artifact, not repo root
           skip_app_build: true # Upload the already-built artifact from build/
           ###### End of Repository/Build Configurations ######
 
@@ -66,3 +68,4 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DELIGHTFUL_MEADOW_056D48003 }}
           action: "close"
+          app_location: ''
