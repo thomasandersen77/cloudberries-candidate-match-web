@@ -36,6 +36,11 @@ jobs:
       - name: Run linter
         run: npm run lint
 
+      - name: Validate staticwebapp.config.json (public)
+        run: |
+          test -f public/staticwebapp.config.json
+          node -e "JSON.parse(require('fs').readFileSync('public/staticwebapp.config.json','utf8'))"
+
       - name: Build application
         run: npm run build
 

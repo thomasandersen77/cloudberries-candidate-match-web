@@ -1,0 +1,13 @@
+{
+  "routes": [
+    {
+      "route": "/api/actuator/{*rest}",
+      "rewrite": "/actuator/{rest}",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/{*rest}",
+      "allowedRoles": ["anonymous"]
+    }
+  ]
+}
