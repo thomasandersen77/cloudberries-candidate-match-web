@@ -40,6 +40,12 @@ jobs:
           cat build/staticwebapp.config.json
           node -e "JSON.parse(require('fs').readFileSync('build/staticwebapp.config.json','utf8'))"
 
+      - name: Show final artifact content
+        run: |
+          du -sh build || true
+          find build -maxdepth 2 -type d -print || true
+          echo "File count:" $(find build -type f | wc -l)
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -49,11 +55,11 @@ jobs:
           action: "upload"
           ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
-          app_location: "/" # App source code path
-          api_location: "" # Api source code path - optional
-          output_location: "build" # Built app content directory - optional
-          app_artifact_location: "build" # Explicitly tell SWA where the built app lives when skip_app_build=true
-          config_file_location: "build" # Validate config from the built artifact, not repo root
+          app_location: "build" # Upload only the built artifact
+          api_location: "" # No API
+          skip_app_build: true # Upload the already-built artifact from build/
+          config_file_location: "build" # Validate config from the built folder
+          ###### End of Repository/Build Configurations ######
           skip_app_build: true # Upload the already-built artifact from build/
           ###### End of Repository/Build Configurations ######
 
