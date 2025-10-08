@@ -7,7 +7,7 @@ import SkillsOverviewPage from './SkillsOverviewPage';
 // Mock IntersectionObserver
 Object.defineProperty(window, 'IntersectionObserver', {
   writable: true,
-  value: vi.fn().mockImplementation(() => ({
+  value: vi.fn().mockImplementation((_callback?: IntersectionObserverCallback) => ({
     observe: vi.fn(),
     disconnect: vi.fn(),
     unobserve: vi.fn(),

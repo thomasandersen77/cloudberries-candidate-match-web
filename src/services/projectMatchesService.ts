@@ -143,7 +143,7 @@ export class ProjectMatchesService {
         if (matches && matches.matches.length > 0) {
           return matches;
         }
-      } catch {
+      } catch (_err) {
         console.debug(`Polling attempt ${attempt + 1} failed, continuing...`);
       }
       
