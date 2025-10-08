@@ -60,8 +60,6 @@ jobs:
           skip_app_build: true # Upload the already-built artifact from build/
           config_file_location: "build" # Validate config from the built folder
           ###### End of Repository/Build Configurations ######
-          skip_app_build: true # Upload the already-built artifact from build/
-          ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
