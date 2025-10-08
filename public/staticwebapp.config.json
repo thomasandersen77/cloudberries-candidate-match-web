@@ -1,6 +1,11 @@
 {
   "routes": [
     {
+      "route": "/api/login",
+      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/api/auth/login",
+      "allowedRoles": ["anonymous"]
+    },
+    {
       "route": "/api/*",
       "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/api/*",
       "allowedRoles": ["anonymous"]
