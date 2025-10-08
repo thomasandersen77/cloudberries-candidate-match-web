@@ -44,6 +44,14 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Show SWA config in build output
+        run: |
+          ls -la build || ls -la dist || true
+          echo "----- staticwebapp.config.json (from build) -----"
+          if [ -f build/staticwebapp.config.json ]; then cat build/staticwebapp.config.json; fi
+          if [ -f dist/staticwebapp.config.json ]; then cat dist/staticwebapp.config.json; fi
+          node -e "const fs=require('fs');const p=fs.existsSync('build/staticwebapp.config.json')?'build/staticwebapp.config.json':'dist/staticwebapp.config.json';JSON.parse(fs.readFileSync(p,'utf8'));"
+
       # --- Steg 3: Kall Gemini API for kode-review ---
       - name: Perform Code Review with Gemini
         if: ${{ success() }}
