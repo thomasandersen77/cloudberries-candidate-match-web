@@ -1,6 +1,7 @@
 {
   "routes": [
     {
+<<<<<<< HEAD
       "route": "/api/actuator/{*rest}",
       "rewrite": "/actuator/{rest}",
       "allowedRoles": ["anonymous"]
