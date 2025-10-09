@@ -1,0 +1,26 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/assets/*",
+      "/api/*"
+    ]
+  },
+  "routes": [
+    {
+      "route": "/api/{*path}",
+      "rewrite": "__BACKEND_BASE_URL__/{path}",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    }
+  ],
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer"
+  },
+  "mimeTypes": {
+    ".json": "application/json; charset=utf-8"
+  }
+}
