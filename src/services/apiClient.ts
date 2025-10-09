@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { getToken } from './authService';
 
-const BASE_URL = import.meta.env?.VITE_API_BASE_URL ?? '/api';
+const rawBase = (import.meta.env?.VITE_API_BASE_URL ?? '/');
+const BASE_URL = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
 
 const apiClient = axios.create({
   baseURL: BASE_URL,

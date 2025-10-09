@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/industries/backfill": {
+    "/industries/backfill": {
         parameters: {
             query?: never;
             header?: never;
@@ -44,7 +44,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/skills": {
+    "/skills": {
         parameters: {
             query?: never;
             header?: never;
@@ -84,7 +84,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/chatbot/analyze": {
+    "/chatbot/analyze": {
         parameters: {
             query?: never;
             header?: never;
@@ -125,7 +125,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/chatbot/search": {
+    "/chatbot/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -176,7 +176,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/consultants": {
+    "/consultants": {
         parameters: {
             query?: never;
             header?: never;
@@ -222,7 +222,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/consultants/with-cv": {
+    "/consultants/with-cv": {
         parameters: {
             query?: never;
             header?: never;
@@ -262,7 +262,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/consultants/with-cv/paged": {
+    "/consultants/with-cv/paged": {
         parameters: {
             query?: never;
             header?: never;
@@ -308,7 +308,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/consultants/{userId}/cvs": {
+    "/consultants/{userId}/cvs": {
         parameters: {
             query?: never;
             header?: never;
@@ -350,7 +350,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/consultants/{userId}": {
+    "/consultants/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -396,7 +396,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/consultants/sync/run": {
+    "/consultants/sync/run": {
         parameters: {
             query?: never;
             header?: never;
@@ -438,7 +438,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/consultants/search": {
+    "/consultants/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -455,7 +455,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/consultants/search/semantic": {
+    "/consultants/search/semantic": {
         parameters: {
             query?: never;
             header?: never;
@@ -475,7 +475,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/consultants/search/embedding-info": {
+    "/consultants/search/embedding-info": {
         parameters: {
             query?: never;
             header?: never;
@@ -515,7 +515,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cv/{userId}": {
+    "/cv/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -554,7 +554,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/embeddings/run/jason": {
+    "/embeddings/run/jason": {
         parameters: {
             query?: never;
             header?: never;
@@ -591,7 +591,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/embeddings/run": {
+    "/embeddings/run": {
         parameters: {
             query?: never;
             header?: never;
@@ -631,7 +631,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/embeddings/run/missing": {
+    "/embeddings/run/missing": {
         parameters: {
             query?: never;
             header?: never;
@@ -670,7 +670,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/health": {
+    "/health": {
         parameters: {
             query?: never;
             header?: never;
@@ -707,7 +707,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/matches": {
+    "/matches": {
         parameters: {
             query?: never;
             header?: never;
@@ -748,7 +748,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/matches/upload": {
+    "/matches/upload": {
         parameters: {
             query?: never;
             header?: never;
@@ -793,7 +793,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/matches/by-skills": {
+    "/matches/by-skills": {
         parameters: {
             query?: never;
             header?: never;
@@ -844,7 +844,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/matches/requests": {
+    "/matches/requests": {
         parameters: {
             query?: never;
             header?: never;
@@ -885,7 +885,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/matches/requests/{id}/top-consultants": {
+    "/matches/requests/{id}/top-consultants": {
         parameters: {
             query?: never;
             header?: never;
@@ -933,7 +933,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/project-requests": {
+    "/project-requests": {
         parameters: {
             query?: never;
             header?: never;
@@ -1021,7 +1021,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/project-requests/upload": {
+    "/project-requests/upload": {
         parameters: {
             query?: never;
             header?: never;
@@ -1111,7 +1111,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/project-requests/{id}": {
+    "/project-requests/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1157,7 +1157,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/project-requests/{id}/close": {
+    "/project-requests/{id}/close": {
         parameters: {
             query?: never;
             header?: never;
@@ -1203,7 +1203,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/project-requests/{id}/analyze": {
+    "/project-requests/{id}/analyze": {
         parameters: {
             query?: never;
             header?: never;
@@ -1249,7 +1249,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/project-requests/{id}/suggestions": {
+    "/project-requests/{id}/suggestions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1295,7 +1295,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cv-score/{candidateId}": {
+    "/cv-score/{candidateId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1360,7 +1360,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cv-score/run/all": {
+    "/cv-score/run/all": {
         parameters: {
             query?: never;
             header?: never;
@@ -1397,7 +1397,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cv-score/all": {
+    "/cv-score/all": {
         parameters: {
             query?: never;
             header?: never;
