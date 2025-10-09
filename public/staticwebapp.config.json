@@ -36,9 +36,3 @@
     ]
   }
 }
-      "/actuator/*",
-      "/assets/*",
-      "/*.{png,jpg,gif,svg,ico,css,js}"
-    ]
-  }
-}
