@@ -1,38 +1,16 @@
 {
-  "routes": [
-    {
-      "route": "/auth/login",
-      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/auth/login",
-      "allowedRoles": ["anonymous"]
-    },
-    { "route": "/auth/*", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/auth/*", "allowedRoles": ["anonymous"] },
-    { "route": "/consultants/*", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/consultants/*", "allowedRoles": ["anonymous"] },
-    { "route": "/skills/*", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/skills/*", "allowedRoles": ["anonymous"] },
-    { "route": "/chatbot/*", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/chatbot/*", "allowedRoles": ["anonymous"] },
-    { "route": "/cv/*", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/cv/*", "allowedRoles": ["anonymous"] },
-    { "route": "/embeddings/*", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/embeddings/*", "allowedRoles": ["anonymous"] },
-    { "route": "/matches/*", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/matches/*", "allowedRoles": ["anonymous"] },
-    { "route": "/project-requests/*", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/project-requests/*", "allowedRoles": ["anonymous"] },
-    { "route": "/cv-score/*", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/cv-score/*", "allowedRoles": ["anonymous"] },
-    { "route": "/health", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/health", "allowedRoles": ["anonymous"] },
-    { "route": "/actuator/*", "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/actuator/*", "allowedRoles": ["anonymous"] }
-  ],
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [
-      "/auth/*",
-      "/consultants/*",
-      "/skills/*",
-      "/chatbot/*",
-      "/cv/*",
-      "/embeddings/*",
-      "/matches/*",
-      "/project-requests/*",
-      "/cv-score/*",
-      "/health",
-      "/actuator/*",
       "/assets/*",
-      "/*.{png,jpg,gif,svg,ico,css,js}"
+      "/api/*"
     ]
-  }
+  },
+  "routes": [
+    {
+      "route": "/api/{*path}",
+      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/{path}",
+      "allowedRoles": ["anonymous"]
+    }
+  ]
 }

@@ -14,6 +14,8 @@ jobs:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
+    env:
+      BACKEND_BASE_URL: ${{ secrets.BACKEND_BASE_URL }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -30,15 +32,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Optional: replace hard-coded backend URL with secret if provided
+      - name: Optionally replace backend URL in SWA config
+        run: |
+          if [ -n "${BACKEND_BASE_URL}" ]; then
+            sed -i 's|https://cloudberries-candidate-match-ca\.whitesand-767916af\.westeurope\.azurecontainerapps\.io|'"${BACKEND_BASE_URL}"'|g' public/staticwebapp.config.json
+            echo "Injected BACKEND_BASE_URL into public/staticwebapp.config.json"
+            cat public/staticwebapp.config.json
+          else
+            echo "No BACKEND_BASE_URL secret provided; using hard-coded URL in config"
+          fi
+
       - name: Build application (Vite outDir=build)
         run: npm run build
 
-      - name: Show SWA config in build output
+      - name: Verify SWA config in build output
         run: |
-          ls -la build || true
-          echo "----- build/staticwebapp.config.json -----"
+          test -f build/staticwebapp.config.json
           cat build/staticwebapp.config.json
           node -e "JSON.parse(require('fs').readFileSync('build/staticwebapp.config.json','utf8'))"
+          grep -E "cloudberries-candidate-match-ca|${BACKEND_BASE_URL}" build/staticwebapp.config.json
 
       - name: Show final artifact content
         run: |
