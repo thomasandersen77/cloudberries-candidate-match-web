@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken } from './authService';
+import { getToken, setToken } from './authService';
 
 const rawBase = (import.meta.env?.VITE_API_BASE_URL ?? '/');
 const BASE_URL = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
@@ -11,9 +11,32 @@ const apiClient = axios.create({
   headers: { Accept: 'application/json' },
 });
 
-// Attach bearer token if present
-apiClient.interceptors.request.use((config) => {
-  const token = getToken();
+// Lazy demo-auth bootstrap if no token is present
+let authBootstrapPromise: Promise<void> | null = null;
+const bootstrapAuthIfNeeded = async () => {
+  if (getToken()) return;
+  if (!authBootstrapPromise) {
+    const bootstrapClient = axios.create({ baseURL: BASE_URL, withCredentials: true });
+    authBootstrapPromise = bootstrapClient
+      .post<{ token: string }>('/auth/demo')
+      .then(({ data }) => {
+        if (data?.token) setToken(data.token);
+      })
+      .catch(() => void 0)
+      .finally(() => {
+        authBootstrapPromise = null;
+      });
+  }
+  await authBootstrapPromise;
+};
+
+// Attach bearer token; if missing, fetch a demo token first
+apiClient.interceptors.request.use(async (config) => {
+  let token = getToken();
+  if (!token) {
+    await bootstrapAuthIfNeeded();
+    token = getToken();
+  }
   if (token) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
@@ -29,8 +52,12 @@ export const aiScoringClient = axios.create({
   headers: { Accept: 'application/json' },
 });
 
-aiScoringClient.interceptors.request.use((config) => {
-  const token = getToken();
+aiScoringClient.interceptors.request.use(async (config) => {
+  let token = getToken();
+  if (!token) {
+    await bootstrapAuthIfNeeded();
+    token = getToken();
+  }
   if (token) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
