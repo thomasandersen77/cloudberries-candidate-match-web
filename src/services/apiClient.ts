@@ -7,7 +7,7 @@ const BASE_URL = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
 const apiClient = axios.create({
   baseURL: BASE_URL,
   timeout: 60000, // Default timeout: 60s for most operations
-  withCredentials: true,
+withCredentials: false,
   headers: { Accept: 'application/json' },
 });
 
@@ -16,7 +16,7 @@ let authBootstrapPromise: Promise<void> | null = null;
 const bootstrapAuthIfNeeded = async () => {
   if (getToken()) return;
   if (!authBootstrapPromise) {
-    const bootstrapClient = axios.create({ baseURL: BASE_URL, withCredentials: true });
+const bootstrapClient = axios.create({ baseURL: BASE_URL, withCredentials: false });
     authBootstrapPromise = bootstrapClient
       .post<{ token: string }>('/auth/demo')
       .then(({ data }) => {
@@ -48,7 +48,7 @@ apiClient.interceptors.request.use(async (config) => {
 export const aiScoringClient = axios.create({
   baseURL: BASE_URL,
   timeout: 300000, // 5 minutes for AI scoring operations
-  withCredentials: true,
+withCredentials: false,
   headers: { Accept: 'application/json' },
 });
 
