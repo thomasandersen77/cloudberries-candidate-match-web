@@ -79,6 +79,76 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /skills/names:
+    get:
+      tags: [ Skills ]
+      summary: List all skill names
+      parameters:
+        - in: query
+          name: prefix
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+      responses:
+        '200':
+          description: Array of skill names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /skills/summary:
+    get:
+      tags: [ Skills ]
+      summary: Paged summary of skills with consultant counts
+      parameters:
+        - in: query
+          name: q
+          required: false
+          schema: { type: string }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - in: query
+          name: sort
+          required: false
+          schema: { type: string, default: 'consultantCount,desc' }
+      responses:
+        '200':
+          description: Paged skill summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        consultantCount: { type: integer }
+                  number: { type: integer }
+                  size: { type: integer }
+                  totalElements: { type: integer }
+                  totalPages: { type: integer }
+                  first: { type: boolean }
+                  last: { type: boolean }
+                  sort: { type: object, additionalProperties: true }
+                  pageable: { type: object, additionalProperties: true }
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /chatbot/analyze:
     post:
       tags: [ Chat ]

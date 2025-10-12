@@ -32,6 +32,9 @@ export default defineConfig({
             '/cv-score': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
             '/health': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => path.replace(/^\/health/, '/api/health') },
             '/actuator': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
+
+            // Analytics service (teknologi-barometer-service) on :8082 during dev
+            '/analytics': { target: 'http://localhost:8082', changeOrigin: true, secure: false },
         },
     },
 });

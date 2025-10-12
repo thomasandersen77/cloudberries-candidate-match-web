@@ -84,6 +84,107 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/skills/names": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all skill names */
+        get: {
+            parameters: {
+                query?: {
+                    prefix?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Array of skill names */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": string[];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skills/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paged summary of skills with consultant counts */
+        get: {
+            parameters: {
+                query?: {
+                    q?: string;
+                    /** @description Page number (0-indexed) */
+                    page?: components["parameters"]["PageParam"];
+                    /** @description Page size */
+                    size?: components["parameters"]["SizeParam"];
+                    sort?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Paged skill summary */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            content?: {
+                                name?: string;
+                                consultantCount?: number;
+                            }[];
+                            number?: number;
+                            size?: number;
+                            totalElements?: number;
+                            totalPages?: number;
+                            first?: boolean;
+                            last?: boolean;
+                            sort?: {
+                                [key: string]: unknown;
+                            };
+                            pageable?: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/chatbot/analyze": {
         parameters: {
             query?: never;
