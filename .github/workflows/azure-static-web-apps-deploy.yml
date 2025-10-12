@@ -1,4 +1,8 @@
-name: Azure Static Web Apps CI/CD
+name: DISABLED - Duplicate SWA workflow
+
+on: { }
+
+jobs: { }
 
 on:
   push:
@@ -28,7 +32,9 @@ jobs:
 
       - name: Inject backend proxy URL into SWA config
         run: |
-          sed -i 's|__BACKEND_BASE_URL__|'"${BACKEND_BASE_URL}"'|g' staticwebapp.config.json
+          if [ -z "${BACKEND_BASE_URL}" ]; then echo "BACKEND_BASE_URL secret is not set" >&2; exit 1; fi
+          sed -i 's|__BACKEND_BASE_URL__|'"${BACKEND_BASE_URL}"'|g' staticwebapp.config.json || true
+          sed -i 's|__BACKEND_BASE_URL__|'"${BACKEND_BASE_URL}"'|g' public/staticwebapp.config.json || true
 
       - name: Build
         run: npm run build
