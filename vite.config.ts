@@ -17,17 +17,21 @@ export default defineConfig({
             usePolling: true, // Helps with file change detection in Docker
         },
         proxy: {
-            '/auth': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
-            '/consultants': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
-            '/skills': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
-            '/chatbot': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
-            '/cv': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
-            '/embeddings': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
-            '/matches': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
-            '/project-requests': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
-            '/cv-score': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
-            '/health': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
-            '/actuator': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
+            // New canonical mapping: backend serves under /api
+            '/api': { target: 'http://localhost:8080', changeOrigin: true, secure: false },
+
+            // Backwards-compat for existing dev calls without /api prefix
+            '/auth': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
+            '/consultants': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
+            '/skills': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
+            '/chatbot': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
+            '/cv': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
+            '/embeddings': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
+            '/matches': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
+            '/project-requests': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
+            '/cv-score': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
+            '/health': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => path.replace(/^\/health/, '/api/health') },
+            '/actuator': { target: 'http://localhost:8080', changeOrigin: true, secure: false, rewrite: (path) => '/api' + path },
         },
     },
 });
