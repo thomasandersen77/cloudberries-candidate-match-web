@@ -167,6 +167,10 @@ const ChatSearchTab = () => {
 
     const isRag = response?.mode === 'RAG';
     const items: SearchResult[] = useMemo(() => response?.results ?? [], [response]);
+    // Sort by score (desc) to ensure highest relevance first
+    const sortedItems: SearchResult[] = useMemo(() => {
+        return [...items].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    }, [items]);
     const debug: DebugInfo | undefined = response?.debug;
     const scoring: ScoringInfo | undefined = response?.scoring as ScoringInfo | undefined;
 
@@ -877,57 +881,54 @@ const ChatSearchTab = () => {
                         </Paper>
                     ) : (
                         <Paper>
-                            {items.length === 0 ? (
+                            {sortedItems.length === 0 ? (
                                 <Box sx={{p: 4, textAlign: 'center'}}>
                                     <Typography variant="body1" color="text.secondary">Ingen resultater</Typography>
                                 </Box>
                             ) : (
                                 <Box sx={{p: 2}}>
                                     <Stack spacing={1}>
-                                        {items.map((r, idx) => {
+                                        {sortedItems.map((r, idx) => {
                                             const userId = resolveUserId(r);
                                             const detailsHref = buildConsultantLink(userId);
                                             const cvHref = buildCvLink(userId);
+                                            const meta = (r.meta || {}) as Record<string, unknown>;
+                                            const justification = typeof meta['justification'] === 'string' ? String(meta['justification']) : undefined;
                                             return (
                                                 <Paper key={idx} sx={{p: 1.5}}
                                                        data-testid={`search-result-item-${idx}`}>
                                                     <Grid container spacing={1} alignItems="center">
                                                         <Grid item xs={12} sm={4}>
                                                             <Typography variant="subtitle2">{r.name}</Typography>
-                                                            <Typography variant="caption"
-                                                                        color="text.secondary">Relevans: {formatScoreToPercent(r.score)}</Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                Relevans: {formatScoreToPercent(r.score)}
+                                                            </Typography>
                                                         </Grid>
                                                         <Grid item xs={12} sm={5}>
-                                                            <Stack direction="row" spacing={0.5}
-                                                                   sx={{flexWrap: 'wrap'}}>
-                                                                {(r.highlights || []).map((h, hIdx) => (
-                                                                    <Chip key={hIdx} label={h} size="small"
-                                                                          variant="outlined"/>
-                                                                ))}
+                                                            <Stack spacing={0.5}>
+                                                                {justification && (
+                                                                    <Typography variant="body2" color="text.secondary" data-testid="result-justification">
+                                                                        {justification}
+                                                                    </Typography>
+                                                                )}
+                                                                <Stack direction="row" spacing={0.5} sx={{flexWrap: 'wrap'}}>
+                                                                    {(r.highlights || []).map((h, hIdx) => (
+                                                                        <Chip key={hIdx} label={h} size="small" variant="outlined"/>
+                                                                    ))}
+                                                                </Stack>
                                                             </Stack>
                                                         </Grid>
                                                         <Grid item xs={12} sm={3}>
-                                                            <Stack direction="row" spacing={1}
-                                                                   justifyContent={{xs: 'flex-start', sm: 'flex-end'}}>
+                                                            <Stack direction="row" spacing={1} justifyContent={{xs: 'flex-start', sm: 'flex-end'}}>
                                                                 {detailsHref ? (
                                                                     <MuiLink href={detailsHref}>Se detaljer</MuiLink>
                                                                 ) : (
-                                                                    <Tooltip
-                                                                        title="Manglende ID for lenking"><span><MuiLink
-                                                                        aria-disabled sx={{
-                                                                        pointerEvents: 'none',
-                                                                        color: 'text.disabled'
-                                                                    }}>Se detaljer</MuiLink></span></Tooltip>
+                                                                    <Tooltip title="Manglende ID for lenking"><span><MuiLink aria-disabled sx={{ pointerEvents: 'none', color: 'text.disabled' }}>Se detaljer</MuiLink></span></Tooltip>
                                                                 )}
                                                                 {cvHref ? (
                                                                     <MuiLink href={cvHref}>Se hele CV</MuiLink>
                                                                 ) : (
-                                                                    <Tooltip
-                                                                        title="Manglende ID for lenking"><span><MuiLink
-                                                                        aria-disabled sx={{
-                                                                        pointerEvents: 'none',
-                                                                        color: 'text.disabled'
-                                                                    }}>Se hele CV</MuiLink></span></Tooltip>
+                                                                    <Tooltip title="Manglende ID for lenking"><span><MuiLink aria-disabled sx={{ pointerEvents: 'none', color: 'text.disabled' }}>Se hele CV</MuiLink></span></Tooltip>
                                                                 )}
                                                             </Stack>
                                                         </Grid>
