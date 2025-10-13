@@ -1,8 +1,6 @@
-name: Azure Static Web Apps Deploy (restored)
+name: Azure Static Web Apps Deploy (deprecated - manual only)
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 concurrency:

@@ -17,15 +17,8 @@ export default defineConfig({
             usePolling: true, // Helps with file change detection in Docker
         },
         proxy: {
-            // Canonical mapping: frontend calls /api/*; proxy strips prefix and forwards to backend root
+            // Preserve /api so requests forward to backend /api/* (matches spring.mvc.servlet.path)
             '/api': {
-                target: 'http://localhost:8080',
-                changeOrigin: true,
-                secure: false,
-                rewrite: (path) => path.replace(/^\/api/, ''),
-            },
-            // Route analytics to the same backend locally (endpoints live in candidate-match)
-            '/analytics': {
                 target: 'http://localhost:8080',
                 changeOrigin: true,
                 secure: false,

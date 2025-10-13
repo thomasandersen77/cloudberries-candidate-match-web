@@ -16,7 +16,7 @@
         "admin",
         "user"
       ],
-      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/{path}"
+      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/api/{path}"
     }
   ],
   "navigationFallback": {
