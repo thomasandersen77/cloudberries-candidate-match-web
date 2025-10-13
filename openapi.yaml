@@ -951,6 +951,56 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /analytics/programming-languages:
+    get:
+      tags: [ Analytics ]
+      summary: Programming languages stats
+      parameters:
+        - in: query
+          name: languages
+          required: false
+          schema:
+            type: array
+            items: { type: string }
+          style: form
+          explode: true
+      responses:
+        '200':
+          description: List of language stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    language: { type: string }
+                    consultantCount: { type: integer }
+                    percentage: { type: number, format: double }
+                    aggregatedYears: { type: integer }
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /analytics/roles:
+    get:
+      tags: [ Analytics ]
+      summary: Role stats
+      responses:
+        '200':
+          description: List of role stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    role: { type: string }
+                    consultantCount: { type: integer }
+                    percentage: { type: number, format: double }
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
 components:
   parameters:
     PageParam:
