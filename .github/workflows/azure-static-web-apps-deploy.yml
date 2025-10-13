@@ -1,0 +1,51 @@
+name: Azure Static Web Apps Deploy (restored)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: swa-deploy
+  cancel-in-progress: true
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_BASE_URL: ${{ secrets.BACKEND_BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build (Vite -> build/)
+        run: npm run build
+
+      - name: Ensure SWA config present in build artifact
+        run: |
+          test -f build/staticwebapp.config.json
+          node -e "JSON.parse(require('fs').readFileSync('build/staticwebapp.config.json','utf8'))"
+
+      - name: Inject BACKEND_BASE_URL (optional)
+        if: env.BACKEND_BASE_URL != ''
+        run: |
+          sed -i 's|https://cloudberries-candidate-match-ca\.whitesand-767916af\.westeurope\.azurecontainerapps\.io|'"${BACKEND_BASE_URL}"'|g' build/staticwebapp.config.json
+          echo "Using backend: ${BACKEND_BASE_URL}"
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DELIGHTFUL_MEADOW_056D48003 }}
+          action: upload
+          app_location: build
+          skip_app_build: true
+          config_file_location: build
