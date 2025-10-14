@@ -56,7 +56,7 @@ jobs:
           ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "build" # Upload only the built artifact
-          api_location: "/" # No API
+          # No api_location since there's no API
           config_file_location: "build" # Validate config from the built folder
           ###### End of Repository/Build Configurations ######
           skip_app_build: true # Upload the already-built artifact from build/
