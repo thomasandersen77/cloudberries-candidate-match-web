@@ -1,7 +1,22 @@
 {
   "routes": [
     {
+      "route": "/api/login",
+      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/auth/login",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/auth/*",
+      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/auth/*",
+      "allowedRoles": ["anonymous"]
+    },
+    {
       "route": "/api/*",
+      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/*",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/auth/login",
       "methods": [
         "GET",
         "HEAD",
