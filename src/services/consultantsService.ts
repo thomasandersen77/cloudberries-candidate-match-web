@@ -68,10 +68,22 @@ export async function runConsultantSync(batchSize = 120): Promise<ConsultantSync
 
 // New CV-related endpoints
 export async function listConsultantsWithCv(onlyActiveCv = false): Promise<ConsultantWithCvDto[]> {
-    const {data} = await apiClient.get<ConsultantWithCvDto[]>('consultants/with-cv', {
-        params: {onlyActiveCv}
+    // Normalize to array to prevent .filter/.map TypeErrors when backend returns a paged object
+    const { data } = await apiClient.get<unknown>('consultants/with-cv', {
+        params: { onlyActiveCv }
     });
-    return data;
+    if (Array.isArray(data)) {
+        return data as ConsultantWithCvDto[];
+    }
+    if (data && typeof data === 'object') {
+        const obj = data as { content?: unknown; items?: unknown };
+        const items = (Array.isArray(obj.content) ? obj.content : undefined)
+            ?? (Array.isArray(obj.items) ? obj.items : undefined);
+        if (Array.isArray(items)) {
+            return items as ConsultantWithCvDto[];
+        }
+    }
+    return [];
 }
 
 export async function listConsultantsWithCvPaged(params: {

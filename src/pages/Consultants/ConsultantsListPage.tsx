@@ -223,8 +223,12 @@ const fetchData = async () => {
     
     try {
       const res = await listConsultantsWithCv(true); // Only active CVs
+      // Normalize defensively to ensure we always store an array
+      const normalized: ConsultantWithCvDto[] = Array.isArray(res)
+        ? res
+        : (((res as any)?.content ?? (res as any)?.items ?? []) as ConsultantWithCvDto[]);
       // Do not sort here; sorting happens on the filtered view to ensure consistency with filters
-      setConsultants(res);
+      setConsultants(Array.isArray(normalized) ? normalized : []);
     } catch (error) {
       console.error('Failed to fetch consultants:', error);
       setNotification({
