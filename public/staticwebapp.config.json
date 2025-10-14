@@ -1,6 +1,16 @@
 {
   "routes": [
     {
+      "route": "/chatbot/analyze",
+      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/chatbot/analyze",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/chatbot/analyze",
+      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/chatbot/analyze",
+      "allowedRoles": ["anonymous"]
+    },
+    {
       "route": "/api/login",
       "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/auth/login",
       "allowedRoles": ["anonymous"]
@@ -13,6 +23,11 @@
     {
       "route": "/api/actuator/*",
       "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/actuator/*",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/chatbot/*",
+      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/chatbot/*",
       "allowedRoles": ["anonymous"]
     },
     {
