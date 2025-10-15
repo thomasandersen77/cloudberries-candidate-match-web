@@ -5,7 +5,7 @@
       "allowedRoles": [
         "anonymous"
       ],
-      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io"
+      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/api/{*}"
     }
   ],
   "navigationFallback": {
