@@ -40,7 +40,7 @@ export class ProjectMatchesService {
       const response = await apiClient.post<TriggerMatchingResponse>(
         `/matches/requests/${projectRequestId}/trigger`,
         null,
-        { params: { forceRecompute } }
+        { params: { forceRecompute }, timeout: 600_000 }
       );
       return response.data;
     } catch (error) {
@@ -103,7 +103,7 @@ export class ProjectMatchesService {
       const response = await apiClient.post<BatchMatchingResponse>(
         '/matches/trigger-all',
         null,
-        { params: { forceRecompute } }
+        { params: { forceRecompute }, timeout: 600_000 }
       );
       return response.data;
     } catch (error) {

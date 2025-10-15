@@ -16,11 +16,11 @@ export async function getCvScore(candidateId: string): Promise<CvScoreDto> {
 }
 
 export async function runScoreForCandidate(candidateId: string): Promise<CvScoreDto> {
-  // AI-scoring kan ta tid – øk timeout for dette kallet
+  // AI-scoring kan ta lang tid – sett 10 minutters timeout
   const { data } = await apiClient.post<CvScoreDto>(
     `cv-score/${encodeURIComponent(candidateId)}/run`,
     undefined,
-    { timeout: 180_000 }
+    { timeout: 600_000 }
   );
   return data;
 }
@@ -28,11 +28,11 @@ export async function runScoreForCandidate(candidateId: string): Promise<CvScore
 export interface CvScoringRunResponse { processedCount: number }
 
 export async function runScoreForAll(): Promise<CvScoringRunResponse> {
-  // Batch-scoring for alle tar lenger tid – sett høyere timeout
+  // Batch-scoring for alle – sett 10 minutters timeout
   const { data } = await apiClient.post<CvScoringRunResponse>(
     `cv-score/run/all`,
     undefined,
-    { timeout: 300_000 }
+    { timeout: 600_000 }
   );
   return data;
 }

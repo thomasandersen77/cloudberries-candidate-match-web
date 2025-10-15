@@ -24,10 +24,10 @@ export const analyticsClient = axios.create({
   headers: { Accept: 'application/json' },
 });
 
-// Extended timeout client for AI scoring operations
+// Extended timeout client for AI scoring and long-running operations
 export const aiScoringClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 300000, // 5 minutes for AI scoring operations
+  timeout: 600000, // 10 minutes for scoring/matching operations
   withCredentials: false,
   headers: { Accept: 'application/json' },
 });
