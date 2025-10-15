@@ -1,22 +1,4 @@
 {
-  "routes": [
-    {
-      "route": "/api/{*path}",
-      "methods": [
-        "GET",
-        "HEAD",
-        "POST",
-        "PUT",
-        "PATCH",
-        "DELETE",
-        "OPTIONS"
-      ],
-      "allowedRoles": [
-        "anonymous"
-      ],
-      "rewrite": "https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/api/{path}"
-    }
-  ],
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [
