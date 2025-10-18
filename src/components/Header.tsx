@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
-import {AppBar, Avatar, IconButton, Toolbar, Typography, Menu, MenuItem, Divider} from '@mui/material';
+import {AppBar, Avatar, IconButton, Toolbar, Typography, Menu, MenuItem, Divider, Tooltip} from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import MenuIcon from '@mui/icons-material/Menu';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import HealthCheckIndicator from './HealthCheckIndicator'; // <--- 1. Importer
+import { useColorMode } from '../theme';
 
 const Header: React.FC = () => {
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const open = Boolean(menuAnchor);
+    const { mode, toggle } = useColorMode();
 
     const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setMenuAnchor(e.currentTarget);
     const handleMenuClose = () => setMenuAnchor(null);
 
     return (
-        <AppBar position="static" color="transparent" elevation={0} sx={{borderBottom: '1px solid #e0e0e0'}}>
+        <AppBar position="static" color="transparent" elevation={0} sx={{borderBottom: (theme) => `1px solid ${theme.palette.divider}`}}>
             <Toolbar>
                 <Avatar sx={{bgcolor: 'primary.main', mr: 2}}>TA</Avatar>
                 <Typography variant="h6" component="div" sx={{flexGrow: 1}}>
@@ -22,6 +26,12 @@ const Header: React.FC = () => {
                 </Typography>
 
                 <HealthCheckIndicator/>
+
+                <Tooltip title={mode === 'dark' ? 'Bytt til lys modus' : 'Bytt til mørk modus'}>
+                    <IconButton color="inherit" aria-label="toggle color mode" onClick={toggle} sx={{ mr: 1 }}>
+                        {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+                    </IconButton>
+                </Tooltip>
 
                 <IconButton color="inherit" aria-label="profil">
                     <PersonOutlineIcon/>

@@ -82,6 +82,7 @@ const SkillsOverviewPage2: React.FC = () => {
     }>>({});
     const [top3BySkill, setTop3BySkill] = useState<Record<string, ConsultantSummaryDto[]>>({});
     const [loadingTop, setLoadingTop] = useState<Record<string, boolean>>({});
+    const [loadingAll, setLoadingAll] = useState<Record<string, boolean>>({});
 
     const toggleLoadConsultants = React.useCallback(async (skill: string) => {
         const key = skill.toUpperCase();
@@ -122,6 +123,30 @@ const SkillsOverviewPage2: React.FC = () => {
                 last: res.last ?? true,
             }
         }));
+    };
+
+    const loadAllConsultants = async (skill: string) => {
+        const key = skill.toUpperCase();
+        setLoadingAll(prev => ({...prev, [key]: true}));
+        try {
+            let page = 0;
+            const size = 50;
+            let all: ConsultantSummaryDto[] = [];
+            // Ensure expanded state before fill
+            let res = await listConsultantsBySkill(key, {page, size, sort: 'name,asc'});
+            all = [...(res.content ?? [])];
+            while (!(res.last ?? true)) {
+                page = (res.number ?? page) + 1;
+                res = await listConsultantsBySkill(key, {page, size, sort: 'name,asc'});
+                all = all.concat(res.content ?? []);
+            }
+            setConsultantsBySkill(prev => ({
+                ...prev,
+                [key]: {items: all, page: page, last: true}
+            }));
+        } finally {
+            setLoadingAll(prev => ({...prev, [key]: false}));
+        }
     };
 
     const loadTop3 = async (skill: string) => {
@@ -196,6 +221,11 @@ const SkillsOverviewPage2: React.FC = () => {
                                             <Button size="small" variant="outlined"
                                                     onClick={() => toggleLoadConsultants(s.name)}>
                                                 {expanded ? 'Skjul konsulenter' : 'Vis konsulenter'}
+                                            </Button>
+                                            <Button size="small" variant="outlined"
+                                                    onClick={() => loadAllConsultants(s.name)}
+                                                    disabled={!!loadingAll[skillKey]}>
+                                                {loadingAll[skillKey] ? 'Henter alle…' : 'Vis alle'}
                                             </Button>
                                             <Button size="small" variant="text" onClick={() => loadTop3(s.name)}
                                                     disabled={isLoadingTop}>

@@ -27,45 +27,48 @@ export async function listConsultantsBySkill(skill: string, opts?: { page?: numb
   const size = opts?.size ?? 10;
   const sort = opts?.sort;
 
-  // If skill contains characters that may be rejected as path variables (e.g. '/')
-  // fall back to relational search which accepts skill in the request body.
-  const needsFallback = /[/%#?;]/.test(skill);
-  if (needsFallback) {
-    try {
-      const { searchConsultantsRelational } = await import('./consultantsService');
-      const request: RelationalSearchRequest = { skillsAll: [skill], onlyActiveCv: false } as RelationalSearchRequest;
-      const res = await searchConsultantsRelational({
-        request,
-        page,
-        size,
-      });
-      const content: ConsultantSummaryDto[] = (res.content ?? []).map((c) => ({
-        userId: c.userId,
-        name: c.name,
-        email: '',
-        bornYear: 0,
-        defaultCvId: c.cvId,
-      }));
-      return {
-        content,
-        number: res.number ?? page,
-        size: res.size ?? size,
-        totalElements: res.totalElements ?? content.length,
-        totalPages: res.totalPages ?? 1,
-        first: res.first ?? page === 0,
-        last: res.last ?? true,
-        sort: {},
-        pageable: {},
-      } as PageConsultantSummaryDto;
-    } catch {
-      // If fallback fails, continue to try the direct endpoint (may still work)
-    }
+  // Helper to adapt relational search page -> PageConsultantSummaryDto (summary shape)
+  const relationalFallback = async (): Promise<PageConsultantSummaryDto> => {
+    const { searchConsultantsRelational } = await import('./consultantsService');
+    const request: RelationalSearchRequest = { skillsAll: [skill], onlyActiveCv: false } as RelationalSearchRequest;
+    const res = await searchConsultantsRelational({ request, page, size, sort: sort ? [sort] : undefined });
+    const content: ConsultantSummaryDto[] = (res.content ?? []).map((c) => ({
+      userId: c.userId,
+      name: c.name,
+      email: '',
+      bornYear: 0,
+      defaultCvId: c.cvId,
+    }));
+    return {
+      content,
+      number: res.number ?? page,
+      size: res.size ?? size,
+      totalElements: res.totalElements ?? content.length,
+      totalPages: res.totalPages ?? 1,
+      first: res.first ?? page === 0,
+      last: res.last ?? true,
+      sort: {},
+      pageable: {},
+    } as PageConsultantSummaryDto;
+  };
+
+  // If skill contains reserved path characters, skip direct endpoint
+  const hasReserved = /[/%#?;]/.test(skill);
+  if (hasReserved) {
+    try { return await relationalFallback(); } catch { /* fall through */ }
   }
 
-  const params: Record<string, unknown> = { page, size };
-  if (sort) (params as Record<string, unknown>).sort = sort;
-  const { data } = await apiClient.get<PageConsultantSummaryDto>(`skills/${encodeURIComponent(skill)}/consultants`, { params });
-  return data;
+  try {
+    const params: Record<string, unknown> = { page, size };
+    if (sort) (params as Record<string, unknown>).sort = sort;
+    const { data } = await apiClient.get<PageConsultantSummaryDto>(`skills/${encodeURIComponent(skill)}/consultants`, { params });
+    return data;
+  } catch {
+    // 404/405/5xx -> fallback to relational search which is supported server-side
+    try { return await relationalFallback(); } catch { /* final */ }
+    // Return empty page on total failure to avoid UI crashes
+    return { content: [], number: page, size, totalElements: 0, totalPages: 0, first: page === 0, last: true, sort: {}, pageable: {} };
+  }
 }
 
 export async function listSkillNames(prefix?: string, limit: number = 100): Promise<string[]> {
@@ -76,34 +79,30 @@ export async function listSkillNames(prefix?: string, limit: number = 100): Prom
 }
 
 export async function listTopConsultantsBySkill(skill: string, limit: number = 3): Promise<ConsultantSummaryDto[]> {
-  // Similar fallback logic for skills with reserved characters
-  const needsFallback = /[/%#?;]/.test(skill);
-  if (needsFallback) {
-    try {
-      const { searchConsultantsRelational } = await import('./consultantsService');
-      const request: RelationalSearchRequest = { skillsAll: [skill], onlyActiveCv: false } as RelationalSearchRequest;
-      const res = await searchConsultantsRelational({
-        request,
-        page: 0,
-        size: Math.max(1, limit),
-      });
-      return (res.content ?? []).slice(0, limit).map((c) => ({
-        userId: c.userId,
-        name: c.name,
-        email: '',
-        bornYear: 0,
-        defaultCvId: c.cvId,
-      }));
-    } catch {
-      // fall through to endpoint attempt
-    }
+  const fallback = async (): Promise<ConsultantSummaryDto[]> => {
+    const { searchConsultantsRelational } = await import('./consultantsService');
+    const request: RelationalSearchRequest = { skillsAll: [skill], onlyActiveCv: false } as RelationalSearchRequest;
+    const res = await searchConsultantsRelational({ request, page: 0, size: Math.max(1, limit) });
+    return (res.content ?? []).slice(0, limit).map((c) => ({
+      userId: c.userId,
+      name: c.name,
+      email: '',
+      bornYear: 0,
+      defaultCvId: c.cvId,
+    }));
+  };
+
+  // Skip direct endpoint if reserved characters
+  const hasReserved = /[/%#?;]/.test(skill);
+  if (hasReserved) {
+    try { return await fallback(); } catch { /* fall through */ }
   }
+
   try {
-    const { data } = await apiClient.get<ConsultantSummaryDto[]>(`skills/${encodeURIComponent(skill)}/top-consultants`, {
-      params: { limit },
-    });
-    return data ?? [];
-  } catch {
-    return [];
-  }
+    const { data } = await apiClient.get<ConsultantSummaryDto[]>(`skills/${encodeURIComponent(skill)}/top-consultants`, { params: { limit } });
+    if (Array.isArray(data) && data.length) return data;
+  } catch { /* ignore */ }
+
+  // Fallback to relational search in all other cases
+  try { return await fallback(); } catch { return []; }
 }

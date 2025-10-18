@@ -1,0 +1,22 @@
+:root {
+  --cb-orange: #F37021;
+  --cb-orange-hover: #D85F1B;
+  --cb-black: #000000;
+  --cb-white: #FFFFFF;
+  --cb-text: #111111;
+  --cb-bg: #FFFFFF;
+  --cb-surface: #FFFFFF;
+  --cb-border: #EDEDED;
+  --cb-link: var(--cb-orange);
+  --cb-link-hover: var(--cb-orange-hover);
+}
+
+/* Dark mode overrides */
+body[data-color-mode="dark"] {
+  --cb-text: #E6E6E6;
+  --cb-bg: #0B0B0C;
+  --cb-surface: #111214;
+  --cb-border: #2A2B2E;
+  --cb-link: #FF8A3C;
+  --cb-link-hover: #FFA45F;
+}

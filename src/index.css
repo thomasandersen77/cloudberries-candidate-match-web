@@ -9,14 +9,16 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
+@import './styles/brand.css';
+
 a {
     font-weight: 500;
-    color: #1976D2;
+    color: var(--cb-link);
     text-decoration: inherit;
 }
 
 a:hover {
-    color: #1565C0;
+    color: var(--cb-link-hover);
 }
 
 body {
@@ -25,6 +27,8 @@ body {
     min-width: 320px;
     min-height: 100vh;
     width: 100%;
+    background: var(--cb-bg);
+    color: var(--cb-text);
 }
 
 #root {

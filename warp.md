@@ -130,6 +130,11 @@ curl https://delightful-meadow-056d48003.1.azurestaticapps.net/api/actuator/heal
 curl https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/actuator/health
 ```
 
+#### Frontend helsesjekk-struping
+- Maks ett kall per 5 minutter på tvers av faner (deles via localStorage).
+- Ekte side-reload bypasser TTL og utløser nytt kall, men koordineres slik at bare én fane kaller backend.
+- Primær endepunkt: `/api/health`; fallback til `/actuator/health` hovedsakelig i lokal utvikling.
+
 ### 🛠️ Common Azure Issues
 
 #### Build Failures

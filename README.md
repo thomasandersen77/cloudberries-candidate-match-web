@@ -171,6 +171,11 @@ Se mer detaljer i `openapi.yaml` i dette repoet.
 - **minQualityScore filtering** is performed **server-side** for optimal performance
 - Client-side fallback enrichment has been removed - search results contain quality scores directly from the backend
 
+### Helsesjekk struping (5 min)
+- UI-komponenter deler en felles 5-minutters cache på tvers av faner (localStorage).
+- Ekte side-reload (Cmd/Ctrl+R) bypasser TTL og utløser nøyaktig ett nettverkskall på tvers av faner (kortvarig lås koordinerer).
+- Primær endepunkt: `/api/health`; fallback til `/actuator/health` hovedsakelig i lokal utvikling. Innenfor TTL returneres cachet data uten nye kall.
+
 ### Kjøre lokalt
 ````bash path=null start=null
 npm install
