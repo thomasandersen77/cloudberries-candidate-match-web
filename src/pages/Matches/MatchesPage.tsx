@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Chip, CircularProgress, Container, IconButton, Link as MuiLink, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Chip, CircularProgress, Container, IconButton, Link as MuiLink, Paper, Stack, Tooltip, Typography, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { listMatchRequests, getTopConsultantsForRequest } from '../../services/matchesRequestsService';
 import type { PagedMatchesListDto, MatchConsultantDto, CoverageStatus } from '../../types/api';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { getMatchStatus, getTopMatchesFlat, recalculateMatches } from '../../services/newMatchesService';
 
 // Helper to decide coverage color/status from count
 function getCoverageFromStatus(status?: CoverageStatus | null, label?: string | null, hitCount?: number | null) {
@@ -27,11 +28,21 @@ function getCoverageFromStatus(status?: CoverageStatus | null, label?: string | 
 }
 
 const MatchesPage: React.FC = () => {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const requestIdParam = params.get('requestId');
+  const requestId = requestIdParam ? Number(requestIdParam) : null;
+
   const [page, setPage] = useState<PagedMatchesListDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [top5, setTop5] = useState<Record<number, MatchConsultantDto[] | 'loading' | 'error'>>({});
   const [pageSize, setPageSize] = useState<number>(20);
+
+  // Status mode state
+  const [status, setStatus] = useState<'PENDING'|'RUNNING'|'COMPLETED'|'FAILED'|null>(null);
+  const [flat, setFlat] = useState<Array<{ name: string; score: number; reasons: string[]; profileUrl?: string | null }>>([]);
+  const [polling, setPolling] = useState(false);
 
   const loadPage = async (pageIndex: number) => {
     setLoading(true);
@@ -44,9 +55,38 @@ const MatchesPage: React.FC = () => {
   };
 
   useEffect(() => {
+    if (requestId) return; // dedicated mode, skip list
     loadPage(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageSize]);
+  }, [pageSize, requestId]);
+
+  // Poll status when requestId mode is active
+  useEffect(() => {
+    if (!requestId) return;
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const tick = async () => {
+      try {
+        const s = await getMatchStatus(requestId);
+        if (cancelled) return;
+        setStatus(s.status);
+        if (s.status === 'COMPLETED') {
+          const items = await getTopMatchesFlat(requestId, 10);
+          if (!cancelled) setFlat(items.map(i => ({ name: i.name, score: i.score, reasons: i.reasons, profileUrl: i.profileUrl })));
+          setPolling(false);
+          return;
+        }
+        setPolling(true);
+        timer = window.setTimeout(tick, 1500);
+      } catch {
+        if (!cancelled) setPolling(false);
+      }
+    };
+    tick();
+
+    return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
+  }, [requestId]);
 
   // No longer prefetching; coverage comes from list item (hitCount/coverageStatus)
   useEffect(() => {
@@ -71,6 +111,60 @@ const MatchesPage: React.FC = () => {
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Matcher</Typography>
+
+      {/* Request-specific mode */}
+      {requestId && (
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between">
+            <Typography variant="subtitle1">Kundeforespørsel #{requestId}</Typography>
+            <Stack direction="row" spacing={1}>
+              <Chip label={`Status: ${status ?? 'ukjent'}`} color={status === 'COMPLETED' ? 'success' : status === 'FAILED' ? 'error' : 'default'} />
+              <Button size="small" variant="outlined" onClick={async () => { if (!requestId) return; await recalculateMatches(requestId); setStatus('PENDING'); setFlat([]); }}>
+                Reberegn
+              </Button>
+              <Button size="small" variant="text" onClick={() => {
+                // Export CSV
+                const lines = ['name;score;reasons'];
+                flat.forEach(i => lines.push(`${i.name};${i.score};${(i.reasons||[]).join(' | ').replace(/\n/g,' ')}`));
+                const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `matches-${requestId}.csv`; a.click(); URL.revokeObjectURL(url);
+              }} disabled={!flat.length}>
+                Eksporter CSV
+              </Button>
+            </Stack>
+          </Stack>
+          {(!flat.length && (status === 'PENDING' || status === 'RUNNING')) && (
+            <Box sx={{ p: 2, textAlign: 'center' }}>
+              <CircularProgress size={16} />
+              <Typography variant="body2" sx={{ ml: 1, display: 'inline' }}>{polling ? 'Venter på resultat…' : 'Ingen data'}</Typography>
+            </Box>
+          )}
+          {flat.length > 0 && (
+            <Table size="small" stickyHeader sx={{ mt: 1 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Navn</TableCell>
+                  <TableCell>Score</TableCell>
+                  <TableCell>Begrunnelser</TableCell>
+                  <TableCell>Profil</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {flat.map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{r.name}</TableCell>
+                    <TableCell>{r.score}</TableCell>
+                    <TableCell>{r.reasons?.slice(0,3).join(' • ')}</TableCell>
+                    <TableCell>{r.profileUrl ? <MuiLink component={RouterLink} to={r.profileUrl}>Åpne</MuiLink> : '-'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Paper>
+      )}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between" sx={{ mb: 1 }}>
         <Typography variant="caption">Sortering: nyeste først</Typography>
         <Stack direction="row" spacing={1} alignItems="center">
@@ -81,19 +175,20 @@ const MatchesPage: React.FC = () => {
         </Stack>
       </Stack>
 
-      {loading && (
+      {!requestId && loading && (
         <Box sx={{ p: 4, textAlign: 'center' }}>
           <CircularProgress />
           <Typography variant="body2" sx={{ mt: 1 }}>Laster prosjektforespørsler…</Typography>
         </Box>
       )}
 
-      {!loading && rows.length === 0 && (
+      {!requestId && !loading && rows.length === 0 && (
         <Paper sx={{ p: 2 }}>
           <Typography variant="body1">Ingen prosjektforespørsler funnet.</Typography>
         </Paper>
       )}
 
+      {!requestId && (
       <Stack spacing={1}>
         {rows.map((pr) => {
           const id = pr.id as number | undefined;
@@ -178,9 +273,10 @@ const MatchesPage: React.FC = () => {
           );
         })}
       </Stack>
+      )}
 
       {/* Pagination controls */}
-      {page && (
+      {!requestId && page && (
         <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end" sx={{ mt: 2 }}>
           <Typography variant="caption">Side {typeof page.currentPage === 'number' ? page.currentPage + 1 : 1} av {page.totalPages ?? '?'}</Typography>
           <Button size="small" variant="outlined" onClick={() => loadPage(Math.max(0, (page.currentPage ?? 0) - 1))} disabled={!page.hasPrevious}>
