@@ -6,18 +6,20 @@ import { CssBaseline, ThemeProvider } from '@mui/material';
 export type ColorMode = 'light' | 'dark';
 
 const brand = {
-  orange: '#F37021',
+  orange: '#F26A21',
   orangeHover: '#D85F1B',
-  black: '#000000',
+  black: '#222222',
   white: '#FFFFFF',
+  green: '#3AAA35',
+  red: '#E53935',
   light: {
-    text: '#111111',
+    text: '#222222',
     secondaryText: '#555555',
     bg: '#FFFFFF',
     paper: '#FFFFFF',
     divider: '#EDEDED',
     tableHead: '#FAFAFA',
-    border: '#EEEEEE',
+    border: '#EDEDED',
   },
   dark: {
     text: '#E6E6E6',
@@ -42,21 +44,21 @@ export function createAppTheme(mode: ColorMode): Theme {
       background: { default: paletteBase.bg, paper: paletteBase.paper },
       text: { primary: paletteBase.text, secondary: paletteBase.secondaryText },
       divider: paletteBase.divider,
-      success: { main: '#2E7D32' },
-      error: { main: '#D32F2F' },
+      success: { main: brand.green },
+      error: { main: brand.red },
       warning: { main: '#ED6C02' },
       info: { main: '#0288D1' },
     },
     shape: { borderRadius: 10 },
     typography: {
       fontFamily:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        "'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
       h4: { fontWeight: 700 },
     },
     components: {
       MuiPaper: {
         styleOverrides: {
-          root: { border: `1px solid ${paletteBase.border}` },
+          root: { border: `1px solid ${paletteBase.border}`, borderRadius: 12 },
         },
       },
       MuiTableHead: {
@@ -64,12 +66,81 @@ export function createAppTheme(mode: ColorMode): Theme {
           root: { backgroundColor: paletteBase.tableHead },
         },
       },
+      MuiTableContainer: {
+        styleOverrides: {
+          root: {
+            borderRadius: 12,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+          },
+        },
+      },
+      MuiTableRow: {
+        styleOverrides: {
+          root: {
+            '&:last-of-type td, &:last-of-type th': {
+              borderBottom: 'none',
+            },
+          },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          head: {
+            fontWeight: 600,
+          },
+          root: {
+            borderBottom: `1px solid ${paletteBase.border}`,
+          },
+        },
+      },
       MuiButton: {
         defaultProps: {
           color: 'primary',
         },
         styleOverrides: {
-          root: { textTransform: 'none', fontWeight: 600 },
+          root: {
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 999,
+            paddingInline: 16,
+          },
+          containedPrimary: {
+            boxShadow: '0 2px 4px rgba(0,0,0,0.14)',
+          },
+          outlinedPrimary: {
+            borderWidth: 1,
+          },
+        },
+      },
+      MuiTextField: {
+        defaultProps: {
+          variant: 'outlined',
+          size: 'small',
+        },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            borderRadius: 10,
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: brand.orange,
+              boxShadow: '0 0 0 2px rgba(242,106,33,0.2)',
+            },
+          },
+        },
+      },
+      MuiFormLabel: {
+        styleOverrides: {
+          root: {
+            fontWeight: 500,
+          },
+        },
+      },
+      MuiChip: {
+        styleOverrides: {
+          root: {
+            borderRadius: 999,
+          },
         },
       },
       MuiLink: {

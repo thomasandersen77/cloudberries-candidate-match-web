@@ -1,5 +1,7 @@
+@import './styles/brand.css';
+
 :root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-family: var(--cb-font-family);
     line-height: 1.5;
     font-weight: 400;
 
@@ -8,8 +10,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
-
-@import './styles/brand.css';
 
 a {
     font-weight: 500;
@@ -42,4 +42,3 @@ h1 {
     font-size: 3.2em;
     line-height: 1.1;
 }
-

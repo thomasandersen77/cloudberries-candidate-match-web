@@ -16,10 +16,9 @@ import {
   Analytics as AnalyticsIcon
 } from '@mui/icons-material';
 import { projectMatchesService } from '../../services/projectMatchesService';
-import ProjectMatchCard from '../../components/matches/ProjectMatchCard';
+import ProjectRequestsTable from './ProjectRequestsTable';
 import type {
-  MatchesPageState,
-  TriggerMatchingResponse
+  MatchesPageState
 } from '../../types/matches';
 
 /**
@@ -86,58 +85,6 @@ const ProjectMatchingPage: React.FC = () => {
     }
   };
 
-  /**
-   * Handles manual matching trigger for a project.
-   */
-  const handleTriggerMatching = async (projectId: number, forceRecompute: boolean = false) => {
-    setState(prev => ({
-      ...prev,
-      loading: { ...prev.loading, [projectId]: true },
-      error: null
-    }));
-
-    try {
-      const response: TriggerMatchingResponse = await projectMatchesService.triggerMatching(
-        projectId, 
-        forceRecompute
-      );
-      
-      setSnackbarMessage(response.message);
-      
-      // Wait a moment then try to load matches
-      setTimeout(async () => {
-        try {
-          const matches = await projectMatchesService.waitForMatches(projectId, 15, 3000);
-          if (matches) {
-            setState(prev => ({
-              ...prev,
-              matches: { ...prev.matches, [projectId]: matches.matches },
-              expandedProjectId: projectId // Auto-expand to show results
-            }));
-            setSnackbarMessage(`✅ Found ${matches.matches.length} consultant matches!`);
-          } else {
-            setSnackbarMessage('⚠️ Matching is taking longer than expected. Please check results manually.');
-          }
-        } catch (error) {
-          console.error('Failed to wait for matches:', error);
-        } finally {
-          setState(prev => ({
-            ...prev,
-            loading: { ...prev.loading, [projectId]: false }
-          }));
-        }
-      }, 2000);
-      
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to trigger matching';
-      setState(prev => ({
-        ...prev,
-        error: message,
-        loading: { ...prev.loading, [projectId]: false }
-      }));
-      setSnackbarMessage(`❌ ${message}`);
-    }
-  };
 
   /**
    * Handles expanding/collapsing project match results.
@@ -242,39 +189,24 @@ const ProjectMatchingPage: React.FC = () => {
         </Alert>
       )}
 
-      {/* Project Cards */}
-      {state.projectRequests.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No Project Requests Found
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Upload some project requests to start matching consultants.
-          </Typography>
-        </Paper>
-      ) : (
-        <Box>
-          <Typography variant="h5" gutterBottom>
-            Project Requests ({state.projectRequests.length})
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Click "Compute Matches" to find the best consultants for each project. 
-            Results are ranked by AI-computed relevance scores.
-          </Typography>
-          
-          {state.projectRequests.map(project => (
-            <ProjectMatchCard
-              key={project.id}
-              project={project}
-              isExpanded={state.expandedProjectId === project.id}
-              matches={state.matches[project.id]}
-              loading={state.loading[project.id]}
-              onToggleExpand={handleToggleExpand}
-              onTriggerMatching={handleTriggerMatching}
-            />
-          ))}
-        </Box>
-      )}
+      {/* Project Requests Table */}
+      <Box>
+        <Typography variant="h5" gutterBottom>
+          Project Requests ({state.projectRequests.length})
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          Click on a project row to view consultant matches. 
+          Matches are ranked by AI-computed relevance scores combining skill match and CV quality.
+        </Typography>
+        
+        <ProjectRequestsTable
+          projectRequests={state.projectRequests}
+          onRowClick={handleToggleExpand}
+          expandedRowId={state.expandedProjectId}
+          matchesData={state.matches}
+          loadingMatches={state.loading}
+        />
+      </Box>
 
       {/* Success/Error Snackbar */}
       <Snackbar

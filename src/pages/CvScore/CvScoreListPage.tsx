@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody, Button, Stack, LinearProgress, Backdrop, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { getAllCandidates, getCvScore, runScoreForAll } from '../../services/cvScoreService';
+import { getAllCandidates, getCvScore, runScoreForCandidate } from '../../services/cvScoreService';
 import type { CvScoreDto } from '../../types/api';
 
 const CvScoreListPage: React.FC = () => {
@@ -48,8 +48,18 @@ const CvScoreListPage: React.FC = () => {
           onClick={async () => {
             try {
               setRunning(true);
-              const { processedCount } = await runScoreForAll();
-              // Refresh scores and rows after batch run
+              // Only score candidates with scorePercent === 0
+              const missing = rows.filter(r => (r.scorePercent ?? 0) === 0).map(r => ({ id: r.id, name: r.name }));
+              let processed = 0;
+              for (const m of missing) {
+                try {
+                  await runScoreForCandidate(m.id);
+                  processed += 1;
+                } catch {
+                  // ignore individual failures; continue
+                }
+              }
+              // Refresh scores and rows after run
               const fresh = await getAllCandidates();
               const refreshed = await Promise.all(
                 fresh.map(async (c) => {
@@ -63,15 +73,15 @@ const CvScoreListPage: React.FC = () => {
               );
               refreshed.sort((a, b) => (b.scorePercent ?? 0) - (a.scorePercent ?? 0));
               setRows(refreshed);
-              setSnack({ open: true, message: `Scoring fullført – prosesserte ${processedCount}`, severity: 'success' });
-      } catch {
+              setSnack({ open: true, message: `Scoring fullført – prosesserte ${processed} (kun de uten score)`, severity: 'success' });
+            } catch {
               setSnack({ open: true, message: 'Scoring feilet', severity: 'error' });
             } finally {
               setRunning(false);
             }
           }}
         >
-          {running ? 'Skårer alle…' : 'Kjør scoring for alle'}
+          {running ? 'Skårer manglende…' : 'Kjør scoring for alle'}
         </Button>
       </Stack>
       {running && <LinearProgress sx={{ mb: 1 }} />}

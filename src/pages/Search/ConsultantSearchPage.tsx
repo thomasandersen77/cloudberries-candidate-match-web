@@ -131,7 +131,7 @@ const ResultsTable: React.FC<{
 }> = ({ items, onDetails, onViewCv }) => {
   return (
     <TableContainer>
-      <Table size="medium">
+      <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
             <TableCell>Navn</TableCell>
@@ -331,12 +331,12 @@ const ConsultantSearchPage: React.FC = () => {
   const gotoCv = (userId: string) => navigate(`/cv/${userId}`);
 
   return (
-    <Container sx={{ py: 4 }}>
+    <Container sx={{ py: 4 }} maxWidth="lg">
       <Typography variant="h4" gutterBottom>
         Konsulentsøk
       </Typography>
 
-      <Paper sx={{ mb: 2 }}>
+      <Paper sx={{ mb: 2, borderRadius: 3 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} aria-label="search-tabs" variant="scrollable" scrollButtons="auto">
           <Tab label="Relasjonelt søk" />
           <Tab label="Semantisk søk" />
@@ -345,7 +345,7 @@ const ConsultantSearchPage: React.FC = () => {
 
       {tab === 0 && (
         <Box>
-          <Paper sx={{ p: 2, mb: 2 }}>
+          <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} md={4}>
@@ -408,7 +408,7 @@ const ConsultantSearchPage: React.FC = () => {
             {skillsError && <Alert severity="warning" sx={{ mt: 2 }}>{skillsError}</Alert>}
           </Paper>
 
-          <Paper>
+          <Paper sx={{ borderRadius: 3 }}>
             {rNotice && <Box sx={{ p: 2 }}><Alert severity="info">{rNotice}</Alert></Box>}
             {(rLoading && rShowSpinner) ? (
               <Box sx={{ p: 4, textAlign: 'center' }}>
@@ -443,7 +443,7 @@ const ConsultantSearchPage: React.FC = () => {
 
       {tab === 1 && (
         <Box>
-          <Paper sx={{ p: 2, mb: 2 }}>
+          <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Om semantisk rangering</Typography>
             <Typography variant="body2" color="text.secondary">
               Resultatene under er rangert semantisk basert på tekstbeskrivelsen. Et eksplisitt likhetsskår vil kunne
@@ -463,7 +463,7 @@ const ConsultantSearchPage: React.FC = () => {
             </Alert>
           </Paper>
 
-          <Paper sx={{ p: 2, mb: 2 }}>
+          <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <TextField
                 label="Beskrivelse (naturlig språk)"
@@ -507,7 +507,7 @@ const ConsultantSearchPage: React.FC = () => {
             </Stack>
           </Paper>
 
-          <Paper>
+          <Paper sx={{ borderRadius: 3 }}>
             {(sLoading && sShowSpinner) ? (
               <Box sx={{ p: 4, textAlign: 'center' }}>
                 <CircularProgress />

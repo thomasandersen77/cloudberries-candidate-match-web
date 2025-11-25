@@ -81,10 +81,10 @@ const ProjectRequestCreatePage: React.FC = () => {
   };
 
   return (
-    <Container sx={{ py: 4 }}>
+    <Container sx={{ py: 4 }} maxWidth="md">
       <Typography variant="h4" gutterBottom>Ny kundeforspørsel</Typography>
 
-      <Paper sx={{ p: 3 }}>
+      <Paper sx={{ p: 3, borderRadius: 3 }}>
         <Stack spacing={2}>
           {error && <Alert severity="error">{error}</Alert>}
 

@@ -61,16 +61,23 @@ const MatchResultsTable: React.FC<MatchResultsTableProps> = ({ matches, loading 
   const sortedMatches = sortCandidatesByScore(matches);
 
   return (
-    <TableContainer component={Paper} elevation={1}>
+    <TableContainer
+      component={Paper}
+      elevation={1}
+      sx={{
+        borderRadius: 3,
+        overflow: 'hidden',
+      }}
+    >
       <Table size="small" aria-label="consultant matches table">
         <TableHead>
-          <TableRow sx={{ backgroundColor: 'grey.50' }}>
-            <TableCell sx={{ fontWeight: 600 }}>Consultant</TableCell>
-            <TableCell align="center" sx={{ fontWeight: 600, minWidth: 100 }}>
+          <TableRow>
+            <TableCell>Consultant</TableCell>
+            <TableCell align="center" sx={{ minWidth: 100 }}>
               Match Score
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, minWidth: 200 }}>Explanation</TableCell>
-            <TableCell align="center" sx={{ fontWeight: 600, minWidth: 120 }}>
+            <TableCell sx={{ minWidth: 200 }}>Explanation</TableCell>
+            <TableCell align="center" sx={{ minWidth: 120 }}>
               Computed
             </TableCell>
           </TableRow>

@@ -22,12 +22,14 @@ import {
     Fade,
     useTheme,
     useMediaQuery,
+    IconButton,
 } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Send as SendIcon, SmartToy as AiIcon, Person as PersonIcon } from '@mui/icons-material';
+import { Send as SendIcon, SmartToy as AiIcon, Person as PersonIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import {searchChat} from '../../services/chatService';
 import { listConsultants, listConsultantCvs, getConsultantByUserId } from '../../services/consultantsService';
+import apiClient from '../../services/apiClient';
 import type {ChatSearchRequest, ChatSearchResponse, DebugInfo, SearchResult, ConsultantSummaryDto, ScoringInfo} from '../../types/api';
 
 // Helpers
@@ -93,6 +95,7 @@ const ChatSearchTab = () => {
     const [pinned, setPinned] = useState<ConsultantSummaryDto[]>([]);
     const [rememberSelection, setRememberSelection] = useState<boolean>(false);
     const [useActiveCv, setUseActiveCv] = useState<boolean>(false);
+    const [reanalyzing, setReanalyzing] = useState<string | null>(null); // userId being re-analyzed
     const spinnerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     
     // Conversation persistence
@@ -435,6 +438,28 @@ const ChatSearchTab = () => {
         });
     };
     
+    const handleReanalyze = useCallback(async (consultant: ConsultantSummaryDto, event: React.MouseEvent) => {
+        event.stopPropagation(); // Prevent dropdown from closing/selecting
+        
+        setReanalyzing(consultant.userId);
+        
+        try {
+            // Call the CV scoring endpoint to re-analyze the consultant's CV
+            // Using a timeout of 360 seconds as specified
+            await apiClient.post(`/cv-score/${consultant.userId}`, null, {
+                timeout: 360_000
+            });
+            
+            // Show success message (you could add a toast notification here)
+            console.log(`Re-analysis completed for ${consultant.name}`);
+        } catch (error) {
+            console.error(`Failed to re-analyze consultant ${consultant.userId}:`, error);
+            // Show error message (you could add a toast notification here)
+        } finally {
+            setReanalyzing(null);
+        }
+    }, []);
+    
     const MessageBubble: React.FC<{ message: ConversationMessage }> = ({ message }) => {
         const isQuestion = message.type === 'question';
         
@@ -552,6 +577,28 @@ const ChatSearchTab = () => {
                             value={selectedConsultant}
                             renderInput={(params) => (
                                 <TextField {...params} label="Konsulent" placeholder="Søk etter navn" size="small" />
+                            )}
+                            renderOption={(props, option) => (
+                                <li {...props} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Box sx={{ flex: 1 }}>
+                                        <Typography variant="body2">{option.name}</Typography>
+                                        <Typography variant="caption" color="text.secondary">({option.userId})</Typography>
+                                    </Box>
+                                    <Tooltip title="Re-analyze CV">
+                                        <IconButton
+                                            size="small"
+                                            onClick={(e) => handleReanalyze(option, e)}
+                                            disabled={reanalyzing === option.userId}
+                                            sx={{ ml: 1 }}
+                                        >
+                                            {reanalyzing === option.userId ? (
+                                                <CircularProgress size={16} />
+                                            ) : (
+                                                <RefreshIcon fontSize="small" />
+                                            )}
+                                        </IconButton>
+                                    </Tooltip>
+                                </li>
                             )}
                         />
                     </Grid>

@@ -101,8 +101,10 @@ const MatchesPage: React.FC = () => {
       setTop5(prev => ({ ...prev, [id]: 'loading' }));
       try {
         const s = await getTopConsultantsForRequest(id, 5);
+        console.log(`Fetched top consultants for request ${id}:`, s);
         setTop5(prev => ({ ...prev, [id]: s }));
-      } catch {
+      } catch (error) {
+        console.error(`Error fetching top consultants for request ${id}:`, error);
         setTop5(prev => ({ ...prev, [id]: 'error' }));
       }
     }
@@ -226,9 +228,14 @@ const MatchesPage: React.FC = () => {
               {expanded[id!] && (
                 <Box sx={{ mt: 1.5, pl: 0.5 }}>
                   {top5[id!] === 'loading' && (
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <CircularProgress size={16} />
-                      <Typography variant="body2">Henter topp 5…</Typography>
+                    <Stack spacing={1}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <CircularProgress size={16} />
+                        <Typography variant="body2">Analyserer kandidater med Gemini AI…</Typography>
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary" sx={{ pl: 3 }}>
+                        Rangerer topp kandidater basert på krav og CV-kvalitet
+                      </Typography>
                     </Stack>
                   )}
                   {top5[id!] === 'error' && (
@@ -236,16 +243,26 @@ const MatchesPage: React.FC = () => {
                   )}
                   {Array.isArray(top5[id!]) && (
                     <Stack spacing={1}>
-                      {((top5[id!] as MatchConsultantDto[])
-                        .slice()
-                        .sort((a, b) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0))
-                        .slice(0, 5)
-                      ).map((s, i) => (
-                        <Paper key={i} sx={{ p: 1 }}>
-                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ sm: 'center' }}>
-                            <Typography variant="body2">
-                              <b>{s.name}</b>{typeof s.relevanceScore === 'number' ? ` • score ${s.relevanceScore.toFixed(2)}` : ''}
+                      {(top5[id!] as MatchConsultantDto[]).length === 0 ? (
+                        <Typography variant="body2" color="text.secondary">Ingen konsulenter funnet for denne forespørselen.</Typography>
+                      ) : (
+                        <>
+                          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                            <Chip label="AI-rangert" size="small" color="primary" variant="outlined" />
+                            <Typography variant="caption" color="text.secondary">
+                              Gemini 3 Pro Preview
                             </Typography>
+                          </Stack>
+                          {((top5[id!] as MatchConsultantDto[])
+                            .slice()
+                            .sort((a, b) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0))
+                            .slice(0, 5)
+                          ).map((s, i) => (
+                          <Paper key={i} sx={{ p: 1 }}>
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ sm: 'center' }}>
+                              <Typography variant="body2">
+                                <b>{s.name}</b>{typeof s.relevanceScore === 'number' ? ` • score ${s.relevanceScore.toFixed(2)}` : ''}
+                              </Typography>
                             <Stack direction="row" spacing={1}>
                               {s.userId && (
                                 <MuiLink component={RouterLink} to={`/consultants/${s.userId}`} underline="hover">Se konsulent</MuiLink>
@@ -263,8 +280,10 @@ const MatchesPage: React.FC = () => {
                               </Typography>
                             </Tooltip>
                           )}
-                        </Paper>
-                      ))}
+                          </Paper>
+                        ))}
+                        </>
+                      )}
                     </Stack>
                   )}
                 </Box>

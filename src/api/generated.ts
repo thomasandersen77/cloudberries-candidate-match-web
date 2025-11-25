@@ -1034,6 +1034,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/matches/requests/{id}/re-analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-analyze consultants using Gemini 3.0 batch evaluation
+         * @description Re-analyzes and re-ranks consultants for a project request using improved AI matching.
+         *     This endpoint:
+         *     - Fetches ~30 consultants matching required skills
+         *     - Scores by 50% skills + 50% CV quality
+         *     - Selects top 10 candidates
+         *     - Sends all 10 CVs in ONE Gemini API call for batch evaluation
+         *     - Returns ranked results with detailed justifications
+         *
+         *     Note: This endpoint runs synchronously and may take up to 60 seconds.
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Re-analyzed and ranked consultants */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchConsultantDto"][];
+                    };
+                };
+                /** @description Project request not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description AI service error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/project-requests": {
         parameters: {
             query?: never;
@@ -2234,6 +2299,81 @@ export interface components {
              * @example 0.92
              */
             extraction: number;
+        };
+        ProjectRequestSummaryDto: {
+            /**
+             * Format: int64
+             * @description Project request ID
+             */
+            id: number;
+            /** @description Truncated project description */
+            title?: string | null;
+            /** @description Customer name */
+            customerName: string;
+            /**
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            createdAt: string;
+        };
+        MatchCandidateDto: {
+            /**
+             * Format: int64
+             * @description Consultant ID
+             */
+            consultantId: number;
+            /** @description Consultant name */
+            consultantName: string;
+            /** @description Consultant user ID */
+            userId: string;
+            /** @description CV ID */
+            cvId?: string | null;
+            /**
+             * Format: double
+             * @description Match score between 0 and 1
+             */
+            matchScore: number;
+            /** @description AI-generated explanation of the match */
+            matchExplanation?: string | null;
+            /**
+             * Format: date-time
+             * @description When the match was computed
+             */
+            createdAt: string;
+        };
+        MatchTop10Response: {
+            /**
+             * Format: int64
+             * @description Project request ID
+             */
+            projectRequestId: number;
+            /** @description Truncated project title */
+            projectTitle?: string | null;
+            /** @description Total number of matches computed */
+            totalMatches: number;
+            /** @description Top consultant matches sorted by score */
+            matches: components["schemas"]["MatchCandidateDto"][];
+            /**
+             * Format: date-time
+             * @description When matches were last computed
+             */
+            lastUpdated?: string | null;
+        };
+        TriggerMatchingResponse: {
+            /**
+             * Format: int64
+             * @description Project request ID
+             */
+            projectRequestId: number;
+            /**
+             * @description Status of the matching operation
+             * @enum {string}
+             */
+            status: "TRIGGERED" | "PENDING" | "COMPLETED" | "ERROR";
+            /** @description Human-readable status message */
+            message: string;
+            /** @description Job ID for tracking the matching operation */
+            jobId?: string | null;
         };
     };
     responses: {

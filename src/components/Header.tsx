@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {AppBar, Avatar, IconButton, Toolbar, Typography, Menu, MenuItem, Divider, Tooltip} from '@mui/material';
+import {AppBar, IconButton, Toolbar, Typography, Menu, MenuItem, Divider, Tooltip, Box} from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -7,6 +7,7 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import HealthCheckIndicator from './HealthCheckIndicator'; // <--- 1. Importer
 import { useColorMode } from '../theme';
+import CloudberriesLogo from '../assets/cloudberries-logo.png';
 
 const Header: React.FC = () => {
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -17,13 +18,42 @@ const Header: React.FC = () => {
     const handleMenuClose = () => setMenuAnchor(null);
 
     return (
-        <AppBar position="static" color="transparent" elevation={0} sx={{borderBottom: (theme) => `1px solid ${theme.palette.divider}`}}>
-            <Toolbar>
-                <Avatar sx={{bgcolor: 'primary.main', mr: 2}}>TA</Avatar>
-                <Typography variant="h6" component="div" sx={{flexGrow: 1}}>
-                    Cloudberries<br/>
-                    <span style={{fontWeight: '300'}}>Intelligent Skill Search and Matching Platform</span>
-                </Typography>
+        <AppBar
+            position="static"
+            color="transparent"
+            elevation={0}
+            sx={{
+                borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+                backdropFilter: 'blur(12px)',
+                backgroundColor: (theme) => theme.palette.mode === 'light'
+                    ? 'rgba(255,255,255,0.9)'
+                    : 'rgba(11,11,12,0.9)',
+            }}
+        >
+            <Toolbar sx={{ maxWidth: 1280, mx: 'auto', width: '100%' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
+                    <Box
+                        component="img"
+                        src={CloudberriesLogo}
+                        alt="Cloudberries logo"
+                        sx={{ height: 40, width: 'auto', mr: 2, display: 'block' }}
+                    />
+                    <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                            variant="h6"
+                            component="div"
+                            sx={{ fontWeight: 700, letterSpacing: 0.2, lineHeight: 1 }}
+                        >
+                            Cloudberries
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 300, color: 'text.secondary' }}
+                        >
+                            Intelligent Skill Search &amp; Matching Platform
+                        </Typography>
+                    </Box>
+                </Box>
 
                 <HealthCheckIndicator/>
 

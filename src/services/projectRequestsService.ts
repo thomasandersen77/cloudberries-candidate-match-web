@@ -13,7 +13,7 @@ export async function uploadProjectRequest(file: File): Promise<ProjectRequestRe
   const { data } = await apiClient.post<ProjectRequestResponseDto>(
     'project-requests/upload',
     formData,
-    { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 60000 }
+    { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 300000 }
   );
   return data;
 }
