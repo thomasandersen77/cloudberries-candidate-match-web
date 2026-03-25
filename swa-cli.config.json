@@ -3,10 +3,10 @@
   "configurations": {
     "cloudberries-candidate-match-web": {
       "appLocation": ".",
-      "outputLocation": "dist",
+      "outputLocation": "build",
       "appBuildCommand": "npm run build",
       "run": "npm run dev",
-      "appDevserverUrl": "http://localhost:5173"
+      "appDevserverUrl": "http://localhost:5174"
     }
   }
 }
