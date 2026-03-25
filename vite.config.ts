@@ -6,7 +6,36 @@ export default defineConfig({
     plugins: [react()],
     build: {
         outDir: 'build',
-        emptyOutDir: true
+        emptyOutDir: true,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (!id.includes('node_modules')) return;
+
+                    if (id.includes('@mui') || id.includes('@emotion') || id.includes('@fontsource')) {
+                        return 'vendor-mui';
+                    }
+
+                    if (id.includes('react-router-dom')) {
+                        return 'vendor-router';
+                    }
+
+                    if (id.includes('@tanstack/react-query')) {
+                        return 'vendor-react-query';
+                    }
+
+                    if (id.includes('react-markdown')) {
+                        return 'vendor-markdown';
+                    }
+
+                    if (id.includes('react') || id.includes('scheduler')) {
+                        return 'vendor-react';
+                    }
+
+                    return 'vendor';
+                },
+            },
+        },
     },
     server: {
         host: true, // Required for Docker container port mapping

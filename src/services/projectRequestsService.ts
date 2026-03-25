@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient, { aiScoringClient } from './apiClient';
 import type {
   ProjectRequestResponseDto,
   PagedProjectRequestResponseDto,
@@ -53,7 +53,7 @@ export async function closeProjectRequest(id: number): Promise<ProjectRequestDto
 
 // New: trigger AI analysis
 export async function analyzeProjectRequest(id: number): Promise<ProjectRequestDto> {
-  const { data } = await apiClient.post<ProjectRequestDto>(`project-requests/${id}/analyze`);
+  const { data } = await aiScoringClient.post<ProjectRequestDto>(`project-requests/${id}/analyze`);
   return data;
 }
 

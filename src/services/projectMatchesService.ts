@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient, { aiScoringClient } from './apiClient';
 import type {
   ProjectRequestSummary,
   MatchTop10Response,
@@ -37,10 +37,10 @@ export class ProjectMatchesService {
     forceRecompute: boolean = false
   ): Promise<TriggerMatchingResponse> {
     try {
-      const response = await apiClient.post<TriggerMatchingResponse>(
+      const response = await aiScoringClient.post<TriggerMatchingResponse>(
         `/matches/requests/${projectRequestId}/trigger`,
         null,
-        { params: { forceRecompute }, timeout: 600_000 }
+        { params: { forceRecompute } }
       );
       return response.data;
     } catch (error) {
@@ -100,10 +100,10 @@ export class ProjectMatchesService {
    */
   async triggerAllMatches(forceRecompute: boolean = false): Promise<BatchMatchingResponse> {
     try {
-      const response = await apiClient.post<BatchMatchingResponse>(
+      const response = await aiScoringClient.post<BatchMatchingResponse>(
         '/matches/trigger-all',
         null,
-        { params: { forceRecompute }, timeout: 600_000 }
+        { params: { forceRecompute } }
       );
       return response.data;
     } catch (error) {

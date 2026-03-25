@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient, { aiScoringClient } from './apiClient';
 import type { CandidateDTO, CvScoreDto } from '../types/api';
 
 // NOTE: This service is used for CV scoring management pages only.
@@ -16,11 +16,9 @@ export async function getCvScore(candidateId: string): Promise<CvScoreDto> {
 }
 
 export async function runScoreForCandidate(candidateId: string): Promise<CvScoreDto> {
-  // AI-scoring kan ta lang tid – sett 10 minutters timeout
-  const { data } = await apiClient.post<CvScoreDto>(
-    `cv-score/${encodeURIComponent(candidateId)}/run`,
-    undefined,
-    { timeout: 600_000 }
+  // AI-scoring kan ta lang tid – sett 10 minutters timeout via aiScoringClient
+  const { data } = await aiScoringClient.post<CvScoreDto>(
+    `cv-score/${encodeURIComponent(candidateId)}/run`
   );
   return data;
 }
@@ -28,11 +26,9 @@ export async function runScoreForCandidate(candidateId: string): Promise<CvScore
 export interface CvScoringRunResponse { processedCount: number }
 
 export async function runScoreForAll(): Promise<CvScoringRunResponse> {
-  // Batch-scoring for alle – sett 10 minutters timeout
-  const { data } = await apiClient.post<CvScoringRunResponse>(
-    `cv-score/run/all`,
-    undefined,
-    { timeout: 600_000 }
+  // Batch-scoring for alle – sett 10 minutters timeout via aiScoringClient
+  const { data } = await aiScoringClient.post<CvScoringRunResponse>(
+    `cv-score/run/all`
   );
   return data;
 }
