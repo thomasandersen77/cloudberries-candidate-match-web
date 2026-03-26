@@ -1,82 +1,126 @@
 import React from 'react';
-import { createTheme, type Theme } from '@mui/material/styles';
+import { alpha, createTheme, type Theme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 
 export type ColorMode = 'light' | 'dark';
 
-const brand = {
+/** Design tokens — premium cold SaaS, warm neutrals (see instructions/new_gui.md) */
+export const tokens = {
   orange: '#F26A21',
   orangeHover: '#D85F1B',
-  black: '#222222',
+  black: '#111111',
   white: '#FFFFFF',
   green: '#3AAA35',
   red: '#E53935',
   light: {
-    text: '#222222',
-    secondaryText: '#555555',
-    bg: '#FFFFFF',
+    text: '#111111',
+    textSecondary: '#5F5F5F',
+    bg: '#FAFAF8',
     paper: '#FFFFFF',
-    divider: '#EDEDED',
-    tableHead: '#FAFAFA',
-    border: '#EDEDED',
+    divider: '#ECE7E1',
+    tableHead: 'rgba(250, 250, 248, 0.98)',
+    border: '#ECE7E1',
+    surfaceMuted: '#F5F3EF',
   },
   dark: {
     text: '#E6E6E6',
-    secondaryText: '#B0B3B8',
+    textSecondary: '#B0B3B8',
     bg: '#0B0B0C',
     paper: '#111214',
     divider: '#2A2B2E',
     tableHead: '#16181B',
     border: '#1F2023',
+    surfaceMuted: '#16181B',
   },
 } as const;
 
+const brand = tokens;
+
 export function createAppTheme(mode: ColorMode): Theme {
   const isDark = mode === 'dark';
-  const paletteBase = isDark ? brand.dark : brand.light;
+  const t = isDark ? brand.dark : brand.light;
 
   return createTheme({
     palette: {
       mode,
       primary: { main: brand.orange, contrastText: brand.white },
       secondary: { main: isDark ? brand.white : brand.black },
-      background: { default: paletteBase.bg, paper: paletteBase.paper },
-      text: { primary: paletteBase.text, secondary: paletteBase.secondaryText },
-      divider: paletteBase.divider,
+      background: { default: t.bg, paper: t.paper },
+      text: { primary: t.text, secondary: t.textSecondary },
+      divider: t.divider,
       success: { main: brand.green },
       error: { main: brand.red },
       warning: { main: '#ED6C02' },
       info: { main: '#0288D1' },
     },
-    shape: { borderRadius: 10 },
+    shape: { borderRadius: 12 },
     typography: {
       fontFamily:
-        "'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
-      h4: { fontWeight: 700 },
+        "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+      h3: { fontWeight: 700, letterSpacing: '-0.02em', color: t.text },
+      h4: { fontWeight: 700, letterSpacing: '-0.02em', color: t.text },
+      h5: { fontWeight: 600, letterSpacing: '-0.01em', color: t.text },
+      h6: { fontWeight: 600, color: t.text },
+      subtitle1: { fontWeight: 500, color: t.text },
+      subtitle2: { fontWeight: 600, color: t.text },
+      body1: { lineHeight: 1.6 },
+      body2: { lineHeight: 1.55 },
+      caption: { color: t.textSecondary, letterSpacing: '0.02em' },
+      button: { fontWeight: 600, letterSpacing: '0.01em' },
+    },
+    transitions: {
+      duration: { shortest: 150, shorter: 200, short: 250, standard: 300 },
     },
     components: {
-      MuiPaper: {
+      MuiCssBaseline: {
         styleOverrides: {
-          root: { border: `1px solid ${paletteBase.border}`, borderRadius: 12 },
+          body: {
+            WebkitFontSmoothing: 'antialiased',
+            MozOsxFontSmoothing: 'grayscale',
+          },
+        },
+      },
+      MuiPaper: {
+        defaultProps: { elevation: 0 },
+        styleOverrides: {
+          root: {
+            border: `1px solid ${t.border}`,
+            borderRadius: 16,
+            backgroundImage: 'none',
+            boxShadow: isDark
+              ? '0 1px 2px rgba(0,0,0,0.35), 0 8px 32px rgba(0,0,0,0.25)'
+              : '0 1px 2px rgba(17,17,17,0.04), 0 8px 32px rgba(17,17,17,0.06)',
+          },
         },
       },
       MuiTableHead: {
         styleOverrides: {
-          root: { backgroundColor: paletteBase.tableHead },
+          root: {
+            backgroundColor: t.tableHead,
+            '& .MuiTableCell-head': {
+              borderBottom: `1px solid ${t.divider}`,
+            },
+          },
         },
       },
       MuiTableContainer: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            borderRadius: 16,
+            border: 'none',
+            boxShadow: 'none',
+            backgroundColor: 'transparent',
           },
         },
       },
       MuiTableRow: {
         styleOverrides: {
           root: {
+            transition: 'background-color 0.15s ease',
+            '&:hover': {
+              backgroundColor: isDark ? alpha('#fff', 0.04) : alpha('#111111', 0.03),
+            },
             '&:last-of-type td, &:last-of-type th': {
               borderBottom: 'none',
             },
@@ -87,28 +131,61 @@ export function createAppTheme(mode: ColorMode): Theme {
         styleOverrides: {
           head: {
             fontWeight: 600,
+            fontSize: '0.6875rem',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: t.textSecondary,
+            borderBottom: `1px solid ${t.divider}`,
+            paddingTop: 16,
+            paddingBottom: 16,
           },
           root: {
-            borderBottom: `1px solid ${paletteBase.border}`,
+            borderBottom: `1px solid ${alpha(t.divider, isDark ? 0.6 : 1)}`,
+            paddingTop: 18,
+            paddingBottom: 18,
           },
         },
       },
       MuiButton: {
         defaultProps: {
           color: 'primary',
+          disableElevation: true,
         },
         styleOverrides: {
           root: {
             textTransform: 'none',
             fontWeight: 600,
-            borderRadius: 999,
-            paddingInline: 16,
+            borderRadius: 12,
+            paddingInline: 18,
+            paddingBlock: 8,
+            transition: 'background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
           },
           containedPrimary: {
-            boxShadow: '0 2px 4px rgba(0,0,0,0.14)',
+            boxShadow: 'none',
+            '&:hover': {
+              boxShadow: `0 4px 14px ${alpha(brand.orange, 0.35)}`,
+              backgroundColor: brand.orangeHover,
+            },
+          },
+          outlined: {
+            borderColor: t.border,
+            '&:hover': {
+              borderColor: alpha(brand.orange, 0.45),
+              backgroundColor: alpha(brand.orange, isDark ? 0.08 : 0.06),
+            },
           },
           outlinedPrimary: {
-            borderWidth: 1,
+            borderWidth: 1.5,
+            borderColor: alpha(brand.orange, 0.55),
+            '&:hover': {
+              borderColor: brand.orange,
+              backgroundColor: alpha(brand.orange, isDark ? 0.12 : 0.08),
+            },
+          },
+          text: {
+            '&:hover': {
+              backgroundColor: alpha(brand.orange, isDark ? 0.1 : 0.08),
+            },
           },
         },
       },
@@ -121,10 +198,18 @@ export function createAppTheme(mode: ColorMode): Theme {
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            borderRadius: 10,
+            borderRadius: 12,
+            backgroundColor: isDark ? alpha('#fff', 0.03) : alpha('#111111', 0.02),
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: t.border,
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: alpha(brand.orange, 0.35),
+            },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
               borderColor: brand.orange,
-              boxShadow: '0 0 0 2px rgba(242,106,33,0.2)',
+              borderWidth: 1.5,
+              boxShadow: `0 0 0 3px ${alpha(brand.orange, 0.18)}`,
             },
           },
         },
@@ -133,13 +218,67 @@ export function createAppTheme(mode: ColorMode): Theme {
         styleOverrides: {
           root: {
             fontWeight: 500,
+            color: t.textSecondary,
+            '&.Mui-focused': { color: brand.orange },
           },
         },
       },
       MuiChip: {
         styleOverrides: {
           root: {
-            borderRadius: 999,
+            borderRadius: 8,
+            fontWeight: 500,
+            fontSize: '0.75rem',
+            height: 26,
+            borderColor: alpha(t.text, isDark ? 0.22 : 0.14),
+            '&.MuiChip-outlinedDefault': {
+              backgroundColor: isDark ? alpha('#fff', 0.04) : alpha('#111111', 0.03),
+            },
+          },
+          sizeSmall: {
+            height: 24,
+            fontSize: '0.6875rem',
+          },
+        },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: {
+            marginTop: 8,
+            borderRadius: 14,
+            border: `1px solid ${t.border}`,
+            boxShadow: isDark
+              ? '0 12px 40px rgba(0,0,0,0.45)'
+              : '0 12px 40px rgba(17,17,17,0.1)',
+            paddingTop: 4,
+            paddingBottom: 4,
+            minWidth: 220,
+          },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            marginLeft: 6,
+            marginRight: 6,
+            minHeight: 44,
+            transition: 'background-color 0.15s ease',
+            '&:hover': {
+              backgroundColor: alpha(brand.orange, isDark ? 0.14 : 0.1),
+            },
+          },
+        },
+      },
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            color: alpha(t.text, 0.65),
+            transition: 'color 0.15s ease, background-color 0.15s ease',
+            '&:hover': {
+              color: t.text,
+              backgroundColor: alpha(brand.orange, isDark ? 0.12 : 0.08),
+            },
           },
         },
       },
@@ -147,7 +286,15 @@ export function createAppTheme(mode: ColorMode): Theme {
         styleOverrides: {
           root: {
             color: brand.orange,
+            fontWeight: 500,
             '&:hover': { color: brand.orangeHover },
+          },
+        },
+      },
+      MuiTablePagination: {
+        styleOverrides: {
+          root: {
+            borderTop: `1px solid ${t.divider}`,
           },
         },
       },

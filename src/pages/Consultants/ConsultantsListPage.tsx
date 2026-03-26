@@ -58,7 +58,7 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Topp ferdigheter:</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {displaySkills.map((skill, idx) => (
-              <Chip key={idx} label={skill} size="small" variant="outlined" color="primary" />
+              <Chip key={idx} label={skill} size="small" variant="outlined" color="default" />
             ))}
             {remainingCount > 0 && (
               <Chip label={`+${remainingCount}`} size="small" variant="outlined" />
@@ -70,22 +70,12 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
         
         {/* Actions */}
         <Stack direction="row" spacing={1}>
-          <Button 
-            variant="contained" 
-            size="small"
-            onClick={onDetailsClick}
-            color="success"
-            sx={{
-              borderRadius: '20px', textTransform: 'none', fontWeight: 'bold',
-              flex: 1
-            }}
-          >Se detaljer</Button>
-          <Button 
-            variant="outlined" 
-            size="small"
-            onClick={onCvClick}
-            sx={{ borderRadius: '20px', textTransform: 'none', fontWeight: 'bold', flex: 1 }}
-          >Se hele CV</Button>
+          <Button variant="contained" color="primary" size="small" onClick={onDetailsClick} sx={{ flex: 1 }}>
+            Se detaljer
+          </Button>
+          <Button variant="outlined" color="inherit" size="small" onClick={onCvClick} sx={{ flex: 1 }}>
+            Se hele CV
+          </Button>
         </Stack>
       </CardContent>
     </Card>
@@ -311,7 +301,11 @@ const fetchData = async () => {
         mb: 3,
         gap: isMobile ? 2 : 0
       }}>
-        <Typography variant={isMobile ? "h5" : "h4"} sx={{ textAlign: isMobile ? 'center' : 'left' }}>
+        <Typography
+          variant={isMobile ? 'h5' : 'h4'}
+          component="h1"
+          sx={{ textAlign: isMobile ? 'center' : 'left', fontWeight: 700, letterSpacing: '-0.02em' }}
+        >
           Konsulenter
         </Typography>
         <SyncButton
@@ -327,22 +321,30 @@ const fetchData = async () => {
         onDismiss={handleDismissNotification} 
       />
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
-        <TextField 
-          label="Søk på navn" 
-          value={searchInput} 
-          onChange={(e) => setSearchInput(e.target.value)} 
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 2, sm: 2.5 },
+          mb: 3,
+          borderRadius: 2,
+        }}
+      >
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+        <TextField
+          label="Søk på navn"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           onKeyDown={handleEnterKey}
-          size="small"
-          placeholder={isMobile ? "Søk konsulent..." : "Skriv navn og trykk Enter eller Søk"}
+          size="medium"
+          placeholder={isMobile ? 'Søk konsulent…' : 'Skriv navn og trykk Enter eller Søk'}
           sx={{ flexGrow: 1 }}
           fullWidth={isMobile}
         />
-        <Button 
-          variant="contained" 
-          color="success" 
+        <Button
+          variant="contained"
+          color="primary"
           onClick={performSearch}
-          sx={{ minWidth: isMobile ? 'auto' : 100 }}
+          sx={{ minWidth: isMobile ? 'auto' : 112, alignSelf: isMobile ? 'stretch' : 'center' }}
           fullWidth={isMobile}
         >
           Søk
@@ -359,10 +361,13 @@ const fetchData = async () => {
           {filteredConsultants.length} av {consultants.length} konsulenter
         </Typography>
       </Stack>
+      </Paper>
 
       {/* Industries filter */}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }} alignItems={{ xs: 'stretch', sm: 'center' }}>
-        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 120 }}>Industries:</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 120, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          Bransje
+        </Typography>
         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
           {industryOptions.map(opt => (
             <Chip
@@ -371,6 +376,7 @@ const fetchData = async () => {
               size="small"
               variant={selectedIndustries.includes(opt) ? 'filled' : 'outlined'}
               color={selectedIndustries.includes(opt) ? 'primary' : 'default'}
+              sx={selectedIndustries.includes(opt) ? undefined : { fontWeight: 500 }}
               onClick={() => {
                 setSelectedIndustries(prev => prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]);
                 setPage(0);
@@ -384,7 +390,7 @@ const fetchData = async () => {
       </Stack>
 
       {loading ? (
-        <Paper>
+        <Paper sx={{ overflow: 'hidden' }}>
           {isMobile ? <MobileSkeleton cards={rowsPerPage} /> : <TableSkeleton rows={rowsPerPage} />}
           {/* Keep pagination stable during loading */}
           <TablePagination
@@ -401,7 +407,7 @@ const fetchData = async () => {
       ) : (
         <>
           {filteredConsultants.length === 0 ? (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
+            <Paper sx={{ p: 4, textAlign: 'center', overflow: 'hidden' }}>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
                 {nameFilter ? 'Ingen konsulenter funnet' : 'Ingen konsulenter tilgjengelig'}
               </Typography>
@@ -412,7 +418,7 @@ const fetchData = async () => {
               )}
             </Paper>
           ) : (
-            <Paper>
+            <Paper sx={{ overflow: 'hidden' }}>
               {/* Mobile Card Layout */}
               {isMobile ? (
                 <Box sx={{ p: 2 }}>
@@ -435,11 +441,11 @@ const fetchData = async () => {
                   >
                     <TableHead>
                       <TableRow>
-                        <TableCell width={isTablet ? 48 : 64}></TableCell>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Navn</TableCell>
-                        {!isTablet && <TableCell sx={{ fontWeight: 'bold' }}>Ferdigheter</TableCell>}
-                        <TableCell align="center" sx={{ fontWeight: 'bold' }}>Kvalitet</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>Handlinger</TableCell>
+                        <TableCell width={isTablet ? 48 : 64} />
+                        <TableCell>Navn</TableCell>
+                        {!isTablet && <TableCell>Ferdigheter</TableCell>}
+                        <TableCell align="center">Kvalitet</TableCell>
+                        <TableCell align="right">Handlinger</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -450,7 +456,7 @@ const fetchData = async () => {
                       const { displaySkills: tabletSkills, remainingCount: tabletRemaining } = getSkillsDisplay(c, 2);
                       
                       return (
-                        <TableRow key={c.userId} hover sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                        <TableRow key={c.userId} hover>
                           <TableCell>
                             <Avatar sx={{ width: isTablet ? 32 : 40, height: isTablet ? 32 : 40 }}>
                               {c.name.charAt(0)}
@@ -458,13 +464,13 @@ const fetchData = async () => {
                           </TableCell>
                           <TableCell>
                             <Box>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.25, letterSpacing: '-0.01em' }}>
                                 {c.name}
                               </Typography>
                               {isTablet && (
                                 <Box sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.25 }}>
                                   {tabletSkills.map((s, idx) => (
-                                    <Chip key={idx} label={s} size="small" variant="outlined" color="primary" sx={{ fontSize: '0.7rem' }} />
+                                    <Chip key={idx} label={s} size="small" variant="outlined" color="default" sx={{ fontSize: '0.7rem' }} />
                                   ))}
                                   {tabletRemaining > 0 && (
                                     <Chip label={`+${tabletRemaining}`} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
@@ -477,7 +483,7 @@ const fetchData = async () => {
                             <TableCell>
                               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                 {topSkills.map((s, idx) => (
-                                  <Chip key={idx} label={s} size="small" variant="outlined" color="primary" />
+                                  <Chip key={idx} label={s} size="small" variant="outlined" color="default" />
                                 ))}
                                 {remainingCount > 0 && (
                                   <Chip label={`+${remainingCount}`} size="small" variant="outlined" />
@@ -509,33 +515,12 @@ const fetchData = async () => {
                                 justifyContent="flex-end"
                                 sx={{ minWidth: isTablet ? 80 : 'auto' }}
                               >
-                                <Button 
-                                  variant="contained" 
-                                  size="small"
-                                  onClick={() => gotoDetails(c.userId)}
-                                  color="success"
-                                  sx={{
-                                    borderRadius: '20px', 
-                                    textTransform: 'none', 
-                                    fontWeight: 'bold',
-                                    fontSize: isTablet ? '0.7rem' : '0.75rem',
-                                    px: isTablet ? 1 : 1.5,
-                                    py: isTablet ? 0.25 : 0.5
-                                  }}
-                                >Se detaljer</Button>
-                                <Button 
-                                  variant="outlined" 
-                                  size="small"
-                                  onClick={() => gotoCv(c.userId)}
-                                  sx={{ 
-                                    borderRadius: '20px', 
-                                    textTransform: 'none', 
-                                    fontWeight: 'bold',
-                                    fontSize: isTablet ? '0.7rem' : '0.75rem',
-                                    px: isTablet ? 1 : 1.5,
-                                    py: isTablet ? 0.25 : 0.5
-                                  }}
-                                >Se hele CV</Button>
+                                <Button variant="contained" color="primary" size="small" onClick={() => gotoDetails(c.userId)}>
+                                  Se detaljer
+                                </Button>
+                                <Button variant="outlined" color="inherit" size="small" onClick={() => gotoCv(c.userId)}>
+                                  Se hele CV
+                                </Button>
                               </Stack>
                             </TableCell>
                           </TableRow>
@@ -560,11 +545,9 @@ const fetchData = async () => {
                   isMobile ? `${from}-${to} av ${count}` : `${from}-${to} av ${count !== -1 ? count : `mer enn ${to}`}`
                 }
                 sx={{
-                  borderTop: '1px solid',
-                  borderColor: 'divider',
                   '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                    fontSize: isMobile ? '0.8rem' : '0.875rem'
-                  }
+                    fontSize: isMobile ? '0.8rem' : '0.875rem',
+                  },
                 }}
               />
             </Paper>

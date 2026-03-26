@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { alpha, useTheme } from '@mui/material/styles';
 import { Box, Button, Container, LinearProgress, Paper, Stack, Typography, Table, TableBody, TableCell, TableHead, TableRow, Alert, Chip, Toolbar, Checkbox, TableSortLabel } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import type { ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
@@ -6,6 +7,7 @@ import { uploadProjectRequest, listProjectRequestsPaged } from '../../services/p
 import { useNavigate } from 'react-router-dom';
 
 const ProjectRequestUploadPage: React.FC = () => {
+  const theme = useTheme();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progressVisible, setProgressVisible] = useState(false);
@@ -101,31 +103,39 @@ const ProjectRequestUploadPage: React.FC = () => {
   };
 
   return (
-    <Container sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>Last opp kundeforspørsel (PDF)</Typography>
-      <Typography variant="body1" sx={{ mb: 2 }}>
+    <Container sx={{ py: { xs: 2, md: 4 } }}>
+      <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 1 }}>
+        Last opp kundeforspørsel (PDF)
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 720, lineHeight: 1.65 }}>
         Her kan du laste opp en kundeforspørsel i PDF-format. Dokumentet vil analyseres av en AI, lagres i databasen,
         og resultatet vises under. Dette kan ta litt tid, så vent til analysen er ferdig.
       </Typography>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-          <Button
-            variant="outlined"
-            component="label"
-            startIcon={<UploadFileIcon />}
-            disabled={uploading}
-          >
-            Velg PDF
-            <input type="file" accept="application/pdf" hidden onChange={onFileChange} />
-          </Button>
-          <Typography variant="body2" sx={{ flex: 1 }}>
-            {file ? file.name : 'Ingen fil valgt'}
-          </Typography>
-          <Button variant="contained" onClick={onUpload} disabled={!file || !isPdf || uploading}>
-            Analyser og lagre
-          </Button>
-        </Stack>
+      <Paper elevation={0} sx={{ p: { xs: 2, md: 3 }, mb: 3, overflow: 'hidden' }}>
+        <Box
+          sx={{
+            p: { xs: 2, sm: 2.5 },
+            borderRadius: 2,
+            border: `1px dashed ${theme.palette.divider}`,
+            bgcolor: theme.palette.mode === 'light' ? alpha('#111111', 0.02) : alpha('#fff', 0.03),
+          }}
+        >
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between">
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ flex: 1, minWidth: 0 }}>
+              <Button variant="outlined" color="primary" component="label" startIcon={<UploadFileIcon />} disabled={uploading}>
+                Velg PDF
+                <input type="file" accept="application/pdf" hidden onChange={onFileChange} />
+              </Button>
+              <Typography variant="body2" color="text.secondary" sx={{ flex: 1, wordBreak: 'break-word' }}>
+                {file ? file.name : 'Ingen fil valgt'}
+              </Typography>
+            </Stack>
+            <Button variant="contained" color="primary" onClick={onUpload} disabled={!file || !isPdf || uploading}>
+              Analyser og lagre
+            </Button>
+          </Stack>
+        </Box>
 
         {progressVisible && (
           <Box sx={{ mt: 2 }}>
@@ -141,16 +151,18 @@ const ProjectRequestUploadPage: React.FC = () => {
         )}
       </Paper>
 
-      {/* Existing project requests list (compact) */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ m: 0, flex: 1 }}>Eksisterende forespørsler</Typography>
-          {loadingList && <LinearProgress sx={{ flex: 1 }} />}
+      <Paper elevation={0} sx={{ p: { xs: 2, md: 2.5 }, mb: 3, overflow: 'hidden' }}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 1 }}>
+          <Typography variant="h6" sx={{ m: 0, flex: 1, fontWeight: 600, letterSpacing: '-0.01em' }}>
+            Eksisterende forespørsler
+          </Typography>
+          {loadingList && <LinearProgress sx={{ flex: 1, maxWidth: 200 }} />}
         </Stack>
-        <Toolbar disableGutters sx={{ mt: 1, mb: 1 }}>
+        <Toolbar disableGutters sx={{ minHeight: 0, py: 1 }}>
           <Button
             variant="outlined"
             size="small"
+            color="inherit"
             disabled={selectedIds.length === 0}
             onClick={() => {
               // Open selected details in new tabs
@@ -160,7 +172,7 @@ const ProjectRequestUploadPage: React.FC = () => {
             Se detaljer ({selectedIds.length})
           </Button>
         </Toolbar>
-        <Table size="small" stickyHeader>
+        <Table size="medium" stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox">
@@ -272,8 +284,10 @@ const ProjectRequestUploadPage: React.FC = () => {
       </Paper>
 
       {result && (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>Resultat</Typography>
+        <Paper elevation={0} sx={{ p: { xs: 2, md: 3 } }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            Resultat
+          </Typography>
           <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap' }}>
             <Typography variant="body2"><strong>ID:</strong> {result.id ?? '-'}</Typography>
             <Typography variant="body2"><strong>Filnavn:</strong> {result.originalFilename ?? '-'}</Typography>

@@ -54,7 +54,6 @@ const HEALTH_CHECK_CONFIG = {
     INTERVAL_MS: 3600000, // 60 minutes
     ICON_SIZE: '26px',
     SPINNER_SIZE: 16,
-    MARGIN_RIGHT: 2
 } as const;
 
 // Custom hook for fetching and managing health status
@@ -103,7 +102,6 @@ const HealthCheckIndicator: React.FC = () => {
         return (
             <CircularProgress
                 size={HEALTH_CHECK_CONFIG.SPINNER_SIZE}
-                sx={{mr: HEALTH_CHECK_CONFIG.MARGIN_RIGHT}}
             />
         );
     }
@@ -120,7 +118,6 @@ const HealthCheckIndicator: React.FC = () => {
                 sx={{
                     color: indicatorColor,
                     fontSize: HEALTH_CHECK_CONFIG.ICON_SIZE,
-                    mr: HEALTH_CHECK_CONFIG.MARGIN_RIGHT,
                     cursor: 'pointer'
                 }}
             />

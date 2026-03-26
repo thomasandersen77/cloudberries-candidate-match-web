@@ -13,8 +13,8 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ skillCategories, skills }
 
   if (!hasSkillCategories && !hasGeneralSkills) {
     return (
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3 }, mb: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, letterSpacing: '-0.01em', mb: 2 }}>
           Ferdigheter
         </Typography>
         <Typography variant="body2" color="text.secondary">
@@ -25,26 +25,20 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ skillCategories, skills }
   }
 
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Typography variant="h6" gutterBottom>
+    <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3 }, mb: 3 }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, letterSpacing: '-0.01em', mb: 2 }}>
         Ferdigheter
       </Typography>
       
       {/* General skills from consultant */}
       {hasGeneralSkills && (
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'medium' }}>
+          <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary' }}>
             Hovedferdigheter
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
             {skills!.map((skill, index) => (
-              <Chip
-                key={index}
-                label={skill}
-                variant="filled"
-                color="primary"
-                size="medium"
-              />
+              <Chip key={index} label={skill} variant="outlined" color="default" size="small" />
             ))}
           </Box>
         </Box>
@@ -56,17 +50,17 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ skillCategories, skills }
           {skillCategories.map((category, categoryIndex) => (
             <Box key={categoryIndex} sx={{ mb: 3 }}>
               {category.name && (
-                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'medium' }}>
+                <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary' }}>
                   {category.name}
                 </Typography>
               )}
-              <Grid container spacing={1}>
+              <Grid container spacing={0.75}>
                 {category.skills && category.skills.map((skill, skillIndex) => (
                   <Grid item key={skillIndex}>
                     <Chip
                       label={`${skill.name}${skill.durationYears ? ` (${skill.durationYears} år)` : ''}`}
                       variant="outlined"
-                      color="secondary"
+                      color="default"
                       size="small"
                     />
                   </Grid>

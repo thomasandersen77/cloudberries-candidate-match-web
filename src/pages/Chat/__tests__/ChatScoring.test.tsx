@@ -40,9 +40,18 @@ vi.mock('../../../services/consultantsService', async () => {
 describe('ChatSearchTab - HYBRID scoring display', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // clean storages to avoid side effects
-    sessionStorage.clear();
-    localStorage.clear();
+    try {
+      sessionStorage.clear();
+    } catch {
+      /* jsdom / test runner quirks */
+    }
+    try {
+      if (typeof localStorage?.clear === 'function') {
+        localStorage.clear();
+      }
+    } catch {
+      /* empty */
+    }
   });
 
   it('viser scoring-vekter/formel og viser scoring i debug accordion', async () => {

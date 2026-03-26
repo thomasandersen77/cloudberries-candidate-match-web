@@ -1,14 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import { Container, Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody, Button, Stack, LinearProgress, Backdrop, CircularProgress, Snackbar, Alert } from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Container,
+  Typography,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  TableContainer,
+  Button,
+  Stack,
+  LinearProgress,
+  Backdrop,
+  CircularProgress,
+  Snackbar,
+  Alert,
+  Box,
+} from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { getAllCandidates, getCvScore, runScoreForCandidate } from '../../services/cvScoreService';
 import type { CvScoreDto } from '../../types/api';
+import CvScoreBadge from '../../components/CvScoreBadge';
 
 const CvScoreListPage: React.FC = () => {
+  const theme = useTheme();
   const [rows, setRows] = useState<Array<{ id: string; name: string; scorePercent: number; summary: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
-  const [snack, setSnack] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
+  const [snack, setSnack] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,18 +41,16 @@ const CvScoreListPage: React.FC = () => {
       setLoading(true);
       try {
         const cs = await getAllCandidates();
-        // Fetch scores for all candidates in parallel
         const scored = await Promise.all(
           cs.map(async (c) => {
             try {
               const dto: CvScoreDto = await getCvScore(c.id);
               return { id: c.id, name: c.name, scorePercent: dto.scorePercent ?? 0, summary: dto.summary ?? '' };
-    } catch {
+            } catch {
               return { id: c.id, name: c.name, scorePercent: 0, summary: '' };
             }
           })
         );
-        // Sort by score descending
         scored.sort((a, b) => (b.scorePercent ?? 0) - (a.scorePercent ?? 0));
         setRows(scored);
       } finally {
@@ -36,30 +59,42 @@ const CvScoreListPage: React.FC = () => {
     })();
   }, []);
 
+  const stats = useMemo(() => {
+    const n = rows.length;
+    if (n === 0) return { total: 0, avg: 0 };
+    const sum = rows.reduce((acc, r) => acc + (r.scorePercent ?? 0), 0);
+    return { total: n, avg: Math.round(sum / n) };
+  }, [rows]);
+
   return (
-    <Container sx={{ py: 4 }}>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 2 }}>
-        <Typography variant="h4" gutterBottom sx={{ m: 0 }}>CV-Score (alle)</Typography>
+    <Container sx={{ py: { xs: 2, md: 4 } }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'flex-end' }, justifyContent: 'space-between', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 0.5 }}>
+            CV-Score
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Oversikt over AI-vurdering av alle kandidat-CV-er
+          </Typography>
+        </Box>
         <Button
-          size="small"
+          size="medium"
           variant="contained"
           disabled={running}
-          startIcon={running ? <CircularProgress size={16} /> : undefined}
+          startIcon={running ? <CircularProgress size={16} color="inherit" /> : undefined}
           onClick={async () => {
             try {
               setRunning(true);
-              // Only score candidates with scorePercent === 0
-              const missing = rows.filter(r => (r.scorePercent ?? 0) === 0).map(r => ({ id: r.id, name: r.name }));
+              const missing = rows.filter((r) => (r.scorePercent ?? 0) === 0).map((r) => ({ id: r.id, name: r.name }));
               let processed = 0;
               for (const m of missing) {
                 try {
                   await runScoreForCandidate(m.id);
                   processed += 1;
                 } catch {
-                  // ignore individual failures; continue
+                  /* continue */
                 }
               }
-              // Refresh scores and rows after run
               const fresh = await getAllCandidates();
               const refreshed = await Promise.all(
                 fresh.map(async (c) => {
@@ -73,7 +108,11 @@ const CvScoreListPage: React.FC = () => {
               );
               refreshed.sort((a, b) => (b.scorePercent ?? 0) - (a.scorePercent ?? 0));
               setRows(refreshed);
-              setSnack({ open: true, message: `Scoring fullført – prosesserte ${processed} (kun de uten score)`, severity: 'success' });
+              setSnack({
+                open: true,
+                message: `Scoring fullført – prosesserte ${processed} (kun de uten score)`,
+                severity: 'success',
+              });
             } catch {
               setSnack({ open: true, message: 'Scoring feilet', severity: 'error' });
             } finally {
@@ -84,29 +123,81 @@ const CvScoreListPage: React.FC = () => {
           {running ? 'Skårer manglende…' : 'Kjør scoring for alle'}
         </Button>
       </Stack>
-      {running && <LinearProgress sx={{ mb: 1 }} />}
-      <Paper sx={{ p: 2, position: 'relative' }}>
-        <Table size="small" stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell width={200}>Navn</TableCell>
-              <TableCell width={120}>Score</TableCell>
-              <TableCell>Oppsummering (2 setninger)</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((r) => (
-              <TableRow key={r.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/cv-score/${encodeURIComponent(r.id)}`)}>
-                <TableCell>{r.name}</TableCell>
-                <TableCell>{r.scorePercent}%</TableCell>
-                <TableCell>{twoSentenceSummary(r.summary)}</TableCell>
+
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          mb: 2,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 3,
+          bgcolor: theme.palette.mode === 'light' ? alpha('#111111', 0.02) : alpha('#fff', 0.04),
+        }}
+      >
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Analysert
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25 }}>
+            {stats.total}
+          </Typography>
+        </Box>
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Gjennomsnittsscore
+          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25 }}>
+            <CvScoreBadge score={stats.avg} size="md" />
+            <Typography variant="body2" color="text.secondary">
+              {stats.total ? `${stats.avg}%` : '—'}
+            </Typography>
+          </Stack>
+        </Box>
+      </Paper>
+
+      {running && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
+      <Paper elevation={0} sx={{ overflow: 'hidden', position: 'relative' }}>
+        <TableContainer sx={{ maxHeight: { md: 'min(70vh, 720px)' } }}>
+          <Table size="medium" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell width={280}>Navn</TableCell>
+                <TableCell width={120} align="center">
+                  Score
+                </TableCell>
+                <TableCell>Oppsummering</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow
+                  key={r.id}
+                  hover
+                  sx={{ cursor: 'pointer' }}
+                  onClick={() => navigate(`/cv-score/${encodeURIComponent(r.id)}`)}
+                >
+                  <TableCell>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, letterSpacing: '-0.01em' }}>
+                      {r.name}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <CvScoreBadge score={r.scorePercent} size="md" />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+                      {twoSentenceSummary(r.summary)}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
         {(loading || running) && <LinearProgress sx={{ position: 'absolute', left: 0, right: 0, bottom: 0 }} />}
       </Paper>
-      <Backdrop open={running} sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <Backdrop open={running} sx={{ color: '#fff', zIndex: (t) => t.zIndex.drawer + 1 }}>
         <Stack spacing={2} alignItems="center">
           <CircularProgress color="inherit" />
           <Typography>Skårer alle konsulenter… dette kan ta noen minutter</Typography>
@@ -123,13 +214,9 @@ const CvScoreListPage: React.FC = () => {
 
 function twoSentenceSummary(text: string): string {
   if (!text) return '';
-  // Split on sentence boundaries (., !, ?) followed by space/cap or end.
-  const sentences = text
-    .replace(/\s+/g, ' ')
-    .match(/[^.!?]+[.!?]/g);
+  const sentences = text.replace(/\s+/g, ' ').match(/[^.!?]+[.!?]/g);
   if (!sentences || sentences.length === 0) return text;
-  const firstTwo = sentences.slice(0, 2).join(' ').trim();
-  return firstTwo;
+  return sentences.slice(0, 2).join(' ').trim();
 }
 
 export default CvScoreListPage;
