@@ -11,7 +11,7 @@ const ANALYTICS_BASE = rawAnalyticsBase
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 60000, // Default timeout: 60s for most operations
+  timeout: 180000, // Increased to 180s (3 min) to match backend Ollama read timeout
   withCredentials: false, // No cookies; backend is fully open behind SWA
   headers: { Accept: 'application/json' },
 });
@@ -19,7 +19,7 @@ const apiClient = axios.create({
 // Dedicated client for analytics endpoints (can point to another service)
 export const analyticsClient = axios.create({
   baseURL: ANALYTICS_BASE,
-  timeout: 60000,
+  timeout: 180000, // Increased to 180s to match apiClient
   withCredentials: false,
   headers: { Accept: 'application/json' },
 });
