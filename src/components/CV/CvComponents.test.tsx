@@ -94,8 +94,9 @@ describe('WorkHistoryTable', () => {
     render(<WorkHistoryTable workExperience={workExperience} />);
 
     expect(screen.getAllByText('Arbeidshistorikk')[0]).toBeInTheDocument();
-    expect(screen.getByText('Company A')).toBeInTheDocument();
-    expect(screen.getByText('Company B')).toBeInTheDocument();
+    const rows = screen.getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('Company B');
+    expect(rows[2]).toHaveTextContent('Company A');
     expect(screen.getByText('01/2020')).toBeInTheDocument();
     expect(screen.getByText('12/2022')).toBeInTheDocument();
     expect(screen.getByText('01/2023')).toBeInTheDocument();

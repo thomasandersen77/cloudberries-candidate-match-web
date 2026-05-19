@@ -10,6 +10,7 @@ import {
   TableRow
 } from '@mui/material';
 import type { WorkExperienceDto } from '../../types/api';
+import { compareYearMonthPeriodDesc } from '../../utils/sort';
 
 interface WorkHistoryTableProps {
   workExperience: WorkExperienceDto[];
@@ -26,19 +27,9 @@ const formatYearMonth = (yearMonth: string | null | undefined): string => {
 };
 
 const sortWorkExperience = (experiences: WorkExperienceDto[]): WorkExperienceDto[] => {
-  return experiences.slice().sort((a, b) => {
-    // Sort by toYearMonth (most recent first), then by fromYearMonth
-    const aTo = a.toYearMonth || '';
-    const bTo = b.toYearMonth || '';
-    
-    if (aTo !== bTo) {
-      return bTo.localeCompare(aTo); // Descending order for most recent first
-    }
-    
-    const aFrom = a.fromYearMonth || '';
-    const bFrom = b.fromYearMonth || '';
-    return bFrom.localeCompare(aFrom);
-  });
+  return experiences.slice().sort((a, b) =>
+    compareYearMonthPeriodDesc(a.toYearMonth, b.toYearMonth, a.fromYearMonth, b.fromYearMonth)
+  );
 };
 
 const WorkHistoryTable: React.FC<WorkHistoryTableProps> = ({ workExperience }) => {

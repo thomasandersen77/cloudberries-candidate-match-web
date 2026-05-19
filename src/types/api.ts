@@ -1,5 +1,9 @@
 // Re-eksporter typer generert fra OpenAPI for konsistens
-import type { components } from '../api/generated';
+import type { components, paths } from '../api/generated';
+
+// --- OpenAPI schemas ---
+
+export type AnthropicUsageResponse = components['schemas']['AnthropicUsageResponse'];
 
 export type HealthStatusValue = components['schemas']['HealthResponse']['status'];
 export type HealthResponse = components['schemas']['HealthResponse'];
@@ -7,60 +11,57 @@ export type HealthResponse = components['schemas']['HealthResponse'];
 export type AIAnalysisRequest = components['schemas']['AIAnalysisRequest'];
 export type AIResponseModel = components['schemas']['AIResponseModel'];
 
+export type RagChatRequest = components['schemas']['RagChatRequest'];
+export type RagChatResponse = components['schemas']['RagChatResponse'];
+export type RagIngestRequest = components['schemas']['RagIngestRequest'];
+export type SourceDocument = components['schemas']['SourceDocument'];
+
 export type ConsultantSummaryDto = components['schemas']['ConsultantSummaryDto'];
-export type PageConsultantSummaryDto = components['schemas']['PageConsultantSummaryDto'];
-
-export type CvData = components['schemas']['CvData'];
-
-export type EmbeddingJasonRunResponse = components['schemas']['EmbeddingJasonRunResponse'];
-export type EmbeddingUserCvRunResponse = components['schemas']['EmbeddingUserCvRunResponse'];
-export type EmbeddingRunMissingResponse = components['schemas']['EmbeddingRunMissingResponse'];
-export type EmbeddingProviderInfo = components['schemas']['EmbeddingProviderInfo'];
-
-export type MatchApiRequest = components['schemas']['MatchApiRequest'];
-export type SkillsRequest = components['schemas']['SkillsRequest'];
-
-export type Requirement = components['schemas']['Requirement'];
-export type CandidateMatchResponse = components['schemas']['CandidateMatchResponse'];
-
-export type CandidateDTO = components['schemas']['CandidateDTO'];
-
-export type CvScoreDto = components['schemas']['CvScoreDto'];
-
-// Project Request typer
-export type ProjectRequirementDto = components['schemas']['ProjectRequirementDto'];
-export type ProjectRequestResponseDto = components['schemas']['ProjectRequestResponseDto'];
-export type ProjectRequestDto = components['schemas']['ProjectRequestDto'];
-export type CreateProjectRequestDto = components['schemas']['CreateProjectRequestDto'];
-export type PagedProjectRequestResponseDto = components['schemas']['PagedProjectRequestResponseDto'];
-export type AISuggestionDto = components['schemas']['AISuggestionDto'];
-
-// Skills aggregate
-export type SkillInCompanyDto = components['schemas']['SkillInCompanyDto'];
-
-// These are frontend-only types for the skills summary endpoint which is not present in the current OpenAPI schema
-export type SkillSummaryDto = {
-  name: string;
-  consultantCount: number;
-};
-export type PageSkillSummaryDto = {
-  content?: SkillSummaryDto[];
-  number?: number;
-  size?: number;
-  totalElements?: number;
-  totalPages?: number;
+type OpenApiPageConsultantSummaryDto = components['schemas']['PageConsultantSummaryDto'];
+export type PageConsultantSummaryDto = OpenApiPageConsultantSummaryDto & {
   first?: boolean;
   last?: boolean;
   sort?: Record<string, unknown>;
   pageable?: Record<string, unknown>;
 };
 
-// CV with consultants
+export type CvData = paths['/cv/{userId}']['get']['responses'][200]['content']['application/json'];
+
+export type EmbeddingRunMissingResponse =
+  paths['/embeddings/run/missing']['post']['responses'][200]['content']['application/json'];
+export type EmbeddingProviderInfo = components['schemas']['EmbeddingProviderInfo'] & {
+  /** Legacy aliases used by search UI */
+  provider?: string;
+  model?: string;
+};
+
+export type CandidateDTO = components['schemas']['CandidateDTO'];
+export type CvScoreDto = components['schemas']['CvScoreDto'];
+export type CvScoringRunResponse = components['schemas']['CvScoringRunResponse'];
+
+export type ProjectRequirementDto = components['schemas']['ProjectRequirementDto'];
+type OpenApiProjectRequestResponseDto = components['schemas']['ProjectRequestResponseDto'];
+export type ProjectRequestResponseDto = OpenApiProjectRequestResponseDto & {
+  uploadedAt?: string;
+  deadlineDate?: string;
+};
+export type ProjectRequestSummaryDto = components['schemas']['ProjectRequestSummaryDto'];
+
+export type SkillInCompanyDto = components['schemas']['SkillInCompanyDto'] & {
+  /** Legacy alias used by some UI code */
+  consultantCount?: number;
+};
+
 export type ConsultantWithCvDto = components['schemas']['ConsultantWithCvDto'];
-export type PageConsultantWithCvDto = components['schemas']['PageConsultantWithCvDto'];
+type OpenApiPageConsultantWithCvDto = components['schemas']['PageConsultantWithCvDto'];
+export type PageConsultantWithCvDto = OpenApiPageConsultantWithCvDto & {
+  first?: boolean;
+  last?: boolean;
+  sort?: Record<string, unknown>;
+  pageable?: Record<string, unknown>;
+};
 export type ConsultantCvDto = components['schemas']['ConsultantCvDto'];
 
-// CV structure types
 export type KeyQualificationDto = components['schemas']['KeyQualificationDto'];
 export type EducationDto = components['schemas']['EducationDto'];
 export type WorkExperienceDto = components['schemas']['WorkExperienceDto'];
@@ -73,24 +74,173 @@ export type SkillCategoryDto = components['schemas']['SkillCategoryDto'];
 export type SkillInCategoryDto = components['schemas']['SkillInCategoryDto'];
 export type AttachmentDto = components['schemas']['AttachmentDto'];
 
-// Search types
 export type RelationalSearchRequest = components['schemas']['RelationalSearchRequest'];
 export type SemanticSearchRequest = components['schemas']['SemanticSearchRequest'];
-export type Skill = components['schemas']['Skill'];
+export type PaginationDto = components['schemas']['PaginationDto'];
 
-// Chat AI Search types
-export type ChatSearchRequest = components['schemas']['ChatSearchRequest'];
-export type ChatSearchResponse = components['schemas']['ChatSearchResponse'];
-export type SearchResult = components['schemas']['SearchResult'];
-export type RAGSource = components['schemas']['RAGSource'];
-export type DebugInfo = components['schemas']['DebugInfo'];
-export type QueryInterpretation = components['schemas']['QueryInterpretation'];
-export type StructuredCriteria = components['schemas']['StructuredCriteria'];
-export type ConfidenceScores = components['schemas']['ConfidenceScores'];
-export type ScoringInfo = components['schemas']['ScoringInfo'];
-
-// Matches domain types (from OpenAPI)
 export type CoverageStatus = components['schemas']['CoverageStatus'];
 export type MatchesListItemDto = components['schemas']['MatchesListItemDto'];
 export type PagedMatchesListDto = components['schemas']['PagedMatchesListDto'];
 export type MatchConsultantDto = components['schemas']['MatchConsultantDto'];
+type OpenApiMatchStatusDto = components['schemas']['MatchStatusDto'];
+export type MatchStatusDto = Omit<OpenApiMatchStatusDto, 'status'> & {
+  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | string;
+};
+export type TriggerMatchingResponse = components['schemas']['TriggerMatchingResponse'];
+export type RecalculateMatchesResponse =
+  paths['/matches/recalculate/{requestId}']['post']['responses'][202]['content']['application/json'];
+
+export type RagIngestResponse = paths['/rag/ingest']['post']['responses'][200]['content']['application/json'];
+export type RagIngestDbResponse = paths['/rag/ingest/db']['post']['responses'][200]['content']['application/json'];
+
+// --- Legacy types (endpoints not in current OpenAPI spec) ---
+
+export type EmbeddingJasonRunResponse = { processedJason?: boolean };
+export type EmbeddingUserCvRunResponse = { userId: string; cvId: string; processed: boolean };
+
+export type MatchApiRequest = { projectRequestText: string };
+export type SkillsRequest = { skills: string[] };
+export type Requirement = { name: string; comment: string; score: string };
+export type CandidateMatchResponse = {
+  totalScore: string;
+  summary: string;
+  matchTimeSeconds?: number;
+  requirements?: Requirement[];
+};
+
+export type PagedProjectRequestResponseDto = {
+  content?: ProjectRequestResponseDto[];
+  totalElements?: number;
+  totalPages?: number;
+  currentPage?: number;
+  pageSize?: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
+};
+
+export type CreateProjectRequestDto = {
+  customerName: string;
+  requiredSkills: string[];
+  startDate: string;
+  endDate: string;
+  responseDeadline: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
+  requestDescription: string;
+  responsibleSalespersonEmail: string;
+};
+
+export type ProjectRequestDto = {
+  id?: number;
+  customerId?: number;
+  customerName: string;
+  requiredSkills: string[];
+  startDate: string;
+  endDate: string;
+  responseDeadline: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
+  requestDescription: string;
+  responsibleSalespersonEmail: string;
+  aiSuggestions?: AISuggestionDto[];
+};
+
+export type AISuggestionDto = {
+  id?: number;
+  consultantName: string;
+  userId: string;
+  cvId: string;
+  matchScore: number;
+  justification: string;
+  createdAt: string;
+  skills?: string[];
+};
+
+// Frontend-only types for skills summary endpoint (not in OpenAPI)
+export type SkillSummaryDto = { name: string; consultantCount: number };
+export type PageSkillSummaryDto = {
+  content?: SkillSummaryDto[];
+  number?: number;
+  size?: number;
+  totalElements?: number;
+  totalPages?: number;
+  first?: boolean;
+  last?: boolean;
+  sort?: Record<string, unknown>;
+  pageable?: Record<string, unknown>;
+};
+
+// Legacy chatbot/search types (not in OpenAPI)
+export type ChatSearchRequest = {
+  conversationId?: string;
+  consultantId?: string;
+  cvId?: string;
+  text: string;
+  forceMode?: 'STRUCTURED' | 'SEMANTIC' | 'HYBRID' | 'RAG';
+  topK?: number;
+};
+
+export type ChatSearchResponse = {
+  mode: 'STRUCTURED' | 'SEMANTIC' | 'HYBRID' | 'RAG';
+  results?: SearchResult[];
+  answer?: string;
+  sources?: RAGSource[];
+  latencyMs: number;
+  debug?: DebugInfo;
+  conversationId?: string;
+  scoring?: ScoringInfo;
+};
+
+export type SearchResult = {
+  consultantId: string;
+  name: string;
+  score: number;
+  highlights?: string[];
+  meta?: Record<string, unknown>;
+};
+
+export type RAGSource = {
+  consultantId: string;
+  consultantName: string;
+  chunkId: string;
+  text: string;
+  score: number;
+  location?: string;
+};
+
+export type DebugInfo = {
+  interpretation?: QueryInterpretation;
+  timings?: Record<string, number>;
+  extra?: Record<string, unknown>;
+};
+
+export type QueryInterpretation = {
+  route?: 'STRUCTURED' | 'SEMANTIC' | 'HYBRID' | 'RAG';
+  structured?: StructuredCriteria;
+  structuredCriteria?: StructuredCriteria;
+  semanticText?: string;
+  consultantName?: string;
+  question?: string;
+  confidence?: ConfidenceScores;
+  rawQuery?: string;
+};
+
+export type StructuredCriteria = {
+  skillsAll?: string[];
+  skillsAny?: string[];
+  roles?: string[];
+  industries?: string[];
+};
+
+export type ConfidenceScores = {
+  overall?: number;
+  skills?: number;
+  roles?: number;
+};
+
+export type ScoringInfo = {
+  method?: string;
+  weights?: Record<string, number>;
+  details?: Record<string, unknown>;
+  semanticWeight?: number;
+  qualityWeight?: number;
+  formula?: string;
+};

@@ -1,8 +1,7 @@
 import apiClient, { aiScoringClient } from './apiClient';
+import type { ProjectRequestSummaryDto, TriggerMatchingResponse } from '../types/api';
 import type {
-  ProjectRequestSummary,
   MatchTop10Response,
-  TriggerMatchingResponse,
   MatchesHealthResponse,
   BatchMatchingResponse
 } from '../types/matches';
@@ -16,9 +15,9 @@ export class ProjectMatchesService {
   /**
    * Fetches all project requests available for matching.
    */
-  async listProjectRequests(): Promise<ProjectRequestSummary[]> {
+  async listProjectRequests(): Promise<ProjectRequestSummaryDto[]> {
     try {
-      const response = await apiClient.get<ProjectRequestSummary[]>('/matches/requests');
+      const response = await apiClient.get<ProjectRequestSummaryDto[]>('matches/requests');
       return response.data;
     } catch (error) {
       console.error('Failed to list project requests:', error);
@@ -38,7 +37,7 @@ export class ProjectMatchesService {
   ): Promise<TriggerMatchingResponse> {
     try {
       const response = await aiScoringClient.post<TriggerMatchingResponse>(
-        `/matches/requests/${projectRequestId}/trigger`,
+        `matches/requests/${projectRequestId}/trigger`,
         null,
         { params: { forceRecompute } }
       );
@@ -57,7 +56,7 @@ export class ProjectMatchesService {
    */
   async getTopMatches(projectRequestId: number): Promise<MatchTop10Response | null> {
     try {
-      const response = await apiClient.get<MatchTop10Response>(`/matches/requests/${projectRequestId}/top`);
+      const response = await apiClient.get<MatchTop10Response>(`matches/requests/${projectRequestId}/top`);
       return response.data;
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error) {
@@ -79,7 +78,7 @@ export class ProjectMatchesService {
    */
   async getMatchResults(projectRequestId: number): Promise<MatchTop10Response | null> {
     try {
-      const response = await apiClient.get<MatchTop10Response>(`/matches/requests/${projectRequestId}/results`);
+      const response = await apiClient.get<MatchTop10Response>(`matches/requests/${projectRequestId}/results`);
       return response.data;
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error) {
@@ -101,7 +100,7 @@ export class ProjectMatchesService {
   async triggerAllMatches(forceRecompute: boolean = false): Promise<BatchMatchingResponse> {
     try {
       const response = await aiScoringClient.post<BatchMatchingResponse>(
-        '/matches/trigger-all',
+        'matches/trigger-all',
         null,
         { params: { forceRecompute } }
       );
@@ -117,7 +116,7 @@ export class ProjectMatchesService {
    */
   async healthCheck(): Promise<MatchesHealthResponse> {
     try {
-      const response = await apiClient.get<MatchesHealthResponse>('/matches/health');
+      const response = await apiClient.get<MatchesHealthResponse>('matches/health');
       return response.data;
     } catch (error) {
       console.error('Failed to check matches service health:', error);

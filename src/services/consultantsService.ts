@@ -54,6 +54,48 @@ export async function listConsultants(params: {
     return normalizePageDto(data);
 }
 
+export function mapToConsultantSummaryDto(input: {
+    userId: string;
+    name: string;
+    cvId?: string;
+}): ConsultantSummaryDto {
+    return {
+        userId: input.userId,
+        name: input.name,
+        email: '',
+        bornYear: 0,
+        defaultCvId: input.cvId ?? '',
+    };
+}
+
+export function mapToConsultantSummaryPage(
+    content: ConsultantSummaryDto[],
+    page: number,
+    size: number,
+    meta?: {
+        number?: number;
+        size?: number;
+        totalElements?: number;
+        totalPages?: number;
+        first?: boolean;
+        last?: boolean;
+    }
+): PageConsultantSummaryDto {
+    const number = meta?.number ?? page;
+    const pageSize = meta?.size ?? size;
+    return {
+        content,
+        number,
+        size: pageSize,
+        totalElements: meta?.totalElements ?? content.length,
+        totalPages: meta?.totalPages ?? 1,
+        first: meta?.first ?? number === 0,
+        last: meta?.last ?? true,
+        sort: {},
+        pageable: {},
+    };
+}
+
 export interface ConsultantSyncResponse {
     total?: number;
     succeeded?: number;

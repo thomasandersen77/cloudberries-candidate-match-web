@@ -70,7 +70,7 @@ const MatchesPage: React.FC = () => {
       try {
         const s = await getMatchStatus(requestId);
         if (cancelled) return;
-        setStatus(s.status);
+        setStatus(s.status as 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED');
         if (s.status === 'COMPLETED') {
           const items = await getTopMatchesFlat(requestId, 10);
           if (!cancelled) setFlat(items.map(i => ({ name: i.name, score: i.score, reasons: i.reasons, profileUrl: i.profileUrl })));

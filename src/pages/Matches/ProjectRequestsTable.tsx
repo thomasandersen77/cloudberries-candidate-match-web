@@ -28,7 +28,7 @@ import type { MatchCandidate } from '../../types/matches';
  */
 export interface ProjectRequestSummary {
   id: number;
-  title: string | null;
+  title?: string | null;
   customerName: string;
   createdAt: string;
 }

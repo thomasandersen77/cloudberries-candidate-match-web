@@ -1,5 +1,6 @@
 import apiClient from './apiClient';
 import type { SkillInCompanyDto, PageSkillSummaryDto, PageConsultantSummaryDto, ConsultantSummaryDto, RelationalSearchRequest } from '../types/api';
+import { mapToConsultantSummaryDto, mapToConsultantSummaryPage, searchConsultantsRelational } from './consultantsService';
 
 // Legacy (deprecated) full aggregate. Prefer summary + consultants endpoints.
 export async function listSkills(filters?: string[]): Promise<SkillInCompanyDto[]> {
@@ -29,27 +30,19 @@ export async function listConsultantsBySkill(skill: string, opts?: { page?: numb
 
   // Helper to adapt relational search page -> PageConsultantSummaryDto (summary shape)
   const relationalFallback = async (): Promise<PageConsultantSummaryDto> => {
-    const { searchConsultantsRelational } = await import('./consultantsService');
     const request: RelationalSearchRequest = { skillsAll: [skill], onlyActiveCv: false } as RelationalSearchRequest;
     const res = await searchConsultantsRelational({ request, page, size, sort: sort ? [sort] : undefined });
-    const content: ConsultantSummaryDto[] = (res.content ?? []).map((c) => ({
-      userId: c.userId,
-      name: c.name,
-      email: '',
-      bornYear: 0,
-      defaultCvId: c.cvId,
-    }));
-    return {
-      content,
-      number: res.number ?? page,
-      size: res.size ?? size,
-      totalElements: res.totalElements ?? content.length,
-      totalPages: res.totalPages ?? 1,
-      first: res.first ?? page === 0,
-      last: res.last ?? true,
-      sort: {},
-      pageable: {},
-    } as PageConsultantSummaryDto;
+    const content: ConsultantSummaryDto[] = (res.content ?? []).map((c) =>
+      mapToConsultantSummaryDto({ userId: c.userId, name: c.name, cvId: c.cvId })
+    );
+    return mapToConsultantSummaryPage(content, page, size, {
+      number: res.number,
+      size: res.size,
+      totalElements: res.totalElements,
+      totalPages: res.totalPages,
+      first: res.first,
+      last: res.last,
+    });
   };
 
   // If skill contains reserved path characters, skip direct endpoint
@@ -80,16 +73,11 @@ export async function listSkillNames(prefix?: string, limit: number = 100): Prom
 
 export async function listTopConsultantsBySkill(skill: string, limit: number = 3): Promise<ConsultantSummaryDto[]> {
   const fallback = async (): Promise<ConsultantSummaryDto[]> => {
-    const { searchConsultantsRelational } = await import('./consultantsService');
     const request: RelationalSearchRequest = { skillsAll: [skill], onlyActiveCv: false } as RelationalSearchRequest;
     const res = await searchConsultantsRelational({ request, page: 0, size: Math.max(1, limit) });
-    return (res.content ?? []).slice(0, limit).map((c) => ({
-      userId: c.userId,
-      name: c.name,
-      email: '',
-      bornYear: 0,
-      defaultCvId: c.cvId,
-    }));
+    return (res.content ?? []).slice(0, limit).map((c) =>
+      mapToConsultantSummaryDto({ userId: c.userId, name: c.name, cvId: c.cvId })
+    );
   };
 
   // Skip direct endpoint if reserved characters

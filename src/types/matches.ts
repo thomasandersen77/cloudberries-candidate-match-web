@@ -3,7 +3,7 @@
 
 export interface ProjectRequestSummary {
   id: number;
-  title: string;
+  title?: string | null;
   customerName: string;
   createdAt: string;
 }
