@@ -1,43 +1,39 @@
 import axios from 'axios';
+import { logApiBaseUrlInDev, resolveApiBaseUrl } from '../config/apiBase';
 
-const rawBase = (import.meta.env?.VITE_API_BASE_URL ?? '/');
-const BASE_URL = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+const BASE_URL = resolveApiBaseUrl();
+logApiBaseUrlInDev();
 
-// Optional separate base for analytics service (e.g. teknologi-barometer-service)
-const rawAnalyticsBase = import.meta.env?.VITE_ANALYTICS_BASE_URL as string | undefined;
+const rawAnalyticsBase = import.meta.env.VITE_ANALYTICS_BASE_URL as string | undefined;
 const ANALYTICS_BASE = rawAnalyticsBase
   ? (rawAnalyticsBase.endsWith('/') ? rawAnalyticsBase : `${rawAnalyticsBase}/`)
-  : BASE_URL; // fallback to main backend if not provided
+  : BASE_URL;
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 180000, // Increased to 180s (3 min) to match backend Ollama read timeout
-  withCredentials: false, // No cookies; backend is fully open behind SWA
-  headers: { Accept: 'application/json' },
-});
-
-// Dedicated client for analytics endpoints (can point to another service)
-export const analyticsClient = axios.create({
-  baseURL: ANALYTICS_BASE,
-  timeout: 180000, // Increased to 180s to match apiClient
+  timeout: 180000,
   withCredentials: false,
   headers: { Accept: 'application/json' },
 });
 
-// Extended timeout client for AI scoring and long-running operations
+export const analyticsClient = axios.create({
+  baseURL: ANALYTICS_BASE,
+  timeout: 180000,
+  withCredentials: false,
+  headers: { Accept: 'application/json' },
+});
+
 export const aiScoringClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 600000, // 10 minutes for scoring/matching operations
+  timeout: 600000,
   withCredentials: false,
   headers: { Accept: 'application/json' },
 });
 
 apiClient.interceptors.response.use(
   (resp) => resp,
-  (error) => {
-    // You can expand error handling/logging here if desired
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
+export { BASE_URL };
 export default apiClient;

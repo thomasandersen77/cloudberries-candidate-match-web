@@ -1,3 +1,4 @@
+import { getBackendOrigin } from '../config/apiBase';
 import apiClient from './apiClient';
 
 // Interface for den detaljerte helsestatusen til hver avhengighet
@@ -132,8 +133,8 @@ async function fetchNetwork(): Promise<{ payload: HealthStatus; source: string }
   } catch {
     // fallthrough
   }
-  // Fallback: Actuator (/actuator/health). Merk: fungerer typisk mest lokalt.
-  const r2 = await apiClient.get<unknown>('/actuator/health');
+  // Fallback: Actuator at server root (not under /api servlet path)
+  const r2 = await apiClient.get<unknown>(`${getBackendOrigin()}/actuator/health`);
   const data = r2.data as { status?: unknown; details?: unknown; components?: unknown };
   if (!data || !data.status) throw new Error('Actuator health missing status');
   const details = data.details ?? data.components ?? {};

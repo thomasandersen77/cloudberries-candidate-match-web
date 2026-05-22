@@ -265,7 +265,7 @@ sequenceDiagram
 
 **Live URL**: https://delightful-meadow-056d48003.1.azurestaticapps.net/
 
-**Backend API**: https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/
+**Backend API**: https://cloudberries-candidate-match.onrender.com
 
 #### Architecture Overview
 ```mermaid
@@ -357,7 +357,7 @@ ls -la build/
 curl https://delightful-meadow-056d48003.1.azurestaticapps.net/
 
 # Backend (direct)
-curl https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/actuator/health
+curl https://cloudberries-candidate-match.onrender.com/actuator/health
 
 # Backend (through SWA proxy)
 curl https://delightful-meadow-056d48003.1.azurestaticapps.net/api/actuator/health
@@ -368,7 +368,7 @@ curl https://delightful-meadow-056d48003.1.azurestaticapps.net/api/actuator/heal
 | Environment | Frontend URL | Backend URL | Notes |
 |-------------|-------------|-------------|-------|
 | **Local** | http://localhost:5174 | http://localhost:8080 | Vite dev server with proxy |
-| **Production** | https://delightful-meadow-056d48003.1.azurestaticapps.net/ | https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/ | Azure Static Web Apps + Container Apps |
+| **Production** | https://cloudberries-candidate-match-web.onrender.com | https://cloudberries-candidate-match.onrender.com | Render Static Site + Web Service |
 
 ### 🔍 Troubleshooting Azure Deployment
 

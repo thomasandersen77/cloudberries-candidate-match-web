@@ -78,7 +78,7 @@ Use the pre-defined workflows in `warp.mf` from Warp’s command palette:
 - `.github/workflows/azure-static-web-apps-*.yml` → Deployment workflow
 
 ### Backend Integration
-- **Backend API**: https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/
+- **Backend API**: https://cloudberries-candidate-match.onrender.com/
 - **Local Development**: Backend proxied through Vite dev server (port 8080)
 - **Production**: API calls routed through Static Web Apps configuration
 
@@ -127,7 +127,7 @@ curl https://delightful-meadow-056d48003.1.azurestaticapps.net/
 curl https://delightful-meadow-056d48003.1.azurestaticapps.net/api/actuator/health
 
 # Backend (direct)
-curl https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/actuator/health
+curl https://cloudberries-candidate-match.onrender.com/actuator/health
 ```
 
 #### Frontend helsesjekk-struping
@@ -168,7 +168,7 @@ curl https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azure
 
 ### 🌐 Production URLs
 - **Frontend (Live)**: https://delightful-meadow-056d48003.1.azurestaticapps.net/
-- **Backend API**: https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azurecontainerapps.io/
+- **Backend API**: https://cloudberries-candidate-match.onrender.com/
 - **API Health Check**: https://delightful-meadow-056d48003.1.azurestaticapps.net/api/actuator/health
 
 ### 🚀 Development & CI/CD
@@ -178,7 +178,7 @@ curl https://cloudberries-candidate-match-ca.whitesand-767916af.westeurope.azure
 
 ### ☂️ Azure Resources
 - **Static Web Apps Portal**: https://portal.azure.com/#@cloudberriesas.onmicrosoft.com/resource/subscriptions/reb3fcd6-f9ae-47b4-9b4a-6f5e84b2f2ba/resourceGroups/cloudberries-internal-dev/providers/Microsoft.Web/staticSites/delightful-meadow-056d48003/overview
-- **Container Apps Portal**: https://portal.azure.com/#@cloudberriesas.onmicrosoft.com/resource/subscriptions/reb3fcd6-f9ae-47b4-9b4a-6f5e84b2f2ba/resourceGroups/cloudberries-internal-dev/providers/Microsoft.App/containerApps/cloudberries-candidate-match-ca/overview
+- **Container Apps Portal**: https://portal.azure.com/#@cloudberriesas.onmicrosoft.com/resource/subscriptions/reb3fcd6-f9ae-47b4-9b4a-6f5e84b2f2ba/resourceGroups/cloudberries-internal-dev/providers/Microsoft.App/containerApps/cloudberries-candidate-match/overview
 
 ### 🛠️ Tools & Documentation
 - **Azure DevOps org**: https://dev.azure.com/cloudberriesas/ (legacy)

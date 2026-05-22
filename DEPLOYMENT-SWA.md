@@ -31,7 +31,7 @@ The deployment workflow (`.github/workflows/azure-static-web-apps-deploy.yml`) p
 Set these secrets in your GitHub repository:
 
 - **AZURE_STATIC_WEB_APPS_API_TOKEN**: Get this from the Azure Static Web App resource in the Azure portal
-- **BACKEND_BASE_URL**: The HTTPS URL of your backend container (e.g., `https://candidate-match-backend.contoso.azurecontainerapps.io`)
+- **BACKEND_BASE_URL**: The HTTPS URL of your backend container (e.g., `https://candidate-match-backend.contoso.containerapps.io`)
 
 ## How the 404 Fix Works
 
