@@ -1,12 +1,14 @@
 services:
   - type: web
     name: cloudberries-candidate-match-web
-    env: docker
+    runtime: static
     branch: main
-    plan: starter
-    rootDir: .
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    dockerCommand: ""
-    dockerBuildArgs:
-      VITE_API_BASE_URL: https://cloudberries-candidate-match.onrender.com
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./build
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://cloudberries-candidate-match.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
