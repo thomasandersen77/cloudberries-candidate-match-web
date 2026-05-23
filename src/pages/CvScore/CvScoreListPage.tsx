@@ -20,13 +20,18 @@ import {
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import { getAllCandidates, getCvScore, runScoreForCandidate } from '../../services/cvScoreService';
-import type { CvScoreDto } from '../../types/api';
+import {
+  getAllCandidates,
+  loadCvScoreListRows,
+  runScoreForCandidate,
+  type CvScoreListRow,
+} from '../../services/cvScoreService';
+import { sortCvScoreRows } from '../../utils/cvScoreSort';
 import CvScoreBadge from '../../components/CvScoreBadge';
 
 const CvScoreListPage: React.FC = () => {
   const theme = useTheme();
-  const [rows, setRows] = useState<Array<{ id: string; name: string; scorePercent: number; summary: string }>>([]);
+  const [rows, setRows] = useState<CvScoreListRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [snack, setSnack] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -37,33 +42,31 @@ const CvScoreListPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       setLoading(true);
       try {
-        const cs = await getAllCandidates();
-        const scored = await Promise.all(
-          cs.map(async (c) => {
-            try {
-              const dto: CvScoreDto = await getCvScore(c.id);
-              return { id: c.id, name: c.name, scorePercent: dto.scorePercent ?? 0, summary: dto.summary ?? '' };
-            } catch {
-              return { id: c.id, name: c.name, scorePercent: 0, summary: '' };
-            }
-          })
-        );
-        scored.sort((a, b) => (b.scorePercent ?? 0) - (a.scorePercent ?? 0));
-        setRows(scored);
+        const candidates = await getAllCandidates();
+        await loadCvScoreListRows(candidates, (partial) => {
+          if (!cancelled) setRows(partial);
+        });
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  const sortedRows = useMemo(() => sortCvScoreRows(rows), [rows]);
+
   const stats = useMemo(() => {
-    const n = rows.length;
-    if (n === 0) return { total: 0, avg: 0 };
-    const sum = rows.reduce((acc, r) => acc + (r.scorePercent ?? 0), 0);
-    return { total: n, avg: Math.round(sum / n) };
+    const scored = rows.filter((r) => r.scorePercent > 0);
+    const n = scored.length;
+    if (n === 0) return { total: rows.length, scored: 0, avg: 0 };
+    const sum = scored.reduce((acc, r) => acc + r.scorePercent, 0);
+    return { total: rows.length, scored: n, avg: Math.round(sum / n) };
   }, [rows]);
 
   return (
@@ -96,17 +99,7 @@ const CvScoreListPage: React.FC = () => {
                 }
               }
               const fresh = await getAllCandidates();
-              const refreshed = await Promise.all(
-                fresh.map(async (c) => {
-                  try {
-                    const dto: CvScoreDto = await getCvScore(c.id);
-                    return { id: c.id, name: c.name, scorePercent: dto.scorePercent ?? 0, summary: dto.summary ?? '' };
-                  } catch {
-                    return { id: c.id, name: c.name, scorePercent: 0, summary: '' };
-                  }
-                })
-              );
-              refreshed.sort((a, b) => (b.scorePercent ?? 0) - (a.scorePercent ?? 0));
+              const refreshed = await loadCvScoreListRows(fresh);
               setRows(refreshed);
               setSnack({
                 open: true,
@@ -150,7 +143,7 @@ const CvScoreListPage: React.FC = () => {
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25 }}>
             <CvScoreBadge score={stats.avg} size="md" />
             <Typography variant="body2" color="text.secondary">
-              {stats.total ? `${stats.avg}%` : '—'}
+              {stats.scored ? `${stats.avg}% (${stats.scored} scoret)` : '—'}
             </Typography>
           </Stack>
         </Box>
@@ -170,7 +163,7 @@ const CvScoreListPage: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((r) => (
+              {sortedRows.map((r) => (
                 <TableRow
                   key={r.id}
                   hover
