@@ -12,7 +12,7 @@ import {
   Box,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { getCvScore, runScoreForCandidate } from '../../services/cvScoreService';
+import { getCvScore, recalculateScoreForCandidate } from '../../services/cvScoreService';
 import type { CvScoreDto } from '../../types/api';
 import CvScoreBadge from '../../components/CvScoreBadge';
 
@@ -97,7 +97,7 @@ const CvScoreDetailPage: React.FC = () => {
                 onClick={async () => {
                   try {
                     setRunning(true);
-                    const updated = await runScoreForCandidate(candidateId);
+                    const updated = await recalculateScoreForCandidate(candidateId);
                     setScore(updated);
                     type MaybeIso = Partial<Record<'evaluatedAt' | 'scoredAt' | 'updatedAt', string>>;
                     const withIso = updated as unknown as MaybeIso;

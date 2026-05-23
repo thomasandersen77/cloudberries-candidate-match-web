@@ -555,16 +555,38 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
     post:
       tags: [ CV Scoring ]
-      summary: Trigger scoring for single candidate
+      summary: Trigger scoring for single candidate (alias for /run)
       operationId: runScoreForCandidate
       parameters:
         - in: path
           name: candidateId
           required: true
           schema: { type: string }
+        - $ref: '#/components/parameters/AiProviderParam'
       responses:
         '200':
           description: Updated candidate CV score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvScoreDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /cv-score/{candidateId}/recalculate:
+    post:
+      tags: [ CV Scoring ]
+      summary: Recalculate CV score for a candidate
+      operationId: recalculateScoreForCandidate
+      parameters:
+        - in: path
+          name: candidateId
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/AiProviderParam'
+      responses:
+        '200':
+          description: Recalculated candidate CV score
           content:
             application/json:
               schema:
@@ -592,6 +614,8 @@ paths:
     post:
       tags: [ CV Scoring ]
       summary: Trigger scoring for all consultants
+      parameters:
+        - $ref: '#/components/parameters/AiProviderParam'
       responses:
         '200':
           description: Scoring summary
@@ -662,6 +686,15 @@ components:
         items: { type: string }
       style: form
       explode: true
+    AiProviderParam:
+      in: query
+      name: aiProvider
+      description: Optional AI provider override (e.g. ANTHROPIC)
+      required: false
+      schema:
+        type: string
+        enum: [ ANTHROPIC, OPENAI, GOOGLE_GEMINI ]
+        example: ANTHROPIC
 
   responses:
     ErrorResponse:

@@ -29,7 +29,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Send as SendIcon, SmartToy as AiIcon, Person as PersonIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import {searchChat} from '../../services/chatService';
 import { listConsultants, listConsultantCvs, getConsultantByUserId } from '../../services/consultantsService';
-import apiClient from '../../services/apiClient';
+import { recalculateScoreForCandidate } from '../../services/cvScoreService';
 import type {ChatSearchRequest, ChatSearchResponse, DebugInfo, SearchResult, ConsultantSummaryDto, ScoringInfo} from '../../types/api';
 
 // Helpers
@@ -446,9 +446,7 @@ const ChatSearchTab = () => {
         try {
             // Call the CV scoring endpoint to re-analyze the consultant's CV
             // Using a timeout of 360 seconds as specified
-            await apiClient.post(`/cv-score/${consultant.userId}`, null, {
-                timeout: 360_000
-            });
+            await recalculateScoreForCandidate(consultant.userId);
             
             // Show success message (you could add a toast notification here)
             console.log(`Re-analysis completed for ${consultant.name}`);

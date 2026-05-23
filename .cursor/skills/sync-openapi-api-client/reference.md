@@ -72,6 +72,8 @@ Kilde: `openapi.yaml` v1.2.0. Oppdater ved spec-endringer.
 | Path | Method | Service | Funksjon |
 |------|--------|---------|----------|
 | `/cv-score/{candidateId}` | GET | `cvScoreService.ts` | `getCvScore()` |
+| `/cv-score/{candidateId}` | POST | `cvScoreService.ts` | `runScoreForCandidate()` |
+| `/cv-score/{candidateId}/recalculate` | POST | `cvScoreService.ts` | `recalculateScoreForCandidate()` |
 | `/cv-score/all` | GET | `cvScoreService.ts` | `getAllCandidates()` |
 | `/cv-score/run/all` | POST | `cvScoreService.ts` | `runScoreForAll()` |
 

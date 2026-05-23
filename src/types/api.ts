@@ -38,6 +38,7 @@ export type EmbeddingProviderInfo = components['schemas']['EmbeddingProviderInfo
 export type CandidateDTO = components['schemas']['CandidateDTO'];
 export type CvScoreDto = components['schemas']['CvScoreDto'];
 export type CvScoringRunResponse = components['schemas']['CvScoringRunResponse'];
+export type CvScoreAiProvider = 'ANTHROPIC' | 'OPENAI' | 'GOOGLE_GEMINI';
 
 export type ProjectRequirementDto = components['schemas']['ProjectRequirementDto'];
 type OpenApiProjectRequestResponseDto = components['schemas']['ProjectRequestResponseDto'];

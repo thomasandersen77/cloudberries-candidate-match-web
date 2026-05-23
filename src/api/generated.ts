@@ -964,8 +964,25 @@ export interface paths {
             };
         };
         put?: never;
-        /** Trigger scoring for single candidate */
+        /** Trigger scoring for single candidate (alias for /run) */
         post: operations["runScoreForCandidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cv-score/{candidateId}/recalculate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recalculate CV score for a candidate */
+        post: operations["recalculateScoreForCandidate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1021,7 +1038,10 @@ export interface paths {
         /** Trigger scoring for all consultants */
         post: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Optional AI provider override (e.g. ANTHROPIC) */
+                    aiProvider?: components["parameters"]["AiProviderParam"];
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1447,6 +1467,8 @@ export interface components {
         SizeParam: number;
         /** @description Sort field(s), e.g. `name,asc`. Repeat for multi-sort. */
         SortParam: string[];
+        /** @description Optional AI provider override (e.g. ANTHROPIC) */
+        AiProviderParam: "ANTHROPIC" | "OPENAI" | "GOOGLE_GEMINI";
     };
     requestBodies: never;
     headers: never;
@@ -1506,7 +1528,10 @@ export interface operations {
     };
     runScoreForCandidate: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional AI provider override (e.g. ANTHROPIC) */
+                aiProvider?: components["parameters"]["AiProviderParam"];
+            };
             header?: never;
             path: {
                 candidateId: string;
@@ -1516,6 +1541,32 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Updated candidate CV score */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CvScoreDto"];
+                };
+            };
+            default: components["responses"]["ErrorResponse"];
+        };
+    };
+    recalculateScoreForCandidate: {
+        parameters: {
+            query?: {
+                /** @description Optional AI provider override (e.g. ANTHROPIC) */
+                aiProvider?: components["parameters"]["AiProviderParam"];
+            };
+            header?: never;
+            path: {
+                candidateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recalculated candidate CV score */
             200: {
                 headers: {
                     [name: string]: unknown;
