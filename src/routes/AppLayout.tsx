@@ -21,7 +21,7 @@ const AppLayout: React.FC = () => {
                 sx={{
                     px: { xs: 2, sm: 3, md: 4 },
                     py: { xs: 3, md: 4 },
-                    maxWidth: 1280,
+                    maxWidth: 1360,
                     mx: 'auto',
                     width: '100%',
                     flex: 1,

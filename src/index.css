@@ -11,6 +11,12 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 a {
     font-weight: 500;
     color: var(--cb-link);
@@ -38,7 +44,32 @@ body {
     justify-content: center;
 }
 
-h1 {
-    font-size: 3.2em;
-    line-height: 1.1;
+.app-shell {
+    width: 100%;
+    min-height: 100vh;
+}
+
+.text-muted {
+    color: var(--cb-text-secondary);
+}
+
+.surface-card {
+    background: var(--cb-surface);
+    border: 1px solid var(--cb-border);
+    border-radius: 16px;
+}
+
+.surface-glass {
+    background: color-mix(in srgb, var(--cb-surface) 82%, transparent);
+    border: 1px solid color-mix(in srgb, var(--cb-border) 88%, transparent);
+    backdrop-filter: blur(10px);
+}
+
+.gradient-brand {
+    background-image: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--cb-link) 16%, transparent) 0%,
+        transparent 48%,
+        color-mix(in srgb, var(--cb-link-hover) 14%, transparent) 100%
+    );
 }

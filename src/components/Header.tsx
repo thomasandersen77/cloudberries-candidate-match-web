@@ -1,19 +1,31 @@
 import React, { useState } from 'react';
-import { AppBar, IconButton, Toolbar, Typography, Menu, MenuItem, Divider, Tooltip, Box } from '@mui/material';
+import { AppBar, IconButton, Toolbar, Typography, Menu, MenuItem, Divider, Tooltip, Box, Button, Stack } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import MenuIcon from '@mui/icons-material/Menu';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
+import CheckIcon from '@mui/icons-material/Check';
 import HealthCheckIndicator from './HealthCheckIndicator';
-import { useColorMode } from '../theme';
-import CloudberriesLogo from '../assets/cloudberries-logo.png';
+import { palettes, useColorMode } from '../theme';
+import { BRANDING } from '../config/branding';
+
+const topNavItems = [
+  { label: 'Dashboard', to: '/' },
+  { label: 'Konsulenter', to: '/consultants' },
+  { label: 'CV-Score', to: '/cv-score' },
+  { label: 'Matcher', to: '/matches' },
+  { label: 'Kundeforspørsel', to: '/project-requests/upload' },
+];
 
 const Header: React.FC = () => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const open = Boolean(menuAnchor);
-  const { mode, toggle } = useColorMode();
+  const { mode, toggle, brandTheme, setBrandTheme } = useColorMode();
+  const brand = BRANDING[brandTheme] ?? BRANDING.cloudberries;
+  const isSopraSteria = brandTheme === 'soprasteria';
 
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setMenuAnchor(e.currentTarget);
   const handleMenuClose = () => setMenuAnchor(null);
@@ -36,7 +48,7 @@ const Header: React.FC = () => {
     >
       <Toolbar
         sx={{
-          maxWidth: 1280,
+          maxWidth: 1360,
           mx: 'auto',
           width: '100%',
           minHeight: { xs: 56, sm: 64 },
@@ -45,21 +57,89 @@ const Header: React.FC = () => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
-          <Box
-            component="img"
-            src={CloudberriesLogo}
-            alt="Cloudberries logo"
-            sx={{ height: { xs: 36, sm: 40 }, width: 'auto', mr: 2, display: 'block', flexShrink: 0 }}
-          />
+          {brand.logoSrc ? (
+            <Box
+              component="img"
+              src={brand.logoSrc}
+              alt={brand.logoAlt}
+              sx={{
+                height: isSopraSteria ? { xs: 34, sm: 38 } : { xs: 42, sm: 48 },
+                width: isSopraSteria ? { xs: 64, sm: 74 } : 'auto',
+                objectFit: isSopraSteria ? 'cover' : 'contain',
+                objectPosition: isSopraSteria ? 'center 22%' : 'center',
+                borderRadius: isSopraSteria ? 1.5 : 0,
+                bgcolor: isSopraSteria ? '#fff' : 'transparent',
+                p: isSopraSteria ? 0.25 : 0,
+                mr: 2,
+                display: 'block',
+                flexShrink: 0,
+              }}
+            />
+          ) : (
+            <Box
+              sx={(theme) => ({
+                mr: 2,
+                width: { xs: 34, sm: 38 },
+                height: { xs: 34, sm: 38 },
+                borderRadius: '50%',
+                bgcolor: alpha(theme.palette.primary.main, 0.16),
+                color: theme.palette.primary.main,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                flexShrink: 0,
+              })}
+            >
+              {brand.displayName.charAt(0)}
+            </Box>
+          )}
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="h6" component="div" sx={{ fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-              Cloudberries
+              {brand.displayName}
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 400, color: 'text.secondary', mt: 0.25, lineHeight: 1.3 }}>
-              Intelligent Skill Search &amp; Matching Platform
+              {brand.tagline}
             </Typography>
           </Box>
         </Box>
+
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{
+            display: { xs: 'none', lg: 'flex' },
+            alignItems: 'center',
+            px: 0.5,
+            py: 0.5,
+            borderRadius: 2.5,
+            bgcolor: (theme) => (theme.palette.mode === 'light' ? alpha(theme.palette.primary.main, 0.05) : alpha('#fff', 0.04)),
+            border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.9)}`,
+          }}
+        >
+          {topNavItems.map((item) => (
+            <Button
+              key={item.to}
+              component={RouterLink}
+              to={item.to}
+              color="inherit"
+              size="small"
+              sx={{
+                px: 1.5,
+                py: 0.75,
+                borderRadius: 2,
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'text.primary',
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === 'light' ? 0.12 : 0.2),
+                },
+              }}
+            >
+              {item.label}
+            </Button>
+          ))}
+        </Stack>
 
         <Box
           sx={(theme) => ({
@@ -81,6 +161,11 @@ const Header: React.FC = () => {
               {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
             </IconButton>
           </Tooltip>
+          <Tooltip title={`Tema: ${palettes[brandTheme].name}`}>
+            <IconButton color="inherit" aria-label="brand palette selector" size="small" onClick={handleMenuOpen}>
+              <PaletteOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <IconButton color="inherit" aria-label="profil" size="small">
             <PersonOutlineIcon fontSize="small" />
           </IconButton>
@@ -92,6 +177,7 @@ const Header: React.FC = () => {
             aria-expanded={open ? 'true' : undefined}
             onClick={handleMenuOpen}
             size="small"
+            sx={{ display: { xs: 'inline-flex', lg: 'none' } }}
           >
             <MenuIcon fontSize="small" />
           </IconButton>
@@ -138,6 +224,27 @@ const Header: React.FC = () => {
           </MenuItem>
           <MenuItem component={RouterLink} to="/search/semantic" onClick={handleMenuClose}>
             Semantisk Søk
+          </MenuItem>
+          <Divider sx={{ my: 0.5 }} />
+          <MenuItem
+            onClick={() => {
+              setBrandTheme('cloudberries');
+              handleMenuClose();
+            }}
+            sx={{ display: 'flex', justifyContent: 'space-between' }}
+          >
+            Cloudberries look
+            {brandTheme === 'cloudberries' ? <CheckIcon fontSize="small" /> : null}
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setBrandTheme('soprasteria');
+              handleMenuClose();
+            }}
+            sx={{ display: 'flex', justifyContent: 'space-between' }}
+          >
+            Sopra Steria look
+            {brandTheme === 'soprasteria' ? <CheckIcon fontSize="small" /> : null}
           </MenuItem>
           <Divider sx={{ my: 0.5 }} />
           <MenuItem component={RouterLink} to="/project-requests/upload" onClick={handleMenuClose}>

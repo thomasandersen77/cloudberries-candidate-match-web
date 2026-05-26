@@ -1,6 +1,6 @@
 import React from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
-import { Box, Grid, Card, CardContent, Typography, Button, Stack } from '@mui/material';
+import { Box, Grid, Card, CardContent, Typography, Button, Stack, Chip } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 import PsychologyOutlinedIcon from '@mui/icons-material/PsychologyOutlined';
@@ -43,14 +43,82 @@ const HomePage: React.FC = () => {
     { to: '/search', title: 'Søk', desc: 'Søk i konsulenter og kompetanse' },
   ];
 
+  const kpis = [
+    { label: 'Konsulenter', value: '111+', helper: 'Live kandidatbase' },
+    { label: 'Scoring', value: 'AI-first', helper: 'CV, match og kvalitet' },
+    { label: 'Arbeidsflyt', value: 'End-to-end', helper: 'Søk til prosjektforslag' },
+  ];
+
   return (
     <Box sx={{ py: { xs: 2, md: 4 } }}>
-      <Stack spacing={1} sx={{ mb: { xs: 3, md: 5 }, maxWidth: 720 }}>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.03em' }}>
-          Cloudberries Candidate Match
+      <Card
+        sx={{
+          mb: { xs: 3, md: 5 },
+          overflow: 'hidden',
+          position: 'relative',
+          borderColor: alpha(theme.palette.primary.main, 0.26),
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            background: `linear-gradient(115deg, ${alpha(theme.palette.primary.main, 0.22)} 0%, transparent 40%, ${alpha(
+              theme.palette.secondary.main,
+              0.1
+            )} 100%)`,
+          }}
+        />
+        <CardContent sx={{ p: { xs: 3, md: 4 }, position: 'relative' }}>
+          <Stack spacing={2} sx={{ maxWidth: 860 }}>
+            <Chip
+              label="Cloudberries Candidate Match"
+              size="small"
+              sx={{ width: 'fit-content', fontWeight: 600, bgcolor: alpha(theme.palette.primary.main, 0.12) }}
+            />
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.03em', maxWidth: 920 }}>
+              Premium arbeidsflate for kompetansesøk, kvalitetsvurdering og AI-drevet matching
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.03rem', lineHeight: 1.68, maxWidth: 800 }}>
+              Bygget for moderne konsulenthus: rask innsikt i kompetanse, bedre match mot kundeforspørsler og tryggere beslutninger
+              basert på data, kontekst og kvalitetssikret AI.
+            </Typography>
+          </Stack>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            {kpis.map((kpi) => (
+              <Grid item xs={12} sm={4} key={kpi.label}>
+                <Box
+                  sx={{
+                    borderRadius: 3,
+                    px: 2,
+                    py: 1.5,
+                    bgcolor: isDark ? alpha('#fff', 0.04) : alpha('#fff', 0.8),
+                    border: `1px solid ${alpha(theme.palette.divider, 0.75)}`,
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    {kpi.label}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25 }}>
+                    {kpi.value}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {kpi.helper}
+                  </Typography>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 650 }}>
+          Moduloversikt
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.0625rem', lineHeight: 1.65 }}>
-          Oversikt over verktøy for kompetansesøk, matching og kvalitetsanalyse — én plattform for konsulenter og prosjekter.
+        <Typography variant="body2" color="text.secondary">
+          Velg arbeidsområde
         </Typography>
       </Stack>
 
@@ -65,6 +133,9 @@ const HomePage: React.FC = () => {
                 flexDirection: 'column',
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
                 border: `1px solid ${theme.palette.divider}`,
+                background: isDark
+                  ? `linear-gradient(180deg, ${alpha('#fff', 0.015)} 0%, transparent 100%)`
+                  : `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.035)} 0%, transparent 100%)`,
                 '&:hover': {
                   transform: 'translateY(-2px)',
                   boxShadow: isDark
