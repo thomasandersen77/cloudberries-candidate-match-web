@@ -10,11 +10,13 @@ const ProjectRequestDetailPage: React.FC = () => {
   const [dto, setDto] = useState<ProjectRequestResponseDto | null>(null);
   const [suggestions, setSuggestions] = useState<Array<{ consultantName: string; userId: string; cvId: string; matchScore: number; justification: string; createdAt: string; skills?: string[] }>>([]);
   const [actionsLoading, setActionsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       if (!id) return;
       setLoading(true);
+      setError(null);
       try {
         const numeric = Number(id);
         const res = await getProjectRequestById(numeric);
@@ -25,6 +27,8 @@ const ProjectRequestDetailPage: React.FC = () => {
         } catch {
           // ignore
         }
+      } catch {
+        setError('Kunne ikke hente kundeforespørselen. Backend svarte med feil.');
       } finally {
         setLoading(false);
       }
@@ -35,6 +39,7 @@ const ProjectRequestDetailPage: React.FC = () => {
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Kundeforspørsel</Typography>
       {loading && <LinearProgress sx={{ mb: 2 }} />}
+      {error && <Typography color="error.main" sx={{ mb: 2 }}>{error}</Typography>}
       {dto && (
         <Paper sx={{ p: 2 }}>
           <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -53,6 +58,9 @@ const ProjectRequestDetailPage: React.FC = () => {
                 await analyzeProjectRequest(dto.id);
                 const sugg = await getProjectRequestSuggestions(dto.id);
                 setSuggestions(sugg ?? []);
+                setError(null);
+              } catch {
+                setError('Analysering feilet. Prøv igjen senere.');
               } finally {
                 setActionsLoading(false);
               }
@@ -62,6 +70,9 @@ const ProjectRequestDetailPage: React.FC = () => {
               setActionsLoading(true);
               try {
                 await closeProjectRequest(dto.id);
+                setError(null);
+              } catch {
+                setError('Kunne ikke lukke forespørselen.');
               } finally {
                 setActionsLoading(false);
               }

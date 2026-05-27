@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Chip, CircularProgress, Container, IconButton, Link as MuiLink, Paper, Stack, Tooltip, Typography, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { listMatchRequests, getTopConsultantsForRequest } from '../../services/matchesRequestsService';
+import { listMatchRequests, getTopConsultantsForRequest, reAnalyzeRequest } from '../../services/matchesRequestsService';
 import type { PagedMatchesListDto, MatchConsultantDto, CoverageStatus } from '../../types/api';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { getMatchStatus, getTopMatchesFlat, recalculateMatches } from '../../services/newMatchesService';
+import { isAxiosError } from 'axios';
 
 // Helper to decide coverage color/status from count
 function getCoverageFromStatus(status?: CoverageStatus | null, label?: string | null, hitCount?: number | null) {
@@ -37,6 +38,8 @@ const MatchesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [top5, setTop5] = useState<Record<number, MatchConsultantDto[] | 'loading' | 'error'>>({});
+  const [top5Error, setTop5Error] = useState<Record<number, string>>({});
+  const [analyzing, setAnalyzing] = useState<Record<number, boolean>>({});
   const [pageSize, setPageSize] = useState<number>(20);
 
   // Status mode state
@@ -95,18 +98,53 @@ const MatchesPage: React.FC = () => {
 
   const rows = useMemo(() => page?.content ?? [], [page]);
 
+  const loadTopConsultants = async (id: number, force = false) => {
+    if (!force && Array.isArray(top5[id])) return;
+    setTop5(prev => ({ ...prev, [id]: 'loading' }));
+    setTop5Error(prev => ({ ...prev, [id]: '' }));
+    try {
+      const s = await getTopConsultantsForRequest(id, 5);
+      setTop5(prev => ({ ...prev, [id]: s }));
+    } catch (error) {
+      const message = isAxiosError(error)
+        ? error.code === 'ECONNABORTED'
+          ? 'Tidsavbrudd hos backend. Prøv igjen om noen sekunder.'
+          : (error.response?.data as { message?: string } | undefined)?.message ?? error.message
+        : 'Ukjent feil ved henting av toppkandidater.';
+      setTop5(prev => ({ ...prev, [id]: 'error' }));
+      setTop5Error(prev => ({ ...prev, [id]: message }));
+    }
+  };
+
   const toggleExpand = async (id: number) => {
-    setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
-    if (!top5[id]) {
-      setTop5(prev => ({ ...prev, [id]: 'loading' }));
-      try {
-        const s = await getTopConsultantsForRequest(id, 5);
-        console.log(`Fetched top consultants for request ${id}:`, s);
-        setTop5(prev => ({ ...prev, [id]: s }));
-      } catch (error) {
-        console.error(`Error fetching top consultants for request ${id}:`, error);
-        setTop5(prev => ({ ...prev, [id]: 'error' }));
+    const nextOpen = !expanded[id];
+    setExpanded(prev => ({ ...prev, [id]: nextOpen }));
+    if (nextOpen && !top5[id]) {
+      await loadTopConsultants(id);
+    }
+  };
+
+  const analyzeNow = async (id: number) => {
+    setAnalyzing((prev) => ({ ...prev, [id]: true }));
+    setTop5((prev) => ({ ...prev, [id]: 'loading' }));
+    setTop5Error((prev) => ({ ...prev, [id]: '' }));
+    try {
+      const analyzed = await reAnalyzeRequest(id);
+      if (Array.isArray(analyzed) && analyzed.length > 0) {
+        setTop5((prev) => ({ ...prev, [id]: analyzed }));
+      } else {
+        await loadTopConsultants(id, true);
       }
+    } catch (error) {
+      const message = isAxiosError(error)
+        ? error.code === 'ECONNABORTED'
+          ? 'Analyse tidsavbrutt hos backend. Prøv igjen.'
+          : (error.response?.data as { message?: string } | undefined)?.message ?? error.message
+        : 'Ukjent feil under analyse.';
+      setTop5((prev) => ({ ...prev, [id]: 'error' }));
+      setTop5Error((prev) => ({ ...prev, [id]: message }));
+    } finally {
+      setAnalyzing((prev) => ({ ...prev, [id]: false }));
     }
   };
 
@@ -239,12 +277,39 @@ const MatchesPage: React.FC = () => {
                     </Stack>
                   )}
                   {top5[id!] === 'error' && (
-                    <Typography variant="body2" color="error.main">Kunne ikke hente topp 5.</Typography>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+                      <Typography variant="body2" color="error.main">
+                        {top5Error[id!] || 'Kunne ikke hente toppkandidater.'}
+                      </Typography>
+                      <Button size="small" variant="outlined" onClick={() => loadTopConsultants(id!, true)}>
+                        Prøv igjen
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        disabled={analyzing[id!]}
+                        onClick={() => analyzeNow(id!)}
+                      >
+                        {analyzing[id!] ? 'Analyserer…' : 'Analyser nå'}
+                      </Button>
+                    </Stack>
                   )}
                   {Array.isArray(top5[id!]) && (
                     <Stack spacing={1}>
                       {(top5[id!] as MatchConsultantDto[]).length === 0 ? (
-                        <Typography variant="body2" color="text.secondary">Ingen konsulenter funnet for denne forespørselen.</Typography>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Ingen konsulenter funnet for denne forespørselen.
+                          </Typography>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            disabled={analyzing[id!]}
+                            onClick={() => analyzeNow(id!)}
+                          >
+                            {analyzing[id!] ? 'Analyserer…' : 'Analyser nå'}
+                          </Button>
+                        </Stack>
                       ) : (
                         <>
                           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>

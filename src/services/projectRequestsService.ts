@@ -7,30 +7,99 @@ import type {
   AISuggestionDto,
 } from '../types/api';
 
+type LegacyProjectRequestDto = ProjectRequestDto & {
+  id?: number;
+  title?: string;
+  summary?: string;
+  originalFilename?: string;
+  uploadedAt?: string;
+  deadlineDate?: string;
+  mustRequirements?: Array<{ name?: string; details?: string }>;
+  shouldRequirements?: Array<{ name?: string; details?: string }>;
+};
+
+function splitRequirements(requiredSkills: string[] = []) {
+  const mustRequirements: Array<{ name: string; details?: string }> = [];
+  const shouldRequirements: Array<{ name: string; details?: string }> = [];
+
+  requiredSkills.forEach((entry) => {
+    const text = (entry ?? '').trim();
+    if (!text) return;
+    const req = { name: text, details: '' };
+    if (/\bbør\b/i.test(text) && !/\bmå\b/i.test(text)) {
+      shouldRequirements.push(req);
+    } else {
+      mustRequirements.push(req);
+    }
+  });
+
+  return { mustRequirements, shouldRequirements };
+}
+
+function deriveTitle(dto: LegacyProjectRequestDto): string {
+  const title = (dto.title ?? '').trim();
+  if (title.length >= 8) return title;
+
+  const description = (dto.requestDescription ?? '').replace(/\s+/g, ' ').trim();
+  if (description) {
+    const firstSentence = description.split(/[.!?]/).find((s) => s.trim().length > 20)?.trim();
+    if (firstSentence) return firstSentence;
+  }
+
+  if (dto.customerName?.trim()) return `Behov fra ${dto.customerName.trim()}`;
+  return 'Kundeforspørsel';
+}
+
+function normalizeProjectRequestResponse(dto: LegacyProjectRequestDto): ProjectRequestResponseDto {
+  const mustFromApi = (dto.mustRequirements ?? [])
+    .filter((r): r is { name: string; details?: string } => typeof r?.name === 'string' && r.name.trim().length > 0)
+    .map((r) => ({ name: r.name.trim(), details: r.details }));
+  const shouldFromApi = (dto.shouldRequirements ?? [])
+    .filter((r): r is { name: string; details?: string } => typeof r?.name === 'string' && r.name.trim().length > 0)
+    .map((r) => ({ name: r.name.trim(), details: r.details }));
+  const fromRequiredSkills = splitRequirements(dto.requiredSkills ?? []);
+
+  return {
+    id: dto.id,
+    customerName: dto.customerName ?? '',
+    originalFilename: dto.originalFilename ?? '',
+    title: deriveTitle(dto),
+    summary: (dto.summary ?? dto.requestDescription ?? '').trim(),
+    mustRequirements: mustFromApi.length > 0 ? mustFromApi : fromRequiredSkills.mustRequirements,
+    shouldRequirements: shouldFromApi.length > 0 ? shouldFromApi : fromRequiredSkills.shouldRequirements,
+    // Fallbacks for legacy backend shape
+    uploadedAt: dto.uploadedAt ?? dto.startDate,
+    deadlineDate: dto.deadlineDate ?? dto.responseDeadline,
+  };
+}
+
 export async function uploadProjectRequest(file: File): Promise<ProjectRequestResponseDto> {
   const formData = new FormData();
   formData.append('file', file);
-  const { data } = await apiClient.post<ProjectRequestResponseDto>(
+  const { data } = await apiClient.post<LegacyProjectRequestDto>(
     'project-requests/upload',
     formData,
     { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 300000 }
   );
-  return data;
+  return normalizeProjectRequestResponse(data);
 }
 
 export async function getProjectRequestById(id: number): Promise<ProjectRequestResponseDto | null> {
-  const { data } = await apiClient.get<ProjectRequestResponseDto | null>(`project-requests/${id}`);
-  return data;
+  const { data } = await apiClient.get<LegacyProjectRequestDto | null>(`project-requests/${id}`);
+  return data ? normalizeProjectRequestResponse(data) : null;
 }
 
 // New: paged listing
 export async function listProjectRequestsPaged(params: { page?: number; size?: number; sort?: string } = {}): Promise<PagedProjectRequestResponseDto> {
   // Sort by uploadedAt desc by default (nyeste først)
   const { page = 0, size = 20, sort = 'uploadedAt,desc' } = params;
-  const { data } = await apiClient.get<PagedProjectRequestResponseDto>(`project-requests`, {
+  const { data } = await apiClient.get<PagedProjectRequestResponseDto & { content?: LegacyProjectRequestDto[] }>(`project-requests`, {
     params: { page, size, sort },
   });
-  return data;
+  return {
+    ...data,
+    content: (data.content ?? []).map(normalizeProjectRequestResponse),
+  };
 }
 
 // Backwards-compatible helper to return the first page content only

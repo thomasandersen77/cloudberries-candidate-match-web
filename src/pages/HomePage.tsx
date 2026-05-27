@@ -11,6 +11,8 @@ import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import HealthAndSafetyOutlinedIcon from '@mui/icons-material/HealthAndSafetyOutlined';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import { useColorMode } from '../theme';
+import { BRANDING } from '../config/branding';
 
 const iconFor = (path: string) => {
   if (path.includes('consultants')) return <PeopleOutlineIcon sx={{ fontSize: 22 }} />;
@@ -29,6 +31,9 @@ const iconFor = (path: string) => {
 const HomePage: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const { brandTheme } = useColorMode();
+  const brand = BRANDING[brandTheme] ?? BRANDING.cloudberries;
+  const heroBrandLabel = `${brand.displayName} Candidate Match`;
 
   const links = [
     { to: '/consultants', title: 'Konsulenter', desc: 'Se liste over konsulenter og CV-kvalitet' },
@@ -73,7 +78,7 @@ const HomePage: React.FC = () => {
         <CardContent sx={{ p: { xs: 3, md: 4 }, position: 'relative' }}>
           <Stack spacing={2} sx={{ maxWidth: 860 }}>
             <Chip
-              label="Cloudberries Candidate Match"
+              label={heroBrandLabel}
               size="small"
               sx={{ width: 'fit-content', fontWeight: 600, bgcolor: alpha(theme.palette.primary.main, 0.12) }}
             />

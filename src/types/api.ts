@@ -3,7 +3,14 @@ import type { components, paths } from '../api/generated';
 
 // --- OpenAPI schemas ---
 
-export type AnthropicUsageResponse = components['schemas']['AnthropicUsageResponse'];
+export type AnthropicUsageResponse = {
+  periodStart?: string;
+  periodEnd?: string;
+  totalRequests?: number;
+  totalInputTokens?: number;
+  totalOutputTokens?: number;
+  estimatedCostUsd?: number;
+};
 
 export type HealthStatusValue = components['schemas']['HealthResponse']['status'];
 export type HealthResponse = components['schemas']['HealthResponse'];
@@ -11,10 +18,30 @@ export type HealthResponse = components['schemas']['HealthResponse'];
 export type AIAnalysisRequest = components['schemas']['AIAnalysisRequest'];
 export type AIResponseModel = components['schemas']['AIResponseModel'];
 
-export type RagChatRequest = components['schemas']['RagChatRequest'];
-export type RagChatResponse = components['schemas']['RagChatResponse'];
-export type RagIngestRequest = components['schemas']['RagIngestRequest'];
-export type SourceDocument = components['schemas']['SourceDocument'];
+export type RagChatRequest = {
+  message: string;
+  topK?: number;
+  similarityThreshold?: number;
+  filter?: string | null;
+};
+export type SourceDocument = {
+  id?: string;
+  consultantId?: string;
+  consultantName?: string;
+  chunkId?: string;
+  content?: string;
+  score?: number;
+  metadata?: Record<string, unknown>;
+};
+export type RagChatResponse = {
+  answer?: string;
+  sources?: SourceDocument[];
+};
+export type RagIngestRequest = {
+  consultantId?: string;
+  cvId?: string;
+  force?: boolean;
+};
 
 export type ConsultantSummaryDto = components['schemas']['ConsultantSummaryDto'];
 type OpenApiPageConsultantSummaryDto = components['schemas']['PageConsultantSummaryDto'];
@@ -83,16 +110,27 @@ export type CoverageStatus = components['schemas']['CoverageStatus'];
 export type MatchesListItemDto = components['schemas']['MatchesListItemDto'];
 export type PagedMatchesListDto = components['schemas']['PagedMatchesListDto'];
 export type MatchConsultantDto = components['schemas']['MatchConsultantDto'];
-type OpenApiMatchStatusDto = components['schemas']['MatchStatusDto'];
-export type MatchStatusDto = Omit<OpenApiMatchStatusDto, 'status'> & {
+export type MatchStatusDto = {
   status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | string;
+  lastUpdated?: string | null;
+  error?: string | null;
 };
 export type TriggerMatchingResponse = components['schemas']['TriggerMatchingResponse'];
-export type RecalculateMatchesResponse =
-  paths['/matches/recalculate/{requestId}']['post']['responses'][202]['content']['application/json'];
+export type RecalculateMatchesResponse = {
+  requestId?: number;
+  status?: string;
+  message?: string;
+};
 
-export type RagIngestResponse = paths['/rag/ingest']['post']['responses'][200]['content']['application/json'];
-export type RagIngestDbResponse = paths['/rag/ingest/db']['post']['responses'][200]['content']['application/json'];
+export type RagIngestResponse = {
+  indexed?: number;
+  skipped?: number;
+  status?: string;
+};
+export type RagIngestDbResponse = {
+  processed?: number;
+  status?: string;
+};
 
 // --- Legacy types (endpoints not in current OpenAPI spec) ---
 

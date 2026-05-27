@@ -51,7 +51,7 @@ const Header: React.FC = () => {
           maxWidth: 1360,
           mx: 'auto',
           width: '100%',
-          minHeight: { xs: 56, sm: 64 },
+          minHeight: { xs: 62, sm: 70 },
           py: { xs: 0.5, sm: 1 },
           gap: 2,
         }}
@@ -63,13 +63,13 @@ const Header: React.FC = () => {
               src={brand.logoSrc}
               alt={brand.logoAlt}
               sx={{
-                height: isSopraSteria ? { xs: 34, sm: 38 } : { xs: 42, sm: 48 },
-                width: isSopraSteria ? { xs: 64, sm: 74 } : 'auto',
+                height: isSopraSteria ? { xs: 64, sm: 72 } : { xs: 42, sm: 48 },
+                width: isSopraSteria ? { xs: 52, sm: 58 } : 'auto',
                 objectFit: isSopraSteria ? 'cover' : 'contain',
-                objectPosition: isSopraSteria ? 'center 22%' : 'center',
-                borderRadius: isSopraSteria ? 1.5 : 0,
+                objectPosition: 'center',
+                borderRadius: isSopraSteria ? 1 : 0,
                 bgcolor: isSopraSteria ? '#fff' : 'transparent',
-                p: isSopraSteria ? 0.25 : 0,
+                p: isSopraSteria ? 0.15 : 0,
                 mr: 2,
                 display: 'block',
                 flexShrink: 0,

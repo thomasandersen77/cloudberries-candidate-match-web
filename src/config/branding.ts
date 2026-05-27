@@ -21,7 +21,7 @@ export const BRANDING: Record<BrandTheme, BrandPresentation> = {
   },
   soprasteria: {
     displayName: 'Sopra Steria',
-    tagline: 'Consulting & Digital Transformation Platform',
+    tagline: 'Sopra Steria Candidate Match',
     logoSrc: SopraSteriaLogo,
     logoAlt: 'Sopra Steria logo',
   },

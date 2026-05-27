@@ -4,30 +4,174 @@
  */
 
 export interface paths {
-    "/admin/anthropic-usage": {
+    "/industries/backfill": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Anthropic API usage and cost statistics */
-        get: {
+        get?: never;
+        put?: never;
+        /** Backfill industry tags for all CVs */
+        post: {
             parameters: {
-                query?: never;
+                query?: {
+                    limit?: number;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description Usage statistics */
+                /** @description Backfill processed count */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AnthropicUsageResponse"];
+                        "application/json": {
+                            processed?: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List skills across consultants */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Optional skill filter (repeat to filter by multiple) */
+                    skill?: string[];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Skill aggregates */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SkillInCompanyDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skills/names": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all skill names */
+        get: {
+            parameters: {
+                query?: {
+                    prefix?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Array of skill names */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": string[];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skills/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paged summary of skills with consultant counts */
+        get: {
+            parameters: {
+                query?: {
+                    q?: string;
+                    /** @description Page number (0-indexed) */
+                    page?: components["parameters"]["PageParam"];
+                    /** @description Page size */
+                    size?: components["parameters"]["SizeParam"];
+                    sort?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Paged skill summary */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            content?: {
+                                name?: string;
+                                consultantCount?: number;
+                            }[];
+                            number?: number;
+                            size?: number;
+                            totalElements?: number;
+                            totalPages?: number;
+                            first?: boolean;
+                            last?: boolean;
+                            sort?: {
+                                [key: string]: unknown;
+                            };
+                            pageable?: {
+                                [key: string]: unknown;
+                            };
+                        };
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -82,7 +226,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/rag/chat": {
+    "/chatbot/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -91,7 +235,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Chat with AI using RAG (Retrieval-Augmented Generation) */
+        /**
+         * AI-powered consultant search
+         * @description Search consultants using natural language with intelligent routing to STRUCTURED, SEMANTIC, HYBRID, or RAG search modes
+         */
         post: {
             parameters: {
                 query?: never;
@@ -101,101 +248,25 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["RagChatRequest"];
+                    "application/json": components["schemas"]["ChatSearchRequest"];
                 };
             };
             responses: {
-                /** @description Chat response with sources */
+                /** @description Search results with AI interpretation */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["RagChatResponse"];
+                        "application/json": components["schemas"]["ChatSearchResponse"];
                     };
                 };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/rag/ingest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ingest a CV into the RAG vector store */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["RagIngestRequest"];
-                };
-            };
-            responses: {
-                /** @description Ingestion result */
-                200: {
+                /** @description Invalid request parameters */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": {
-                            ingested?: number;
-                        };
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/rag/ingest/db": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ingest all CVs from the database into the RAG vector store */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Batch ingestion report */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            rowsProcessed?: number;
-                            chunksAdded?: number;
-                        };
-                    };
+                    content?: never;
                 };
                 default: components["responses"]["ErrorResponse"];
             };
@@ -259,10 +330,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get all consultants with their CVs */
+        /** List all consultants with their CVs (normalized entities) */
         get: {
             parameters: {
                 query?: {
+                    /** @description If true, include only active CVs for each consultant */
                     onlyActiveCv?: boolean;
                 };
                 header?: never;
@@ -271,7 +343,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description List of consultants with CVs */
+                /** @description Consultants with nested CV structures */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -298,15 +370,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get paged consultants with their CVs */
+        /** List consultants with CVs (paged) */
         get: {
             parameters: {
                 query?: {
+                    /** @description If true, include only active CVs for each consultant */
                     onlyActiveCv?: boolean;
                     /** @description Page number (0-indexed) */
                     page?: components["parameters"]["PageParam"];
                     /** @description Page size */
                     size?: components["parameters"]["SizeParam"];
+                    /** @description Sort field(s), e.g. `name,asc`. Repeat for multi-sort. */
+                    sort?: components["parameters"]["SortParam"];
                 };
                 header?: never;
                 path?: never;
@@ -320,7 +395,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PageResponseConsultantWithCvDto"];
+                        "application/json": components["schemas"]["PageConsultantWithCvDto"];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -341,10 +416,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List CVs for a specific consultant */
+        /** List CVs for a consultant by userId */
         get: {
             parameters: {
                 query?: {
+                    /** @description If true, include only the active CV */
                     onlyActiveCv?: boolean;
                 };
                 header?: never;
@@ -355,7 +431,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description List of consultant CVs */
+                /** @description Consultant CVs */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -369,6 +445,94 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultants/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get consultant summary by userId */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Consultant summary */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConsultantSummaryDto"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultants/sync/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger a sync from Flowcase */
+        post: {
+            parameters: {
+                query?: {
+                    /** @description Max number of users to sync in this run */
+                    batchSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Sync summary */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -401,7 +565,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Semantic (vector) search for consultants */
+        /**
+         * Semantic (vector) search for consultants
+         * @description Embeds the provided text using the configured EmbeddingProvider and performs pgvector similarity search.
+         */
         post: operations["searchConsultantsSemantic"];
         delete?: never;
         options?: never;
@@ -416,7 +583,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get information about the configured embedding provider */
+        /**
+         * Get embedding provider information
+         * @description Returns information about the available embedding provider for semantic search
+         */
         get: {
             parameters: {
                 query?: never;
@@ -426,7 +596,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Embedding provider info */
+                /** @description Embedding provider information */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -440,47 +610,6 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/consultants/sync/run": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Trigger a sync from Flowcase */
-        post: {
-            parameters: {
-                query?: {
-                    batchSize?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Sync summary */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
         delete?: never;
         options?: never;
         head?: never;
@@ -506,15 +635,13 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description CV data */
+                /** @description CV data (shape depends on source) */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
+                        "application/json": components["schemas"]["CvData"];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -522,6 +649,83 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/embeddings/run/jason": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate embeddings for Jason (demo) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Operation result */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EmbeddingJasonRunResponse"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/embeddings/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate embeddings for a specific user/cv */
+        post: {
+            parameters: {
+                query: {
+                    userId: string;
+                    cvId: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Operation result */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EmbeddingUserCvRunResponse"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -555,506 +759,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            processedCount?: number;
-                            batchSize?: number;
-                        };
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/requests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List all project requests available for matching */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of project request summaries */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProjectRequestSummaryDto"][];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/requests-paged": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List project requests with coverage information (paged) */
-        get: {
-            parameters: {
-                query?: {
-                    page?: number;
-                    size?: number;
-                    sort?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Paged project requests with coverage */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["PagedMatchesListDto"];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/requests/{id}/top-consultants": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Returns AI-enriched top consultants for a given project request */
-        get: {
-            parameters: {
-                query?: {
-                    limit?: number;
-                };
-                header?: never;
-                path: {
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of AI-enriched matches */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["MatchConsultantDto"][];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/requests/{id}/re-analyze": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Re-analyzes and re-ranks consultants for a project request */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Re-analysis results */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["MatchConsultantDto"][];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/requests/{projectRequestId}/trigger": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Trigger matching computation for a specific project request */
-        post: {
-            parameters: {
-                query?: {
-                    forceRecompute?: boolean;
-                };
-                header?: never;
-                path: {
-                    projectRequestId: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Trigger status */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["TriggerMatchingResponse"];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/status/{requestId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get the status of a matching job */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    requestId: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Match status */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["MatchStatusDto"];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/recalculate/{requestId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Recalculate matches for a project request (Async) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    requestId: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Recalculation accepted */
-                202: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            requestId?: number;
-                            statusUrl?: string;
-                            matchesUrl?: string;
-                        };
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/matches/trigger-all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Trigger matching for all project requests */
-        post: {
-            parameters: {
-                query?: {
-                    forceRecompute?: boolean;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Batch operation status */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/project-requests/upload": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Upload and analyze a customer project request PDF */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "multipart/form-data": {
-                        /** Format: binary */
-                        file: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Extracted project request */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProjectRequestResponseDto"];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/cv-score/{candidateId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get CV score for a candidate */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    candidateId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Candidate CV score */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["CvScoreDto"];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        put?: never;
-        /** Trigger scoring for single candidate (alias for /run) */
-        post: operations["runScoreForCandidate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/cv-score/{candidateId}/recalculate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Recalculate CV score for a candidate */
-        post: operations["recalculateScoreForCandidate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/cv-score/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List all candidates (summary) */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Candidates */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["CandidateDTO"][];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/cv-score/run/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Trigger scoring for all consultants */
-        post: {
-            parameters: {
-                query?: {
-                    /** @description Optional AI provider override (e.g. ANTHROPIC) */
-                    aiProvider?: components["parameters"]["AiProviderParam"];
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Scoring summary */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["CvScoringRunResponse"];
+                        "application/json": components["schemas"]["EmbeddingRunMissingResponse"];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -1103,19 +808,157 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/skills": {
+    "/matches": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List skills across consultants */
+        get?: never;
+        put?: never;
+        /** Find candidate matches for a project request */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MatchApiRequest"];
+                };
+            };
+            responses: {
+                /** @description List of candidate matches */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CandidateMatchResponse"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/matches/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a CV PDF and find matches */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        /** Format: binary */
+                        file: string;
+                        projectRequestText: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description List of candidate matches */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CandidateMatchResponse"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/matches/by-skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Find candidate matches given a list of skills
+         * @description Uses AI matching against all known consultants using a prompt derived from the provided skills.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /** @example {
+                     *       "skills": [
+                     *         "java",
+                     *         "azure",
+                     *         "react"
+                     *       ]
+                     *     } */
+                    "application/json": components["schemas"]["SkillsRequest"];
+                };
+            };
+            responses: {
+                /** @description List of candidate matches */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CandidateMatchResponse"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/matches/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List project requests (uploaded customer documents) with coverage info */
         get: {
             parameters: {
                 query?: {
-                    /** @description Optional skill filter (repeat to filter by multiple) */
-                    skill?: string[];
+                    page?: number;
+                    size?: number;
+                    sort?: string;
                 };
                 header?: never;
                 path?: never;
@@ -1123,13 +966,714 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Skill aggregates */
+                /** @description Paged list of requests with coverage */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["SkillInCompanyDto"][];
+                        "application/json": components["schemas"]["PagedMatchesListDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/matches/requests/{id}/top-consultants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get top consultants for a request (AI-enriched) */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Top consultants */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchConsultantDto"][];
+                    };
+                };
+                /** @description Project request not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/matches/requests/{id}/re-analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-analyze consultants using Gemini 3.0 batch evaluation
+         * @description Re-analyzes and re-ranks consultants for a project request using improved AI matching.
+         *     This endpoint:
+         *     - Fetches ~30 consultants matching required skills
+         *     - Scores by 50% skills + 50% CV quality
+         *     - Selects top 10 candidates
+         *     - Sends all 10 CVs in ONE Gemini API call for batch evaluation
+         *     - Returns ranked results with detailed justifications
+         *
+         *     Note: This endpoint runs synchronously and may take up to 60 seconds.
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Re-analyzed and ranked consultants */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchConsultantDto"][];
+                    };
+                };
+                /** @description Project request not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description AI service error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List stored customer project requests with pagination */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number (0-based) */
+                    page?: number;
+                    /** @description Number of items per page */
+                    size?: number;
+                    /** @description Sort specification (field,direction) */
+                    sort?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Paged project requests */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PagedProjectRequestResponseDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        /** Create a new project request */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /** @example {
+                     *       "customerName": "Acme Corp AS",
+                     *       "requiredSkills": [
+                     *         "KOTLIN",
+                     *         "JAVA"
+                     *       ],
+                     *       "startDate": "2024-04-01T09:00:00",
+                     *       "endDate": "2024-10-01T17:00:00",
+                     *       "responseDeadline": "2024-03-15T17:00:00",
+                     *       "requestDescription": "We need a senior backend developer for a 6-month project using Kotlin and Spring Boot.",
+                     *       "responsibleSalespersonEmail": "sales@acme.com"
+                     *     } */
+                    "application/json": components["schemas"]["CreateProjectRequestDto"];
+                };
+            };
+            responses: {
+                /** @description Project request created successfully */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectRequestDto"];
+                    };
+                };
+                /** @description Invalid request data */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload and analyze a customer project request PDF
+         * @description Uploads a PDF document and uses AI to extract structured information including:
+         *     - Customer name from the document
+         *     - Project summary and requirements
+         *     - MUST vs SHOULD requirements categorization
+         *     - Project deadline (if mentioned)
+         *     - Upload timestamp tracking
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        /** Format: binary */
+                        file: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Extracted project request with AI-analyzed structure */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /** @example {
+                         *       "id": 123,
+                         *       "customerName": "Acme Corporation AS",
+                         *       "title": "Senior Kotlin Developer - Mobile Platform",
+                         *       "summary": "Project for developing a new mobile banking application using Kotlin and modern Android architecture. Requires experienced developer with strong backend integration skills.",
+                         *       "originalFilename": "project-request-acme-mobile.pdf",
+                         *       "uploadedAt": "2024-10-01T10:30:00Z",
+                         *       "deadlineDate": "2024-12-15T00:00:00Z",
+                         *       "mustRequirements": [
+                         *         {
+                         *           "name": "5+ years experience with Kotlin/Android development",
+                         *           "details": null
+                         *         },
+                         *         {
+                         *           "name": "Experience with REST API integration",
+                         *           "details": null
+                         *         },
+                         *         {
+                         *           "name": "Knowledge of Material Design principles",
+                         *           "details": null
+                         *         }
+                         *       ],
+                         *       "shouldRequirements": [
+                         *         {
+                         *           "name": "Experience with Jetpack Compose",
+                         *           "details": null
+                         *         },
+                         *         {
+                         *           "name": "Familiarity with CI/CD pipelines",
+                         *           "details": null
+                         *         },
+                         *         {
+                         *           "name": "Previous fintech application experience",
+                         *           "details": null
+                         *         }
+                         *       ]
+                         *     } */
+                        "application/json": components["schemas"]["ProjectRequestResponseDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get stored customer project request by id */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Project request */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectRequestResponseDto"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Close a project request */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Project request closed successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectRequestDto"];
+                    };
+                };
+                /** @description Project request not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests/{id}/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger AI analysis for a project request */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Analysis completed successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectRequestDto"];
+                    };
+                };
+                /** @description Project request not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests/{id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get AI suggestions for a project request */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description AI suggestions for the project request */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AISuggestionDto"][];
+                    };
+                };
+                /** @description Project request not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cv-score/{candidateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get CV score for a candidate */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    candidateId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Candidate CV score */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CvScoreDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        /**
+         * Trigger scoring for single candidate
+         * @description Runs CV scoring for the specified candidate and stores/returns the latest score.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    candidateId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Updated candidate CV score */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CvScoreDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cv-score/run/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger scoring for all consultants */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Scoring summary */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CvScoringRunResponse"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cv-score/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all candidates (summary) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Candidates */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CandidateDTO"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analytics/programming-languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Programming languages stats */
+        get: {
+            parameters: {
+                query?: {
+                    languages?: string[];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of language stats */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            language?: string;
+                            consultantCount?: number;
+                            /** Format: double */
+                            percentage?: number;
+                            aggregatedYears?: number;
+                        }[];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analytics/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Role stats */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of role stats */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            role?: string;
+                            consultantCount?: number;
+                            /** Format: double */
+                            percentage?: number;
+                        }[];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -1147,21 +1691,105 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        AnthropicUsageResponse: {
+        /** @enum {string} */
+        CoverageStatus: "GREEN" | "YELLOW" | "RED" | "NEUTRAL";
+        MatchesListItemDto: {
             /** Format: int64 */
-            inputTokens?: number;
+            id: number;
+            title?: string | null;
+            customerName?: string | null;
+            /** Format: date-time */
+            date?: string | null;
+            /** Format: date-time */
+            deadlineDate?: string | null;
             /** Format: int64 */
-            outputTokens?: number;
+            hitCount: number;
+            coverageStatus: components["schemas"]["CoverageStatus"];
+            coverageLabel: string;
+        };
+        PagedMatchesListDto: {
+            content?: components["schemas"]["MatchesListItemDto"][];
             /** Format: int64 */
-            cacheCreationTokens?: number;
-            /** Format: int64 */
-            cacheReadTokens?: number;
-            /** Format: int64 */
-            totalInputTokens?: number;
+            totalElements?: number;
+            totalPages?: number;
+            currentPage?: number;
+            pageSize?: number;
+            hasNext?: boolean;
+            hasPrevious?: boolean;
+        };
+        MatchConsultantDto: {
+            userId: string;
+            name: string;
+            cvId: string;
             /** Format: double */
-            cacheHitRate?: number;
-            /** Format: double */
-            estimatedCostUsd?: number;
+            relevanceScore: number;
+            justification?: string | null;
+        };
+        RelationalSearchRequest: {
+            /** @description Name filter (contains match) */
+            name?: string;
+            /** @description Skills that must ALL be present (AND condition) */
+            skillsAll?: string[];
+            /** @description Skills where ANY can be present (OR condition) */
+            skillsAny?: string[];
+            /** @description Minimum CV quality score (0–100). Candidates without a score are treated as 0 for filtering. */
+            minQualityScore?: number;
+            /**
+             * @description Only include active CVs
+             * @default false
+             */
+            onlyActiveCv: boolean;
+            pagination?: components["schemas"]["PaginationDto"];
+        };
+        SemanticSearchRequest: {
+            /** @description Natural language search text */
+            text: string;
+            /**
+             * @description Embedding provider (must match server configuration)
+             * @default GOOGLE_GEMINI
+             */
+            provider: string;
+            /**
+             * @description Embedding model (must match server configuration)
+             * @default text-embedding-004
+             */
+            model: string;
+            /**
+             * @description Maximum number of results to return
+             * @default 10
+             */
+            topK: number;
+            /** @description Minimum CV quality score (0–100). Candidates without a score are treated as 0 for filtering. */
+            minQualityScore?: number;
+            /**
+             * @description Only include active CVs
+             * @default false
+             */
+            onlyActiveCv: boolean;
+            pagination?: components["schemas"]["PaginationDto"];
+        };
+        EmbeddingProviderInfo: {
+            /** @description Whether semantic search is available */
+            enabled: boolean;
+            /** @description Name of the embedding provider */
+            provider: string;
+            /** @description Name of the embedding model */
+            model: string;
+            /** @description Vector dimension of the embeddings */
+            dimension: number;
+        };
+        /** @enum {string} */
+        Skill: "BACKEND" | "FRONTEND" | "JAVA" | "KOTLIN" | "REACT" | "TYPESCRIPT" | "ARCHITECTURE";
+        SkillInCompanyDto: {
+            name: string;
+            /** @description Number of consultants with this skill (preferred) */
+            consultantCount?: number;
+            /**
+             * @deprecated
+             * @description Number of consultants with this skill (deprecated)
+             */
+            konsulenterMedSkill: number;
+            konsulenter: components["schemas"]["ConsultantSummaryDto"][];
         };
         AIAnalysisRequest: {
             /** @description Content to analyze */
@@ -1170,34 +1798,6 @@ export interface components {
         AIResponseModel: {
             content?: string;
             modelUsed?: string;
-        };
-        RagChatRequest: {
-            message: string;
-            /** @default 4 */
-            topK: number;
-            /**
-             * Format: double
-             * @default 0.7
-             */
-            similarityThreshold: number;
-            filter?: string | null;
-        };
-        RagChatResponse: {
-            answer?: string;
-            sources?: components["schemas"]["SourceDocument"][];
-        };
-        SourceDocument: {
-            id?: string | null;
-            contentPreview?: string;
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
-        RagIngestRequest: {
-            /** Format: int64 */
-            candidateId: number;
-            name?: string | null;
-            cvText: string;
         };
         ConsultantSummaryDto: {
             userId: string;
@@ -1209,11 +1809,19 @@ export interface components {
         };
         PageConsultantSummaryDto: {
             content?: components["schemas"]["ConsultantSummaryDto"][];
-            /** Format: int64 */
-            totalElements?: number;
-            totalPages?: number;
+            /** @description Page number (0-indexed) */
             number?: number;
             size?: number;
+            totalElements?: number;
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
+            sort?: {
+                [key: string]: unknown;
+            };
+            pageable?: {
+                [key: string]: unknown;
+            };
         };
         ConsultantWithCvDto: {
             /** Format: int64 */
@@ -1221,6 +1829,7 @@ export interface components {
             userId: string;
             name: string;
             cvId: string;
+            /** @description Top 3 skills for the consultant when available */
             skills: string[];
             cvs: components["schemas"]["ConsultantCvDto"][];
         };
@@ -1228,9 +1837,9 @@ export interface components {
             /** Format: int64 */
             id?: number | null;
             versionTag?: string | null;
+            /** @description CV quality score (0–100); populated from cv_score.score_percent. May be null when no score exists. */
             qualityScore?: number | null;
             active: boolean;
-            industries: string[];
             keyQualifications?: components["schemas"]["KeyQualificationDto"][];
             education?: components["schemas"]["EducationDto"][];
             workExperience?: components["schemas"]["WorkExperienceDto"][];
@@ -1240,6 +1849,7 @@ export interface components {
             languages?: components["schemas"]["LanguageDto"][];
             skillCategories?: components["schemas"]["SkillCategoryDto"][];
             attachments?: components["schemas"]["AttachmentDto"][];
+            industries?: string[];
         };
         KeyQualificationDto: {
             label?: string | null;
@@ -1294,141 +1904,39 @@ export interface components {
             fileName?: string | null;
             url?: string | null;
         };
-        PageResponseConsultantWithCvDto: {
-            content?: components["schemas"]["ConsultantWithCvDto"][];
-            /** Format: int64 */
-            totalElements?: number;
-            totalPages?: number;
-            number?: number;
-            size?: number;
-        };
         PageConsultantWithCvDto: {
             content?: components["schemas"]["ConsultantWithCvDto"][];
-            /** Format: int64 */
-            totalElements?: number;
-            totalPages?: number;
             number?: number;
             size?: number;
-        };
-        RelationalSearchRequest: {
-            name?: string | null;
-            skillsAll?: string[];
-            skillsAny?: string[];
-            minQualityScore?: number | null;
-            /** @default false */
-            onlyActiveCv: boolean;
-            pagination?: components["schemas"]["PaginationDto"];
-        };
-        SemanticSearchRequest: {
-            text: string;
-            /** @default GOOGLE_GEMINI */
-            provider: string;
-            /** @default gemini-embedding-001 */
-            model: string;
-            /** @default 10 */
-            topK: number;
-            minQualityScore?: number | null;
-            /** @default false */
-            onlyActiveCv: boolean;
-            pagination?: components["schemas"]["PaginationDto"];
-        };
-        PaginationDto: {
-            /** @default 0 */
-            page: number;
-            /** @default 10 */
-            size: number;
-            sort?: string[];
-        };
-        EmbeddingProviderInfo: {
-            providerName?: string;
-            modelName?: string;
-            dimension?: number;
-            enabled?: boolean;
-        };
-        ProjectRequestSummaryDto: {
-            /** Format: int64 */
-            id: number;
-            title?: string | null;
-            customerName: string;
-            /** Format: date-time */
-            createdAt: string;
-        };
-        PagedMatchesListDto: {
-            content?: components["schemas"]["MatchesListItemDto"][];
-            /** Format: int64 */
             totalElements?: number;
             totalPages?: number;
-            currentPage?: number;
-            pageSize?: number;
-            hasNext?: boolean;
-            hasPrevious?: boolean;
+            first?: boolean;
+            last?: boolean;
+            sort?: {
+                [key: string]: unknown;
+            };
+            pageable?: {
+                [key: string]: unknown;
+            };
         };
-        MatchesListItemDto: {
-            /** Format: int64 */
-            id: number;
-            title?: string | null;
-            customerName?: string | null;
-            /** Format: date-time */
-            date?: string | null;
-            /** Format: date-time */
-            deadlineDate?: string | null;
-            /** Format: int64 */
-            hitCount: number;
-            coverageStatus: components["schemas"]["CoverageStatus"];
-            coverageLabel: string;
+        /** @description Arbitrary CV JSON structure from Flowcase (includes optional displayName when available) */
+        CvData: {
+            /** @description Human-friendly name derived from consultant record */
+            displayName?: string;
+        } & {
+            [key: string]: unknown;
         };
-        /** @enum {string} */
-        CoverageStatus: "GREEN" | "YELLOW" | "RED" | "NEUTRAL";
-        MatchConsultantDto: {
+        EmbeddingJasonRunResponse: {
+            processedJason?: boolean;
+        };
+        EmbeddingUserCvRunResponse: {
             userId: string;
-            name: string;
             cvId: string;
-            /** Format: double */
-            relevanceScore: number;
-            justification?: string | null;
+            processed: boolean;
         };
-        TriggerMatchingResponse: {
-            /** Format: int64 */
-            projectRequestId: number;
-            status: string;
-            message: string;
-            jobId?: string | null;
-        };
-        MatchStatusDto: {
-            /** @description PENDING|RUNNING|COMPLETED|FAILED */
-            status: string;
-            /** Format: date-time */
-            lastUpdated?: string | null;
-            error?: string | null;
-        };
-        ProjectRequestResponseDto: {
-            /** Format: int64 */
-            id?: number;
-            customerName?: string;
-            title?: string;
-            summary?: string;
-            originalFilename?: string;
-            mustRequirements?: components["schemas"]["ProjectRequirementDto"][];
-            shouldRequirements?: components["schemas"]["ProjectRequirementDto"][];
-        };
-        ProjectRequirementDto: {
-            name: string;
-            details?: string;
-        };
-        CvScoreDto: {
-            candidateId: string;
-            scorePercent: number;
-            summary: string;
-            strengths: string[];
-            potentialImprovements: string[];
-        };
-        CandidateDTO: {
-            id: string;
-            name: string;
-            birthYear: number;
-        };
-        CvScoringRunResponse: {
-            processedCount: number;
+        EmbeddingRunMissingResponse: {
+            processedCount?: number;
+            batchSize?: number;
         };
         HealthResponse: {
             /** @enum {string} */
@@ -1437,16 +1945,435 @@ export interface components {
                 [key: string]: string;
             };
         };
-        SkillInCompanyDto: {
-            name: string;
-            konsulenterMedSkill: number;
-            konsulenter: components["schemas"]["ConsultantSummaryDto"][];
+        MatchApiRequest: {
+            /** @description Project request text/requirements */
+            projectRequestText: string;
         };
+        SkillsRequest: {
+            skills: string[];
+        };
+        CandidateMatchResponse: {
+            /** @description Overall match score (string in current implementation) */
+            totalScore: string;
+            summary: string;
+            matchTimeSeconds?: number;
+            requirements?: components["schemas"]["Requirement"][];
+        };
+        Requirement: {
+            name: string;
+            comment: string;
+            score: string;
+        };
+        CandidateDTO: {
+            id: string;
+            name: string;
+            birthYear: number;
+        };
+        CvScoreDto: {
+            candidateId: string;
+            scorePercent: number;
+            summary: string;
+            strengths: string[];
+            potentialImprovements: string[];
+        };
+        CvScoringRunResponse: {
+            processedCount: number;
+        };
+        ProjectRequestResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            /** @description Customer name extracted from the document */
+            customerName?: string;
+            /** @description Title/subject derived from the document */
+            title?: string;
+            /** @description AI-generated summary of the project request */
+            summary?: string;
+            /** @description Original filename of the uploaded PDF */
+            originalFilename?: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when the document was uploaded
+             */
+            uploadedAt?: string;
+            /**
+             * Format: date-time
+             * @description Project deadline extracted from the document (if available)
+             */
+            deadlineDate?: string;
+            /** @description Critical requirements that must be met */
+            mustRequirements?: components["schemas"]["ProjectRequirementDto"][];
+            /** @description Preferred requirements that would be beneficial */
+            shouldRequirements?: components["schemas"]["ProjectRequirementDto"][];
+        };
+        ProjectRequirementDto: {
+            name: string;
+            details?: string;
+        };
+        PagedProjectRequestResponseDto: {
+            content?: components["schemas"]["ProjectRequestResponseDto"][];
+            /** Format: int64 */
+            totalElements?: number;
+            totalPages?: number;
+            currentPage?: number;
+            pageSize?: number;
+            hasNext?: boolean;
+            hasPrevious?: boolean;
+        };
+        CreateProjectRequestDto: {
+            customerName: string;
+            requiredSkills: ("KOTLIN" | "JAVA" | "PYTHON" | "JAVASCRIPT" | "TYPESCRIPT" | "REACT" | "ANGULAR" | "VUE" | "SPRING_BOOT" | "BACKEND" | "FRONTEND" | "FULLSTACK" | "AZURE" | "AWS" | "DOCKER" | "KUBERNETES")[];
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: string;
+            /** Format: date-time */
+            responseDeadline: string;
+            /**
+             * @default OPEN
+             * @enum {string}
+             */
+            status: "OPEN" | "IN_PROGRESS" | "CLOSED";
+            requestDescription: string;
+            /** Format: email */
+            responsibleSalespersonEmail: string;
+        };
+        ProjectRequestDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            customerId?: number;
+            customerName: string;
+            requiredSkills: string[];
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: string;
+            /** Format: date-time */
+            responseDeadline: string;
+            /** @enum {string} */
+            status: "OPEN" | "IN_PROGRESS" | "CLOSED";
+            requestDescription: string;
+            /** Format: email */
+            responsibleSalespersonEmail: string;
+            aiSuggestions?: components["schemas"]["AISuggestionDto"][];
+        };
+        AISuggestionDto: {
+            /** Format: int64 */
+            id?: number;
+            consultantName: string;
+            userId: string;
+            cvId: string;
+            /** Format: double */
+            matchScore: number;
+            justification: string;
+            /** Format: date-time */
+            createdAt: string;
+            skills?: string[];
+        };
+        PaginationDto: {
+            /**
+             * @description Page number (0-indexed)
+             * @default 0
+             */
+            page: number;
+            /**
+             * @description Number of items per page
+             * @default 10
+             */
+            size: number;
+            /** @description Sort specifications (e.g. "name,asc", "id,desc") */
+            sort?: string[];
+        };
+        /** @description Generic error payload */
         Problem: {
             status?: number;
             error?: string;
             message?: string;
             path?: string;
+        };
+        ChatSearchRequest: {
+            /**
+             * @description Optional conversation ID to maintain context
+             * @example conv-123
+             */
+            conversationId?: string;
+            /**
+             * @description Optional consultant userId to target the query (used to bias or provide RAG context)
+             * @example thomas.andersen
+             */
+            consultantId?: string;
+            /**
+             * @description Optional CV/resume id for the selected consultant; used to include CV JSON as context to the AI
+             * @example default
+             */
+            cvId?: string;
+            /**
+             * @description Natural language search text
+             * @example Find consultants who know Kotlin and Spring
+             */
+            text: string;
+            /**
+             * @description Force a specific search mode
+             * @example STRUCTURED
+             * @enum {string}
+             */
+            forceMode?: "STRUCTURED" | "SEMANTIC" | "HYBRID" | "RAG";
+            /**
+             * @description Maximum number of results to return
+             * @default 10
+             * @example 10
+             */
+            topK: number;
+        };
+        ChatSearchResponse: {
+            /**
+             * @description Search mode used
+             * @example STRUCTURED
+             * @enum {string}
+             */
+            mode: "STRUCTURED" | "SEMANTIC" | "HYBRID" | "RAG";
+            /** @description Search results (for structured/semantic/hybrid modes) */
+            results?: components["schemas"]["SearchResult"][];
+            /**
+             * @description Generated answer text (for RAG mode)
+             * @example Based on the consultant's CV...
+             */
+            answer?: string;
+            /** @description Sources used for RAG answers */
+            sources?: components["schemas"]["RAGSource"][];
+            /**
+             * @description Response time in milliseconds
+             * @example 1250
+             */
+            latencyMs: number;
+            /** @description Optional debug information */
+            debug?: components["schemas"]["DebugInfo"];
+            /** @description Conversation ID for follow-up queries */
+            conversationId?: string;
+            scoring?: components["schemas"]["ScoringInfo"];
+        };
+        SearchResult: {
+            /** @description Consultant userId */
+            consultantId: string;
+            /**
+             * @description Consultant name
+             * @example Thomas Andersen
+             */
+            name: string;
+            /**
+             * Format: double
+             * @description Relevance score (0-1)
+             * @example 0.87
+             */
+            score: number;
+            /** @description Text highlights from matching */
+            highlights?: string[];
+            /** @description Additional metadata */
+            meta?: {
+                [key: string]: unknown;
+            };
+        };
+        RAGSource: {
+            /** @description Consultant userId */
+            consultantId: string;
+            /** @description Consultant name */
+            consultantName: string;
+            /** @description Chunk identifier */
+            chunkId: string;
+            /** @description Source text excerpt */
+            text: string;
+            /**
+             * Format: double
+             * @description Relevance score
+             * @example 0.92
+             */
+            score: number;
+            /**
+             * @description CV section location
+             * @example Experience
+             */
+            location?: string;
+        };
+        DebugInfo: {
+            /** @description Query interpretation details */
+            interpretation?: components["schemas"]["QueryInterpretation"];
+            /** @description Timing breakdown */
+            timings?: {
+                [key: string]: number;
+            };
+            /** @description Additional debug data */
+            extra?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description HYBRID scoring weights and formula */
+        ScoringInfo: {
+            /**
+             * Format: double
+             * @example 0.7
+             */
+            semanticWeight?: number;
+            /**
+             * Format: double
+             * @example 0.3
+             */
+            qualityWeight?: number;
+            /** @example combined = semanticWeight * semanticScore + qualityWeight * qualityScore */
+            formula?: string;
+        };
+        QueryInterpretation: {
+            /**
+             * @description Determined search route
+             * @example STRUCTURED
+             * @enum {string}
+             */
+            route: "STRUCTURED" | "SEMANTIC" | "HYBRID" | "RAG";
+            /** @description Extracted structured search criteria */
+            structured?: components["schemas"]["StructuredCriteria"];
+            /**
+             * @description Semantic search text
+             * @example experienced fullstack developer
+             */
+            semanticText?: string;
+            /**
+             * @description Detected consultant name
+             * @example Thomas Andersen
+             */
+            consultantName?: string;
+            /**
+             * @description RAG question
+             * @example What is his experience with React?
+             */
+            question?: string;
+            /** @description Confidence scores for the interpretation */
+            confidence: components["schemas"]["ConfidenceScores"];
+        };
+        StructuredCriteria: {
+            /**
+             * @description Skills that must all be present
+             * @example [
+             *       "kotlin",
+             *       "spring"
+             *     ]
+             */
+            skillsAll?: string[];
+            /**
+             * @description Skills where at least one must be present
+             * @example [
+             *       "architecture",
+             *       "tech lead"
+             *     ]
+             */
+            skillsAny?: string[];
+            /**
+             * @description Required roles or positions
+             * @example [
+             *       "senior developer",
+             *       "tech lead"
+             *     ]
+             */
+            roles?: string[];
+            /**
+             * @description Minimum quality score
+             * @example 85
+             */
+            minQualityScore?: number;
+            /** @description Location requirements */
+            locations?: string[];
+            /**
+             * @description Availability requirements
+             * @example available
+             */
+            availability?: string;
+        };
+        ConfidenceScores: {
+            /**
+             * Format: double
+             * @description Confidence in route selection (0-1)
+             * @example 0.87
+             */
+            route: number;
+            /**
+             * Format: double
+             * @description Confidence in criteria extraction (0-1)
+             * @example 0.92
+             */
+            extraction: number;
+        };
+        ProjectRequestSummaryDto: {
+            /**
+             * Format: int64
+             * @description Project request ID
+             */
+            id: number;
+            /** @description Truncated project description */
+            title?: string | null;
+            /** @description Customer name */
+            customerName: string;
+            /**
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            createdAt: string;
+        };
+        MatchCandidateDto: {
+            /**
+             * Format: int64
+             * @description Consultant ID
+             */
+            consultantId: number;
+            /** @description Consultant name */
+            consultantName: string;
+            /** @description Consultant user ID */
+            userId: string;
+            /** @description CV ID */
+            cvId?: string | null;
+            /**
+             * Format: double
+             * @description Match score between 0 and 1
+             */
+            matchScore: number;
+            /** @description AI-generated explanation of the match */
+            matchExplanation?: string | null;
+            /**
+             * Format: date-time
+             * @description When the match was computed
+             */
+            createdAt: string;
+        };
+        MatchTop10Response: {
+            /**
+             * Format: int64
+             * @description Project request ID
+             */
+            projectRequestId: number;
+            /** @description Truncated project title */
+            projectTitle?: string | null;
+            /** @description Total number of matches computed */
+            totalMatches: number;
+            /** @description Top consultant matches sorted by score */
+            matches: components["schemas"]["MatchCandidateDto"][];
+            /**
+             * Format: date-time
+             * @description When matches were last computed
+             */
+            lastUpdated?: string | null;
+        };
+        TriggerMatchingResponse: {
+            /**
+             * Format: int64
+             * @description Project request ID
+             */
+            projectRequestId: number;
+            /**
+             * @description Status of the matching operation
+             * @enum {string}
+             */
+            status: "TRIGGERED" | "PENDING" | "COMPLETED" | "ERROR";
+            /** @description Human-readable status message */
+            message: string;
+            /** @description Job ID for tracking the matching operation */
+            jobId?: string | null;
         };
     };
     responses: {
@@ -1467,8 +2394,6 @@ export interface components {
         SizeParam: number;
         /** @description Sort field(s), e.g. `name,asc`. Repeat for multi-sort. */
         SortParam: string[];
-        /** @description Optional AI provider override (e.g. ANTHROPIC) */
-        AiProviderParam: "ANTHROPIC" | "OPENAI" | "GOOGLE_GEMINI";
     };
     requestBodies: never;
     headers: never;
@@ -1485,6 +2410,24 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /** @example {
+                 *       "name": "kotlin",
+                 *       "skillsAll": [
+                 *         "KOTLIN"
+                 *       ],
+                 *       "skillsAny": [
+                 *         "BACKEND"
+                 *       ],
+                 *       "minQualityScore": 70,
+                 *       "onlyActiveCv": true,
+                 *       "pagination": {
+                 *         "page": 0,
+                 *         "size": 10,
+                 *         "sort": [
+                 *           "name,asc"
+                 *         ]
+                 *       }
+                 *     } */
                 "application/json": components["schemas"]["RelationalSearchRequest"];
             };
         };
@@ -1498,6 +2441,13 @@ export interface operations {
                     "application/json": components["schemas"]["PageConsultantWithCvDto"];
                 };
             };
+            /** @description Invalid search criteria */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             default: components["responses"]["ErrorResponse"];
         };
     };
@@ -1510,11 +2460,26 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /** @example {
+                 *       "text": "Senior Kotlin developer with Spring experience",
+                 *       "provider": "GOOGLE_GEMINI",
+                 *       "model": "text-embedding-004",
+                 *       "topK": 5,
+                 *       "minQualityScore": 80,
+                 *       "onlyActiveCv": true,
+                 *       "pagination": {
+                 *         "page": 0,
+                 *         "size": 10,
+                 *         "sort": [
+                 *           "name,asc"
+                 *         ]
+                 *       }
+                 *     } */
                 "application/json": components["schemas"]["SemanticSearchRequest"];
             };
         };
         responses: {
-            /** @description Paged semantically similar consultants */
+            /** @description Top-K semantically similar consultants */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1523,57 +2488,19 @@ export interface operations {
                     "application/json": components["schemas"]["PageConsultantWithCvDto"];
                 };
             };
-            default: components["responses"]["ErrorResponse"];
-        };
-    };
-    runScoreForCandidate: {
-        parameters: {
-            query?: {
-                /** @description Optional AI provider override (e.g. ANTHROPIC) */
-                aiProvider?: components["parameters"]["AiProviderParam"];
-            };
-            header?: never;
-            path: {
-                candidateId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Updated candidate CV score */
-            200: {
+            /** @description Invalid search criteria */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["CvScoreDto"];
-                };
+                content?: never;
             };
-            default: components["responses"]["ErrorResponse"];
-        };
-    };
-    recalculateScoreForCandidate: {
-        parameters: {
-            query?: {
-                /** @description Optional AI provider override (e.g. ANTHROPIC) */
-                aiProvider?: components["parameters"]["AiProviderParam"];
-            };
-            header?: never;
-            path: {
-                candidateId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Recalculated candidate CV score */
-            200: {
+            /** @description Embedding provider disabled or not configured */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["CvScoreDto"];
-                };
+                content?: never;
             };
             default: components["responses"]["ErrorResponse"];
         };
