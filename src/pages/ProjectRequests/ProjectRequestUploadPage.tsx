@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
-import { Box, Button, Container, LinearProgress, Paper, Stack, Typography, Table, TableBody, TableCell, TableHead, TableRow, Alert, TableSortLabel } from '@mui/material';
+import { Box, Button, Collapse, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, LinearProgress, Paper, Stack, Typography, Table, TableBody, TableCell, TableHead, TableRow, Alert, TableSortLabel } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import type { ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
-import { uploadProjectRequest, listProjectRequestsPaged, getProjectRequestById } from '../../services/projectRequestsService';
+import { uploadProjectRequest, listProjectRequestsPaged, getProjectRequestById, deleteProjectRequest } from '../../services/projectRequestsService';
 
 const ProjectRequestUploadPage: React.FC = () => {
   const theme = useTheme();
@@ -15,6 +17,10 @@ const ProjectRequestUploadPage: React.FC = () => {
   const [existing, setExisting] = useState<ProjectRequestResponseDto[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [openingId, setOpeningId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [detailsById, setDetailsById] = useState<Record<number, ProjectRequestResponseDto>>({});
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; label: string } | null>(null);
   const [sortField, setSortField] = useState<'uploadedAt' | 'customerName' | 'summary' | 'deadlineDate' | 'status'>('uploadedAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -91,20 +97,61 @@ const ProjectRequestUploadPage: React.FC = () => {
     return arr;
   }, [existing, sortField, sortDir]);
 
-  const displayTitle = useMemo(() => deriveDisplayTitle(result), [result]);
-
   const onOpenDetails = async (id: number) => {
-    setOpeningId(id);
+    // Toggle: clicking an already-open row collapses it.
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
     setError(null);
+    // Use cached details when available; otherwise fetch once.
+    if (detailsById[id]) {
+      setExpandedId(id);
+      return;
+    }
+    setOpeningId(id);
     try {
       const dto = await getProjectRequestById(id);
       if (dto) {
-        setResult(dto);
+        setDetailsById((prev) => ({ ...prev, [id]: dto }));
+        setExpandedId(id);
       }
     } catch {
       setError('Kunne ikke hente detaljer for valgt forespørsel.');
     } finally {
       setOpeningId(null);
+    }
+  };
+
+  const requestDelete = (id: number, label: string) => {
+    setPendingDelete({ id, label });
+  };
+
+  const cancelDelete = () => {
+    if (deletingId != null) return;
+    setPendingDelete(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const { id } = pendingDelete;
+    setDeletingId(id);
+    setError(null);
+    try {
+      await deleteProjectRequest(id);
+      setExisting((prev) => prev.filter((r) => r.id !== id));
+      setDetailsById((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      if (expandedId === id) setExpandedId(null);
+      if (result?.id === id) setResult(null);
+      setPendingDelete(null);
+    } catch {
+      setError('Kunne ikke slette forespørselen. Prøv igjen senere.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -221,38 +268,73 @@ const ProjectRequestUploadPage: React.FC = () => {
                   Svarfrist
                 </TableSortLabel>
               </TableCell>
-              <TableCell width={110}>Detaljer</TableCell>
+              <TableCell width={170}>Handlinger</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedExisting.map((r) => (
-              <TableRow
-                key={r.id ?? Math.random()}
-                hover
-                sx={{ cursor: r.id ? 'pointer' : 'default' }}
-                onClick={() => {
-                  if (r.id != null) onOpenDetails(r.id);
-                }}
-              >
-                <TableCell>{r.uploadedAt ? new Date(r.uploadedAt).toLocaleString('no-NO') : '-'}</TableCell>
-                <TableCell>{r.customerName ?? '-'}</TableCell>
-                <TableCell>{r.summary ? (r.summary.length > 120 ? r.summary.slice(0, 120) + '…' : r.summary) : '-'}</TableCell>
-                <TableCell>{(r as unknown as { status?: string }).status ?? '-'}</TableCell>
-                <TableCell>{r.deadlineDate ? new Date(r.deadlineDate).toLocaleDateString('no-NO') : '-'}</TableCell>
-                <TableCell>
-                  <Button
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
+            {sortedExisting.map((r) => {
+              const isExpanded = r.id != null && expandedId === r.id;
+              const detail = r.id != null ? detailsById[r.id] : undefined;
+              return (
+                <React.Fragment key={r.id ?? Math.random()}>
+                  <TableRow
+                    hover
+                    selected={isExpanded}
+                    sx={{ cursor: r.id ? 'pointer' : 'default', '& > *': { borderBottom: isExpanded ? 'unset' : undefined } }}
+                    onClick={() => {
                       if (r.id != null) onOpenDetails(r.id);
                     }}
-                    disabled={r.id == null || openingId === r.id}
                   >
-                    {openingId === r.id ? 'Åpner…' : 'Åpne'}
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                    <TableCell>{r.uploadedAt ? new Date(r.uploadedAt).toLocaleString('no-NO') : '-'}</TableCell>
+                    <TableCell>{r.customerName ?? '-'}</TableCell>
+                    <TableCell>{r.summary ? (r.summary.length > 120 ? r.summary.slice(0, 120) + '…' : r.summary) : '-'}</TableCell>
+                    <TableCell>{(r as unknown as { status?: string }).status ?? '-'}</TableCell>
+                    <TableCell>{r.deadlineDate ? new Date(r.deadlineDate).toLocaleDateString('no-NO') : '-'}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={0.5}>
+                        <Button
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (r.id != null) onOpenDetails(r.id);
+                          }}
+                          disabled={r.id == null || openingId === r.id}
+                        >
+                          {openingId === r.id ? 'Åpner…' : isExpanded ? 'Lukk' : 'Åpne'}
+                        </Button>
+                        <Button
+                          size="small"
+                          color="error"
+                          startIcon={<DeleteOutlineIcon />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (r.id != null) requestDelete(r.id, r.customerName || r.title || `#${r.id}`);
+                          }}
+                          disabled={r.id == null || deletingId === r.id}
+                        >
+                          {deletingId === r.id ? 'Sletter…' : 'Slett'}
+                        </Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} sx={{ py: 0, borderBottom: isExpanded ? undefined : 'none' }}>
+                      <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                        <Box sx={{ py: 2 }}>
+                          {detail ? (
+                            <ProjectRequestDetails
+                              dto={detail}
+                              deleting={r.id != null && deletingId === r.id}
+                              onDelete={r.id != null ? () => requestDelete(r.id as number, r.customerName || r.title || `#${r.id}`) : undefined}
+                            />
+                          ) : null}
+                        </Box>
+                      </Collapse>
+                    </TableCell>
+                  </TableRow>
+                </React.Fragment>
+              );
+            })}
             {(!sortedExisting || sortedExisting.length === 0) && (
               <TableRow>
                 <TableCell colSpan={6}>
@@ -269,44 +351,117 @@ const ProjectRequestUploadPage: React.FC = () => {
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, letterSpacing: '-0.01em' }}>
             Resultat
           </Typography>
-          <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap' }}>
-            <Typography variant="body2"><strong>ID:</strong> {result.id ?? '-'}</Typography>
-            <Typography variant="body2"><strong>Filnavn:</strong> {result.originalFilename ?? '-'}</Typography>
-            <Typography variant="body2"><strong>Kunde:</strong> {result.customerName ?? '-'}</Typography>
-            <Typography variant="body2"><strong>Tittel:</strong> {displayTitle}</Typography>
-          </Stack>
-          {result.summary && (
-            <Box sx={{ mb: 2 }}>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 700,
-                  mb: 0.5,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  color: 'text.secondary',
-                }}
-              >
-                Oppsummering
-              </Typography>
-              <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>{result.summary}</Typography>
-            </Box>
-          )}
-
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
-            <Typography variant="body2"><strong>Analysert:</strong> {result.uploadedAt ? new Date(result.uploadedAt).toLocaleString('no-NO') : '-'}</Typography>
-            <Typography variant="body2"><strong>Svarfrist:</strong> {result.deadlineDate ? new Date(result.deadlineDate).toLocaleDateString('no-NO') : '-'}</Typography>
-          </Stack>
-
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <RequirementPanel title="Må-krav" rows={result.mustRequirements ?? []} tone="must" />
-            <RequirementPanel title="Bør-krav" rows={result.shouldRequirements ?? []} tone="should" />
-          </Stack>
+          <ProjectRequestDetails
+            dto={result}
+            deleting={result.id != null && deletingId === result.id}
+            onDelete={result.id != null ? () => requestDelete(result.id as number, result.customerName || result.title || `#${result.id}`) : undefined}
+          />
         </Paper>
       )}
+
+      <Dialog
+        open={pendingDelete != null}
+        onClose={cancelDelete}
+        aria-labelledby="delete-request-title"
+        aria-describedby="delete-request-description"
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle id="delete-request-title" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <WarningAmberIcon color="error" />
+          Slette prosjektforespørsel?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-request-description" component="div">
+            Du er i ferd med å slette
+            {pendingDelete ? <strong> «{pendingDelete.label}»</strong> : ' forespørselen'}.
+            <Box component="p" sx={{ mt: 1.5, mb: 0 }}>
+              Denne forespørselen kan være knyttet til matchende konsulenter. Sletting fjerner
+              forespørselen og tilknyttede matcher permanent, og <strong>kan ikke angres</strong>.
+            </Box>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={cancelDelete} disabled={deletingId != null} color="inherit">
+            Avbryt
+          </Button>
+          <Button
+            onClick={confirmDelete}
+            color="error"
+            variant="contained"
+            startIcon={<DeleteOutlineIcon />}
+            disabled={deletingId != null}
+          >
+            {deletingId != null ? 'Sletter…' : 'Slett forespørsel'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
+
+function ProjectRequestDetails({
+  dto,
+  onDelete,
+  deleting = false,
+}: {
+  dto: ProjectRequestResponseDto;
+  onDelete?: () => void;
+  deleting?: boolean;
+}) {
+  const displayTitle = deriveDisplayTitle(dto);
+  return (
+    <>
+      <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap' }}>
+        <Typography variant="body2"><strong>ID:</strong> {dto.id ?? '-'}</Typography>
+        <Typography variant="body2"><strong>Filnavn:</strong> {dto.originalFilename ?? '-'}</Typography>
+        <Typography variant="body2"><strong>Kunde:</strong> {dto.customerName ?? '-'}</Typography>
+        <Typography variant="body2"><strong>Tittel:</strong> {displayTitle}</Typography>
+      </Stack>
+      {dto.summary && (
+        <Box sx={{ mb: 2 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 700,
+              mb: 0.5,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: 'text.secondary',
+            }}
+          >
+            Oppsummering
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>{dto.summary}</Typography>
+        </Box>
+      )}
+
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
+        <Typography variant="body2"><strong>Analysert:</strong> {dto.uploadedAt ? new Date(dto.uploadedAt).toLocaleString('no-NO') : '-'}</Typography>
+        <Typography variant="body2"><strong>Svarfrist:</strong> {dto.deadlineDate ? new Date(dto.deadlineDate).toLocaleDateString('no-NO') : '-'}</Typography>
+      </Stack>
+
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+        <RequirementPanel title="Må-krav" rows={dto.mustRequirements ?? []} tone="must" />
+        <RequirementPanel title="Bør-krav" rows={dto.shouldRequirements ?? []} tone="should" />
+      </Stack>
+
+      {onDelete && (
+        <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
+          <Button
+            color="error"
+            variant="outlined"
+            startIcon={<DeleteOutlineIcon />}
+            onClick={onDelete}
+            disabled={deleting}
+          >
+            {deleting ? 'Sletter…' : 'Slett forespørsel'}
+          </Button>
+        </Stack>
+      )}
+    </>
+  );
+}
 
 function RequirementPanel({
   title,

@@ -45,9 +45,10 @@ const routes: RouteObject[] = [
   }
 ];
 
+// Note: v7_startTransition is a RouterProvider future flag (set in main.tsx),
+// not a createBrowserRouter option. Only data-router flags belong here.
 const options = {
   future: {
-    v7_startTransition: true,
     v7_relativeSplatPath: true,
   },
 } as const;

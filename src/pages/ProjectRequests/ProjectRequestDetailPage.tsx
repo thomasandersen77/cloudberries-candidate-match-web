@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Container, Paper, Stack, Typography, Table, TableHead, TableRow, TableCell, TableBody, LinearProgress, Button, Box, Chip } from '@mui/material';
 import type { ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
 import { getProjectRequestById, analyzeProjectRequest, getProjectRequestSuggestions, closeProjectRequest } from '../../services/projectRequestsService';
+import HighQualityToggle from '../../components/HighQualityToggle';
 
 const ProjectRequestDetailPage: React.FC = () => {
   const { id } = useParams();
@@ -11,6 +12,8 @@ const ProjectRequestDetailPage: React.FC = () => {
   const [suggestions, setSuggestions] = useState<Array<{ consultantName: string; userId: string; cvId: string; matchScore: number; justification: string; createdAt: string; skills?: string[] }>>([]);
   const [actionsLoading, setActionsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Default off every time; not persisted.
+  const [highQuality, setHighQuality] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -51,11 +54,12 @@ const ProjectRequestDetailPage: React.FC = () => {
             <Typography variant="body2"><strong>Opplastet:</strong> {dto.uploadedAt ? new Date(dto.uploadedAt).toLocaleString('no-NO') : '-'}</Typography>
             <Typography variant="body2"><strong>Svarfrist:</strong> {dto.deadlineDate ? new Date(dto.deadlineDate).toLocaleDateString('no-NO') : '-'}</Typography>
             <Box sx={{ flex: 1 }} />
+            <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={actionsLoading} />
             <Button size="small" variant="outlined" disabled={actionsLoading || !dto.id} onClick={async () => {
               if (!dto?.id) return;
               setActionsLoading(true);
               try {
-                await analyzeProjectRequest(dto.id);
+                await analyzeProjectRequest(dto.id, { useHighestQualityModel: highQuality });
                 const sugg = await getProjectRequestSuggestions(dto.id);
                 setSuggestions(sugg ?? []);
                 setError(null);

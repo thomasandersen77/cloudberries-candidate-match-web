@@ -3,14 +3,7 @@ import type { components, paths } from '../api/generated';
 
 // --- OpenAPI schemas ---
 
-export type AnthropicUsageResponse = {
-  periodStart?: string;
-  periodEnd?: string;
-  totalRequests?: number;
-  totalInputTokens?: number;
-  totalOutputTokens?: number;
-  estimatedCostUsd?: number;
-};
+export type AnthropicUsageResponse = components['schemas']['AnthropicUsageResponse'];
 
 export type HealthStatusValue = components['schemas']['HealthResponse']['status'];
 export type HealthResponse = components['schemas']['HealthResponse'];
@@ -18,30 +11,10 @@ export type HealthResponse = components['schemas']['HealthResponse'];
 export type AIAnalysisRequest = components['schemas']['AIAnalysisRequest'];
 export type AIResponseModel = components['schemas']['AIResponseModel'];
 
-export type RagChatRequest = {
-  message: string;
-  topK?: number;
-  similarityThreshold?: number;
-  filter?: string | null;
-};
-export type SourceDocument = {
-  id?: string;
-  consultantId?: string;
-  consultantName?: string;
-  chunkId?: string;
-  content?: string;
-  score?: number;
-  metadata?: Record<string, unknown>;
-};
-export type RagChatResponse = {
-  answer?: string;
-  sources?: SourceDocument[];
-};
-export type RagIngestRequest = {
-  consultantId?: string;
-  cvId?: string;
-  force?: boolean;
-};
+export type RagChatRequest = components['schemas']['RagChatRequest'];
+export type SourceDocument = components['schemas']['SourceDocument'];
+export type RagChatResponse = components['schemas']['RagChatResponse'];
+export type RagIngestRequest = components['schemas']['RagIngestRequest'];
 
 export type ConsultantSummaryDto = components['schemas']['ConsultantSummaryDto'];
 type OpenApiPageConsultantSummaryDto = components['schemas']['PageConsultantSummaryDto'];
@@ -106,15 +79,14 @@ export type RelationalSearchRequest = components['schemas']['RelationalSearchReq
 export type SemanticSearchRequest = components['schemas']['SemanticSearchRequest'];
 export type PaginationDto = components['schemas']['PaginationDto'];
 
+/** Explicit LLM model tier for matching/scoring. Wins over useHighestQualityModel. */
+export type ModelTier = 'FAST' | 'DEFAULT' | 'QUALITY';
+
 export type CoverageStatus = components['schemas']['CoverageStatus'];
 export type MatchesListItemDto = components['schemas']['MatchesListItemDto'];
 export type PagedMatchesListDto = components['schemas']['PagedMatchesListDto'];
 export type MatchConsultantDto = components['schemas']['MatchConsultantDto'];
-export type MatchStatusDto = {
-  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | string;
-  lastUpdated?: string | null;
-  error?: string | null;
-};
+export type MatchStatusDto = components['schemas']['MatchStatusDto'];
 export type TriggerMatchingResponse = components['schemas']['TriggerMatchingResponse'];
 export type RecalculateMatchesResponse = {
   requestId?: number;

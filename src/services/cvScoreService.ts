@@ -50,10 +50,16 @@ export type { CvScoreAiProvider };
 
 export type CvScoreRequestOptions = {
   aiProvider?: CvScoreAiProvider;
+  /** When true, ask backend for the server-configured highest-quality AI model tier. */
+  useHighestQualityModel?: boolean;
 };
 
 function scoringParams(opts?: CvScoreRequestOptions): Record<string, string> | undefined {
-  return opts?.aiProvider ? { aiProvider: opts.aiProvider } : undefined;
+  const params: Record<string, string> = {};
+  if (opts?.aiProvider) params.aiProvider = opts.aiProvider;
+  // Only send the flag when explicitly enabled; omit otherwise (default = false on backend).
+  if (opts?.useHighestQualityModel) params.useHighestQualityModel = 'true';
+  return Object.keys(params).length > 0 ? params : undefined;
 }
 
 export async function getAllCandidates(): Promise<CandidateDTO[]> {
@@ -73,6 +79,19 @@ export async function runScoreForCandidate(
 ): Promise<CvScoreDto> {
   const { data } = await aiScoringClient.post<CvScoreDto>(
     `cv-score/${encodeURIComponent(candidateId)}`,
+    null,
+    { params: scoringParams(opts) }
+  );
+  return data;
+}
+
+/** POST /cv-score/{candidateId}/run – trigger a scoring run for a single candidate. */
+export async function runScoreRunForCandidate(
+  candidateId: string,
+  opts?: CvScoreRequestOptions
+): Promise<CvScoreDto> {
+  const { data } = await aiScoringClient.post<CvScoreDto>(
+    `cv-score/${encodeURIComponent(candidateId)}/run`,
     null,
     { params: scoringParams(opts) }
   );

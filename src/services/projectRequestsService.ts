@@ -120,9 +120,23 @@ export async function closeProjectRequest(id: number): Promise<ProjectRequestDto
   return data;
 }
 
+// New: permanently delete a project request (DELETE /project-requests/{id})
+export async function deleteProjectRequest(id: number): Promise<void> {
+  await apiClient.delete(`project-requests/${encodeURIComponent(id)}`);
+}
+
+export type AiQualityOptions = {
+  /** When true, ask backend for the server-configured highest-quality AI model tier. */
+  useHighestQualityModel?: boolean;
+};
+
 // New: trigger AI analysis
-export async function analyzeProjectRequest(id: number): Promise<ProjectRequestDto> {
-  const { data } = await aiScoringClient.post<ProjectRequestDto>(`project-requests/${id}/analyze`);
+export async function analyzeProjectRequest(id: number, opts?: AiQualityOptions): Promise<ProjectRequestDto> {
+  const { data } = await aiScoringClient.post<ProjectRequestDto>(
+    `project-requests/${id}/analyze`,
+    null,
+    { params: opts?.useHighestQualityModel ? { useHighestQualityModel: 'true' } : undefined }
+  );
   return data;
 }
 

@@ -17,6 +17,11 @@ import {
   Snackbar,
   Alert,
   Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
@@ -28,12 +33,16 @@ import {
 } from '../../services/cvScoreService';
 import { sortCvScoreRows } from '../../utils/cvScoreSort';
 import CvScoreBadge from '../../components/CvScoreBadge';
+import HighQualityToggle from '../../components/HighQualityToggle';
 
 const CvScoreListPage: React.FC = () => {
   const theme = useTheme();
   const [rows, setRows] = useState<CvScoreListRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
+  // Default off every time; not persisted.
+  const [highQuality, setHighQuality] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [snack, setSnack] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -59,6 +68,43 @@ const CvScoreListPage: React.FC = () => {
     };
   }, []);
 
+  const runScoreForAllMissing = async () => {
+    try {
+      setRunning(true);
+      const missing = rows.filter((r) => (r.scorePercent ?? 0) === 0).map((r) => ({ id: r.id, name: r.name }));
+      let processed = 0;
+      for (const m of missing) {
+        try {
+          await runScoreForCandidate(m.id, { useHighestQualityModel: highQuality });
+          processed += 1;
+        } catch {
+          /* continue */
+        }
+      }
+      const fresh = await getAllCandidates();
+      const refreshed = await loadCvScoreListRows(fresh);
+      setRows(refreshed);
+      setSnack({
+        open: true,
+        message: `Scoring fullført – prosesserte ${processed} (kun de uten score)`,
+        severity: 'success',
+      });
+    } catch {
+      setSnack({ open: true, message: 'Scoring feilet', severity: 'error' });
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const handleScoreAllClick = () => {
+    // Cost guard: high-quality scoring of many CVs can be expensive.
+    if (highQuality) {
+      setConfirmOpen(true);
+      return;
+    }
+    void runScoreForAllMissing();
+  };
+
   const sortedRows = useMemo(() => sortCvScoreRows(rows), [rows]);
 
   const stats = useMemo(() => {
@@ -80,41 +126,18 @@ const CvScoreListPage: React.FC = () => {
             Oversikt over AI-vurdering av alle kandidat-CV-er
           </Typography>
         </Box>
-        <Button
-          size="medium"
-          variant="contained"
-          disabled={running}
-          startIcon={running ? <CircularProgress size={16} color="inherit" /> : undefined}
-          onClick={async () => {
-            try {
-              setRunning(true);
-              const missing = rows.filter((r) => (r.scorePercent ?? 0) === 0).map((r) => ({ id: r.id, name: r.name }));
-              let processed = 0;
-              for (const m of missing) {
-                try {
-                  await runScoreForCandidate(m.id);
-                  processed += 1;
-                } catch {
-                  /* continue */
-                }
-              }
-              const fresh = await getAllCandidates();
-              const refreshed = await loadCvScoreListRows(fresh);
-              setRows(refreshed);
-              setSnack({
-                open: true,
-                message: `Scoring fullført – prosesserte ${processed} (kun de uten score)`,
-                severity: 'success',
-              });
-            } catch {
-              setSnack({ open: true, message: 'Scoring feilet', severity: 'error' });
-            } finally {
-              setRunning(false);
-            }
-          }}
-        >
-          {running ? 'Skårer manglende…' : 'Kjør scoring for alle'}
-        </Button>
+        <Stack spacing={1} alignItems={{ xs: 'flex-start', sm: 'flex-end' }}>
+          <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={running} />
+          <Button
+            size="medium"
+            variant="contained"
+            disabled={running}
+            startIcon={running ? <CircularProgress size={16} color="inherit" /> : undefined}
+            onClick={handleScoreAllClick}
+          >
+            {running ? 'Skårer manglende…' : 'Kjør scoring for alle'}
+          </Button>
+        </Stack>
       </Stack>
 
       <Paper
@@ -201,6 +224,26 @@ const CvScoreListPage: React.FC = () => {
           {snack.message}
         </Alert>
       </Snackbar>
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Bekreft scoring med høyeste kvalitet</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Dette kan bruke betydelig mer AI-kreditt fordi mange CV-er vurderes. Vil du fortsette?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Avbryt</Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setConfirmOpen(false);
+              void runScoreForAllMissing();
+            }}
+          >
+            Fortsett
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

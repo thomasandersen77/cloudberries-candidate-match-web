@@ -22,9 +22,19 @@ export async function getTopMatchesFlat(requestId: number, limit = 10): Promise<
   return data;
 }
 
-export async function recalculateMatches(requestId: number): Promise<RecalculateMatchesResponse> {
+export type AiQualityOptions = {
+  /** When true, ask backend for the server-configured highest-quality AI model tier. */
+  useHighestQualityModel?: boolean;
+};
+
+export async function recalculateMatches(
+  requestId: number,
+  opts?: AiQualityOptions
+): Promise<RecalculateMatchesResponse> {
   const { data } = await aiScoringClient.post<RecalculateMatchesResponse>(
-    `matches/recalculate/${requestId}`
+    `matches/recalculate/${requestId}`,
+    null,
+    { params: opts?.useHighestQualityModel ? { useHighestQualityModel: 'true' } : undefined }
   );
   return data;
 }

@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Chip, CircularProgress, Container, IconButton, Link as MuiLink, Paper, Stack, Tooltip, Typography, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Button, Chip, CircularProgress, Container, IconButton, Link as MuiLink, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { listMatchRequests, getTopConsultantsForRequest, reAnalyzeRequest } from '../../services/matchesRequestsService';
-import type { PagedMatchesListDto, MatchConsultantDto, CoverageStatus } from '../../types/api';
+import type { PagedMatchesListDto, MatchConsultantDto, CoverageStatus, ModelTier } from '../../types/api';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { getMatchStatus, getTopMatchesFlat, recalculateMatches } from '../../services/newMatchesService';
+import { projectMatchesService } from '../../services/projectMatchesService';
 import { isAxiosError } from 'axios';
 
 // Helper to decide coverage color/status from count
@@ -28,6 +29,26 @@ function getCoverageFromStatus(status?: CoverageStatus | null, label?: string | 
   return { color: undefined, label: 'Moderat dekning' };
 }
 
+// Tuning options for an explicit AI re-run. GET top-consultants is cache-aware
+// and never receives these; they are only sent on POST re-analyze.
+const MODEL_TIERS: ReadonlyArray<{ value: ModelTier; label: string }> = [
+  { value: 'FAST', label: 'Rask' },
+  { value: 'DEFAULT', label: 'Balansert' },
+  { value: 'QUALITY', label: 'Best kvalitet' },
+];
+const CV_WEIGHT_OPTIONS: readonly number[] = [20, 30, 60, 80];
+const DEFAULT_MODEL_TIER: ModelTier = 'DEFAULT';
+const DEFAULT_CV_WEIGHT_PERCENT = 30;
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (isAxiosError(error)) {
+    if (error.code === 'ECONNABORTED') return 'Tidsavbrudd hos backend. Prøv igjen om noen sekunder.';
+    return (error.response?.data as { message?: string } | undefined)?.message ?? error.message;
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
+
 const MatchesPage: React.FC = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -41,6 +62,15 @@ const MatchesPage: React.FC = () => {
   const [top5Error, setTop5Error] = useState<Record<number, string>>({});
   const [analyzing, setAnalyzing] = useState<Record<number, boolean>>({});
   const [pageSize, setPageSize] = useState<number>(20);
+  // Re-run tuning. Defaults are not persisted (reset to DEFAULT/30 every visit).
+  const [modelTier, setModelTier] = useState<ModelTier>(DEFAULT_MODEL_TIER);
+  const [cvWeightPercent, setCvWeightPercent] = useState<number>(DEFAULT_CV_WEIGHT_PERCENT);
+  // Per-request "last updated" timestamp from the persisted matches.
+  const [lastUpdated, setLastUpdated] = useState<Record<number, string>>({});
+
+  // Guard against state updates after unmount while polling.
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   // Status mode state
   const [status, setStatus] = useState<'PENDING'|'RUNNING'|'COMPLETED'|'FAILED'|null>(null);
@@ -98,19 +128,31 @@ const MatchesPage: React.FC = () => {
 
   const rows = useMemo(() => page?.content ?? [], [page]);
 
+  // Best-effort fetch of the persisted "last updated" timestamp.
+  const refreshLastUpdated = async (id: number) => {
+    try {
+      const top = await projectMatchesService.getTopMatches(id);
+      if (mountedRef.current && top?.lastUpdated) {
+        setLastUpdated((prev) => ({ ...prev, [id]: top.lastUpdated as string }));
+      }
+    } catch {
+      /* timestamp is non-critical */
+    }
+  };
+
+  // GET top-consultants is cache-aware: it returns the persisted result without
+  // a new LLM call. No model/weight params are sent here.
   const loadTopConsultants = async (id: number, force = false) => {
     if (!force && Array.isArray(top5[id])) return;
     setTop5(prev => ({ ...prev, [id]: 'loading' }));
     setTop5Error(prev => ({ ...prev, [id]: '' }));
     try {
       const s = await getTopConsultantsForRequest(id, 5);
+      if (!mountedRef.current) return;
       setTop5(prev => ({ ...prev, [id]: s }));
+      void refreshLastUpdated(id);
     } catch (error) {
-      const message = isAxiosError(error)
-        ? error.code === 'ECONNABORTED'
-          ? 'Tidsavbrudd hos backend. Prøv igjen om noen sekunder.'
-          : (error.response?.data as { message?: string } | undefined)?.message ?? error.message
-        : 'Ukjent feil ved henting av toppkandidater.';
+      const message = extractErrorMessage(error, 'Ukjent feil ved henting av toppkandidater.');
       setTop5(prev => ({ ...prev, [id]: 'error' }));
       setTop5Error(prev => ({ ...prev, [id]: message }));
     }
@@ -124,29 +166,61 @@ const MatchesPage: React.FC = () => {
     }
   };
 
-  const analyzeNow = async (id: number) => {
+  // Explicit re-run (POST re-analyze): forces a fresh LLM computation with the
+  // chosen modelTier + cvWeightPercent and replaces the list with the response.
+  const rerunAnalysis = async (id: number) => {
     setAnalyzing((prev) => ({ ...prev, [id]: true }));
     setTop5((prev) => ({ ...prev, [id]: 'loading' }));
     setTop5Error((prev) => ({ ...prev, [id]: '' }));
     try {
-      const analyzed = await reAnalyzeRequest(id);
-      if (Array.isArray(analyzed) && analyzed.length > 0) {
-        setTop5((prev) => ({ ...prev, [id]: analyzed }));
-      } else {
-        await loadTopConsultants(id, true);
-      }
+      const analyzed = await reAnalyzeRequest(id, { modelTier, cvWeightPercent });
+      if (!mountedRef.current) return;
+      setTop5((prev) => ({ ...prev, [id]: Array.isArray(analyzed) ? analyzed : [] }));
+      void refreshLastUpdated(id);
     } catch (error) {
-      const message = isAxiosError(error)
-        ? error.code === 'ECONNABORTED'
-          ? 'Analyse tidsavbrutt hos backend. Prøv igjen.'
-          : (error.response?.data as { message?: string } | undefined)?.message ?? error.message
-        : 'Ukjent feil under analyse.';
+      if (!mountedRef.current) return;
+      const message = extractErrorMessage(error, 'Ukjent feil under analyse.');
       setTop5((prev) => ({ ...prev, [id]: 'error' }));
       setTop5Error((prev) => ({ ...prev, [id]: message }));
     } finally {
-      setAnalyzing((prev) => ({ ...prev, [id]: false }));
+      if (mountedRef.current) setAnalyzing((prev) => ({ ...prev, [id]: false }));
     }
   };
+
+  const renderTuning = (id: number) => (
+    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap>
+      <TextField
+        select
+        size="small"
+        label="Modell"
+        value={modelTier}
+        onChange={(e) => setModelTier(e.target.value as ModelTier)}
+        disabled={analyzing[id]}
+        sx={{ minWidth: 150 }}
+      >
+        {MODEL_TIERS.map((t) => (
+          <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+        ))}
+      </TextField>
+      <Stack spacing={0.25}>
+        <Typography variant="caption" color="text.secondary">CV-kvalitet teller</Typography>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={cvWeightPercent}
+          onChange={(_e, val) => { if (val != null) setCvWeightPercent(val as number); }}
+          aria-label="CV-kvalitet teller"
+        >
+          {CV_WEIGHT_OPTIONS.map((w) => (
+            <ToggleButton key={w} value={w} disabled={analyzing[id]}>{w}%</ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+      </Stack>
+      <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 260 }}>
+        Resten teller som skills. Brukes kun ved «Kjør på nytt».
+      </Typography>
+    </Stack>
+  );
 
   return (
     <Container sx={{ py: 4 }}>
@@ -277,47 +351,68 @@ const MatchesPage: React.FC = () => {
                     </Stack>
                   )}
                   {top5[id!] === 'error' && (
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+                    <Stack spacing={1}>
                       <Typography variant="body2" color="error.main">
                         {top5Error[id!] || 'Kunne ikke hente toppkandidater.'}
                       </Typography>
-                      <Button size="small" variant="outlined" onClick={() => loadTopConsultants(id!, true)}>
-                        Prøv igjen
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        disabled={analyzing[id!]}
-                        onClick={() => analyzeNow(id!)}
-                      >
-                        {analyzing[id!] ? 'Analyserer…' : 'Analyser nå'}
-                      </Button>
+                      {renderTuning(id!)}
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+                        <Button size="small" variant="outlined" onClick={() => loadTopConsultants(id!, true)}>
+                          Prøv igjen
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          disabled={analyzing[id!]}
+                          onClick={() => rerunAnalysis(id!)}
+                        >
+                          {analyzing[id!] ? 'Kjører…' : 'Kjør på nytt'}
+                        </Button>
+                      </Stack>
                     </Stack>
                   )}
                   {Array.isArray(top5[id!]) && (
                     <Stack spacing={1}>
                       {(top5[id!] as MatchConsultantDto[]).length === 0 ? (
-                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+                        <Stack spacing={1}>
                           <Typography variant="body2" color="text.secondary">
                             Ingen konsulenter funnet for denne forespørselen.
                           </Typography>
+                          {renderTuning(id!)}
                           <Button
                             size="small"
                             variant="contained"
                             disabled={analyzing[id!]}
-                            onClick={() => analyzeNow(id!)}
+                            onClick={() => rerunAnalysis(id!)}
+                            sx={{ alignSelf: 'flex-start' }}
                           >
-                            {analyzing[id!] ? 'Analyserer…' : 'Analyser nå'}
+                            {analyzing[id!] ? 'Kjører…' : 'Kjør på nytt'}
                           </Button>
                         </Stack>
                       ) : (
                         <>
-                          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                            <Chip label="AI-rangert" size="small" color="primary" variant="outlined" />
-                            <Typography variant="caption" color="text.secondary">
-                              Gemini 3 Pro Preview
-                            </Typography>
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between" sx={{ mb: 1 }}>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Chip label="AI-rangert" size="small" color="primary" variant="outlined" />
+                              {lastUpdated[id!] && (
+                                <Typography variant="caption" color="text.secondary">
+                                  Sist oppdatert: {new Date(lastUpdated[id!]).toLocaleString('no-NO')}
+                                </Typography>
+                              )}
+                            </Stack>
                           </Stack>
+                          <Box sx={{ mb: 1 }}>
+                            {renderTuning(id!)}
+                          </Box>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            disabled={analyzing[id!]}
+                            onClick={() => rerunAnalysis(id!)}
+                            sx={{ alignSelf: 'flex-start', mb: 1 }}
+                          >
+                            {analyzing[id!] ? 'Kjører…' : 'Kjør på nytt'}
+                          </Button>
                           {((top5[id!] as MatchConsultantDto[])
                             .slice()
                             .sort((a, b) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0))

@@ -422,9 +422,9 @@ const fetchData = async () => {
               {/* Mobile Card Layout */}
               {isMobile ? (
                 <Box sx={{ p: 2 }}>
-                  {pagedConsultants.map((c) => (
+                  {pagedConsultants.map((c, idx) => (
                     <ConsultantMobileCard
-                      key={c.userId}
+                      key={c.userId || `consultant-${idx}`}
                       consultant={c}
                       onDetailsClick={() => gotoDetails(c.userId)}
                       onCvClick={() => gotoCv(c.userId)}
@@ -449,14 +449,14 @@ const fetchData = async () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                    {pagedConsultants.map((c) => {
+                    {pagedConsultants.map((c, idx) => {
                       const activeCv = c.cvs?.find(cv => cv.active);
                       const quality = activeCv?.qualityScore ?? null;
                       const { displaySkills: topSkills, remainingCount } = getSkillsDisplay(c, 3);
                       const { displaySkills: tabletSkills, remainingCount: tabletRemaining } = getSkillsDisplay(c, 2);
                       
                       return (
-                        <TableRow key={c.userId} hover>
+                        <TableRow key={c.userId || `consultant-${idx}`} hover>
                           <TableCell>
                             <Avatar sx={{ width: isTablet ? 32 : 40, height: isTablet ? 32 : 40 }}>
                               {c.name.charAt(0)}
