@@ -73,13 +73,20 @@ function normalizeProjectRequestResponse(dto: LegacyProjectRequestDto): ProjectR
   };
 }
 
-export async function uploadProjectRequest(file: File): Promise<ProjectRequestResponseDto> {
+export async function uploadProjectRequest(
+  file: File,
+  opts?: { useHighestQualityModel?: boolean },
+): Promise<ProjectRequestResponseDto> {
   const formData = new FormData();
   formData.append('file', file);
   const { data } = await apiClient.post<LegacyProjectRequestDto>(
     'project-requests/upload',
     formData,
-    { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 300000 }
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 300000,
+      params: opts?.useHighestQualityModel ? { useHighestQualityModel: 'true' } : undefined,
+    },
   );
   return normalizeProjectRequestResponse(data);
 }

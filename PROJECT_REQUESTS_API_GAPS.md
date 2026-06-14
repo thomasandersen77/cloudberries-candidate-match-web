@@ -86,3 +86,4 @@ Frontend currently maps legacy response into the new UI by:
 - mapping `responseDeadline` to `deadlineDate`
 
 This fallback should be removed once backend contract is normalized.
+>

@@ -393,6 +393,7 @@ paths:
     get:
       tags: [ Matches ]
       summary: Returns AI-enriched top consultants for a given project request
+      deprecated: true
       description: >
         Returns previously persisted LLM evaluation when present (no LLM call).
         On first access, triggers a fresh LLM run and persists the result.
@@ -416,7 +417,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MatchConsultantDto'
+                  $ref: '#/components/schemas/MatchCandidateDto'
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -424,10 +425,12 @@ paths:
     post:
       tags: [ Matches ]
       summary: Re-analyzes and re-ranks consultants for a project request
+      deprecated: true
       description: >
         Forces a fresh LLM evaluation and overwrites the cached result for the
         given project request. Use this for an explicit "Run again" action from
         the UI when the user wants updated matches.
+        DEPRECATED: Use `POST /matches/requests/{id}/matches/run` instead.
       parameters:
         - in: path
           name: id
@@ -444,13 +447,73 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MatchConsultantDto'
+                  $ref: '#/components/schemas/MatchCandidateDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /matches/requests/{id}/matches/preview:
+    get:
+      tags: [ Matches ]
+      deprecated: true
+      summary: Cheap candidate shortlist generation without LLM reasoning
+      description: >
+        Uses pgvector and skill matching to generate a quick preview of potential candidates.
+        Does not call expensive LLMs.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10, minimum: 1, maximum: 50 }
+      responses:
+        '200':
+          description: List of potential matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchCandidateDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /matches/requests/{id}/matches/run:
+    post:
+      tags: [ Matches ]
+      deprecated: true
+      summary: Explicitly triggers expensive AI matching for a shortlist
+      description: >
+        Triggers LLM reasoning for the top candidates identified for this project request.
+        Persists results for later retrieval.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10, minimum: 1, maximum: 20 }
+        - $ref: '#/components/parameters/ModelTierParam'
+        - $ref: '#/components/parameters/UseHighestQualityModelParam'
+        - $ref: '#/components/parameters/CvWeightPercentParam'
+      responses:
+        '200':
+          description: List of AI-enriched matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchCandidateDto'
         default:
           $ref: '#/components/responses/ErrorResponse'
 
   /matches/requests/{projectRequestId}/trigger:
     post:
       tags: [ Matches ]
+      deprecated: true
       summary: Trigger matching computation for a specific project request
       parameters:
         - in: path
@@ -476,6 +539,7 @@ paths:
   /matches/status/{requestId}:
     get:
       tags: [ Matches ]
+      deprecated: true
       summary: Get the status of a matching job
       parameters:
         - in: path
@@ -650,6 +714,7 @@ paths:
   /project-requests/{id}/analyze:
     post:
       tags: [ Project Requests ]
+      deprecated: true
       summary: Trigger AI analysis for an existing project request
       parameters:
         - in: path
@@ -664,6 +729,110 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectRequestResponseDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /project-requests/{id}/matches:
+    get:
+      tags: [ Matches ]
+      summary: Get persisted matching results for a project request
+      description: |
+        Returns stored match results without triggering any new LLM computation.
+        Safe to call on page load or expand.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: List of stored candidate matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MatchCandidateDto' }
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /project-requests/{id}/matches/preview:
+    get:
+      tags: [ Matches ]
+      summary: Cheap shortlist / preselection for a project request
+      description: |
+        Returns a shortlist of candidates based on skills and semantic similarity.
+        Does NOT call Anthropic or any LLM.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Shortlist preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMatchPreviewResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /project-requests/{id}/matches/run:
+    post:
+      tags: [ Matches ]
+      summary: Explicitly run AI matching for a project request
+      description: |
+        Triggers LLM-based matching for a shortlist of candidates.
+        This is an expensive operation.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+        - $ref: '#/components/parameters/UseHighestQualityModelParam'
+        - in: query
+          name: modelTier
+          schema: { $ref: '#/components/schemas/ModelTier' }
+        - in: query
+          name: cvWeightPercent
+          schema: { type: integer, minimum: 0, maximum: 100 }
+      responses:
+        '200':
+          description: AI matching results
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MatchCandidateDto' }
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /project-requests/{id}/matches/status:
+    get:
+      tags: [ Matches ]
+      summary: Get normalized matching status
+      description: Returns the current status of matching for the project request.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Matching status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMatchStatusResponse'
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -1131,6 +1300,10 @@ paths:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/SizeParam'
         - $ref: '#/components/parameters/SortParam'
+        - in: query
+          name: onlyActiveCv
+          required: false
+          schema: { type: boolean, default: true }
       responses:
         '200':
           description: Page of consultants for the skill
@@ -1155,6 +1328,10 @@ paths:
           name: limit
           required: false
           schema: { type: integer, default: 3, minimum: 1 }
+        - in: query
+          name: onlyActiveCv
+          required: false
+          schema: { type: boolean, default: true }
       responses:
         '200':
           description: Top consultants for the skill
@@ -1164,6 +1341,36 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ConsultantSummaryDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /skills/{skill}/top-ranked-consultants:
+    get:
+      tags: [ Skills ]
+      summary: Top-N consultants for the given skill with detailed ranking evidence
+      parameters:
+        - in: path
+          name: skill
+          required: true
+          description: Skill name (URL-encoded by the client)
+          schema: { type: string }
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer, default: 3, minimum: 1 }
+        - in: query
+          name: onlyActiveCv
+          required: false
+          schema: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Top ranked consultants for the skill with evidence
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillConsultantRankingDto'
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -1319,6 +1526,38 @@ components:
         candidateId: { type: integer, format: int64 }
         name: { type: string, nullable: true }
         cvText: { type: string }
+
+    SkillConsultantRankingDto:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, nullable: true }
+        role: { type: string, nullable: true }
+        office: { type: string, nullable: true }
+        bornYear: { type: integer, nullable: true }
+        defaultCvId: { type: string, nullable: true }
+        skill: { type: string }
+        skillScore: { type: number, format: double }
+        durationYears: { type: integer }
+        projectHitCount: { type: integer }
+        latestUsedYearMonth: { type: string, nullable: true }
+        cvQualityScore: { type: integer, nullable: true }
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillEvidenceDto'
+
+    SkillEvidenceDto:
+      type: object
+      properties:
+        source: { type: string }
+        skillName: { type: string }
+        customer: { type: string, nullable: true }
+        projectDescription: { type: string, nullable: true }
+        fromYearMonth: { type: string, nullable: true }
+        toYearMonth: { type: string, nullable: true }
+        durationYears: { type: integer, nullable: true }
 
     ConsultantSummaryDto:
       type: object
@@ -1536,10 +1775,13 @@ components:
     EmbeddingProviderInfo:
       type: object
       properties:
-        providerName: { type: string }
-        modelName: { type: string }
+        provider: { type: string }
+        model: { type: string }
         dimension: { type: integer }
         enabled: { type: boolean }
+        activeEmbeddingCount: { type: integer }
+        semanticSearchReady: { type: boolean }
+        totalConsultantCount: { type: integer, format: int64 }
 
     ProjectRequestSummaryDto:
       type: object
@@ -1580,15 +1822,20 @@ components:
       type: string
       enum: [ GREEN, YELLOW, RED, NEUTRAL ]
 
-    MatchConsultantDto:
+    MatchCandidateDto:
       type: object
-      required: [ userId, name, cvId, relevanceScore ]
+      required: [ userId, name, cvId, score ]
       properties:
         userId: { type: string }
         name: { type: string }
         cvId: { type: string }
-        relevanceScore: { type: number, format: double }
+        score: { type: number, format: double, description: "Match score from 0.0 to 10.0" }
+        scorePercent: { type: integer, description: "Match score from 0 to 100" }
         justification: { type: string, nullable: true }
+        skills:
+          type: array
+          items: { type: string }
+        email: { type: string, nullable: true }
 
     TriggerMatchingResponse:
       type: object
@@ -1606,6 +1853,48 @@ components:
         status: { type: string, description: "PENDING|RUNNING|COMPLETED|FAILED" }
         lastUpdated: { type: string, format: date-time, nullable: true }
         error: { type: string, nullable: true }
+
+    ProjectMatchPreviewResponse:
+      type: object
+      properties:
+        projectRequestId: { type: integer, format: int64 }
+        limit: { type: integer }
+        semanticSearchReady: { type: boolean }
+        semanticSearchUsed: { type: boolean }
+        candidates:
+          type: array
+          items: { $ref: '#/components/schemas/MatchPreviewCandidateDto' }
+
+    MatchPreviewCandidateDto:
+      type: object
+      properties:
+        userId: { type: string }
+        cvId: { type: string }
+        name: { type: string }
+        skillScore: { type: number, format: double }
+        semanticScore: { type: number, format: double }
+        cvQualityScore: { type: number, format: double }
+        combinedScore: { type: number, format: double }
+        reason: { type: string }
+        email: { type: string, nullable: true }
+
+    ProjectMatchStatusResponse:
+      type: object
+      properties:
+        projectRequestId: { type: integer, format: int64 }
+        status: { $ref: '#/components/schemas/MatchingStatus' }
+        lastUpdated: { type: string, format: date-time, nullable: true }
+        error: { type: string, nullable: true }
+        matchCount: { type: integer }
+        semanticSearchReady: { type: boolean }
+
+    MatchingStatus:
+      type: string
+      enum: [ NOT_STARTED, READY_FOR_PREVIEW, RUNNING, COMPLETED, FAILED ]
+
+    ModelTier:
+      type: string
+      enum: [ FAST, DEFAULT, QUALITY ]
 
     ProjectRequestResponseDto:
       type: object

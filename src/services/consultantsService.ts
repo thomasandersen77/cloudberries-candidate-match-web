@@ -107,6 +107,31 @@ export async function runConsultantSync(batchSize = 120): Promise<ConsultantSync
     const {data} = await aiScoringClient.post<ConsultantSyncResponse>('consultants/sync/run', null, {params: {batchSize}});
     return data;
 }
+export interface ConsultantSyncSingleResponse {
+    userId: string;
+    cvId: string;
+    processed: boolean;
+    message?: string;
+}
+
+/**
+ * Compatibility helper for UI flows that trigger a targeted CV sync.
+ * Backend exposes batch sync in OpenAPI, so this triggers a minimal batch run.
+ */
+export async function syncSingleConsultant(userId: string, cvId: string): Promise<ConsultantSyncSingleResponse> {
+    const {data} = await aiScoringClient.post<ConsultantSyncResponse>('consultants/sync/run', null, {
+        params: {batchSize: 1}
+    });
+    const succeeded = typeof data?.succeeded === 'number' ? data.succeeded : undefined;
+    const total = typeof data?.total === 'number' ? data.total : undefined;
+    const processed = (succeeded ?? total ?? 0) > 0;
+    return {
+        userId,
+        cvId,
+        processed,
+        message: processed ? 'Sync batch triggered' : 'No consultants processed by sync batch',
+    };
+}
 
 // New CV-related endpoints
 export async function listConsultantsWithCv(onlyActiveCv = false): Promise<ConsultantWithCvDto[]> {
@@ -151,12 +176,6 @@ export async function getConsultantByUserId(userId: string): Promise<ConsultantS
     return data;
 }
 
-export interface ConsultantSyncSingleResponse {
-    userId: string;
-    cvId: string;
-    processed: boolean;
-    message?: string;
-}
 
 // Search endpoints
 export async function searchConsultantsRelational(params: {
@@ -202,17 +221,5 @@ export async function searchConsultantsSemantic(params: {
 
 export async function getEmbeddingInfo(): Promise<EmbeddingProviderInfo> {
     const { data } = await apiClient.get<EmbeddingProviderInfo>('consultants/search/embedding-info');
-    return data;
-}
-
-// Note: Single consultant sync endpoint may not exist in OpenAPI spec
-// This function may need to be removed or the endpoint added to backend
-export async function syncSingleConsultant(
-    userId: string, 
-    cvId: string
-): Promise<ConsultantSyncSingleResponse> {
-    const {data} = await aiScoringClient.post<ConsultantSyncSingleResponse>(
-        `consultants/sync/${userId}/${cvId}`
-    );
     return data;
 }

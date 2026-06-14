@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { getBackendOrigin } from '../config/apiBase';
 import apiClient from './apiClient';
 
@@ -134,7 +135,10 @@ async function fetchNetwork(): Promise<{ payload: HealthStatus; source: string }
     // fallthrough
   }
   // Fallback: Actuator at server root (not under /api servlet path)
-  const r2 = await apiClient.get<unknown>(`${getBackendOrigin()}/actuator/health`);
+  const r2 = await axios.get<unknown>(`${getBackendOrigin()}/actuator/health`, {
+    timeout: 10000,
+    headers: { Accept: 'application/json' },
+  });
   const data = r2.data as { status?: unknown; details?: unknown; components?: unknown };
   if (!data || !data.status) throw new Error('Actuator health missing status');
   const details = data.details ?? data.components ?? {};

@@ -30,9 +30,10 @@ export type CvData = paths['/cv/{userId}']['get']['responses'][200]['content']['
 export type EmbeddingRunMissingResponse =
   paths['/embeddings/run/missing']['post']['responses'][200]['content']['application/json'];
 export type EmbeddingProviderInfo = components['schemas']['EmbeddingProviderInfo'] & {
-  /** Legacy aliases used by search UI */
-  provider?: string;
-  model?: string;
+  /** Legacy aliases used by older UI code */
+  providerName?: string;
+  modelName?: string;
+  lastRebuildTime?: string | null;
 };
 
 export type CandidateDTO = components['schemas']['CandidateDTO'];
@@ -52,6 +53,10 @@ export type SkillInCompanyDto = components['schemas']['SkillInCompanyDto'] & {
   /** Legacy alias used by some UI code */
   consultantCount?: number;
 };
+export type SkillConsultantRankingDto = components['schemas']['SkillConsultantRankingDto'];
+export type SkillEvidenceDto = components['schemas']['SkillEvidenceDto'];
+export type ProgrammingLanguageStat = components['schemas']['ProgrammingLanguageStat'];
+export type RoleStat = components['schemas']['RoleStat'];
 
 export type ConsultantWithCvDto = components['schemas']['ConsultantWithCvDto'];
 type OpenApiPageConsultantWithCvDto = components['schemas']['PageConsultantWithCvDto'];
@@ -85,9 +90,24 @@ export type ModelTier = 'FAST' | 'DEFAULT' | 'QUALITY';
 export type CoverageStatus = components['schemas']['CoverageStatus'];
 export type MatchesListItemDto = components['schemas']['MatchesListItemDto'];
 export type PagedMatchesListDto = components['schemas']['PagedMatchesListDto'];
-export type MatchConsultantDto = components['schemas']['MatchConsultantDto'];
+export type MatchCandidateDto = components['schemas']['MatchCandidateDto'];
+export type MatchPreviewCandidateDto = components['schemas']['MatchPreviewCandidateDto'];
+export type ProjectMatchPreviewResponse = components['schemas']['ProjectMatchPreviewResponse'];
+export type ProjectMatchStatusResponse = components['schemas']['ProjectMatchStatusResponse'];
+export type MatchingStatus = components['schemas']['MatchingStatus'];
 export type MatchStatusDto = components['schemas']['MatchStatusDto'];
+/** @deprecated Use MatchCandidateDto — kept for legacy service call sites */
+export type MatchConsultantDto = MatchCandidateDto & { relevanceScore?: number };
+export type AiModelsResponse = components['schemas']['AiModelsResponse'];
 export type TriggerMatchingResponse = components['schemas']['TriggerMatchingResponse'];
+
+/** Normalized persisted match results for UI (GET /project-requests/{id}/matches). */
+export type ProjectMatchResults = {
+  projectRequestId: number;
+  matches: MatchCandidateDto[];
+  totalMatches?: number;
+  lastUpdated?: string | null;
+};
 export type RecalculateMatchesResponse = {
   requestId?: number;
   status?: string;

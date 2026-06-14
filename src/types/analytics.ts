@@ -1,16 +1,11 @@
-// Analytics data types
-export interface LanguageStat {
-  language: string;
-  consultantCount: number;
-  percentage: number;
-  aggregatedYears: number;
-}
+import type {
+  ProgrammingLanguageStat as LanguageStat,
+  RoleStat as ApiRoleStat,
+} from './api';
 
-export interface RoleStat {
-  role: string;
-  consultantCount: number;
-  percentage: number;
-}
+// Analytics data types (aliases of OpenAPI-generated types)
+export type { LanguageStat };
+export type RoleStat = ApiRoleStat;
 
 // Sorting types
 export type Order = 'asc' | 'desc';

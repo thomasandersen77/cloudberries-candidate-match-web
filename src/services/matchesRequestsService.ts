@@ -1,7 +1,7 @@
 import apiClient, { aiScoringClient } from './apiClient';
 import type {
   PagedMatchesListDto,
-  MatchConsultantDto,
+  MatchCandidateDto,
   ProjectRequestSummaryDto,
   ModelTier,
 } from '../types/api';
@@ -24,25 +24,25 @@ export async function listMatchRequests(params: { page?: number; size?: number; 
 // apiClient-timeout. Vi bruker aiScoringClient (lang timeout) for disse.
 const AI_MATCH_TIMEOUT_MS = 240_000;
 
-export async function getTopConsultantsForRequest(id: number, limit = 5): Promise<MatchConsultantDto[]> {
+export async function getTopConsultantsForRequest(id: number, limit = 5): Promise<MatchCandidateDto[]> {
   try {
-    const { data } = await aiScoringClient.get<MatchConsultantDto[]>(`matches/requests/${id}/top-consultants`, {
+    const { data } = await aiScoringClient.get<MatchCandidateDto[]>(`matches/requests/${id}/top-consultants`, {
       params: { limit },
       timeout: AI_MATCH_TIMEOUT_MS,
     });
     return data;
   } catch {
-    // Legacy fallback: some environments only expose matches/{requestId}
     const { data } = await aiScoringClient.get<MatchItemDto[]>(`matches/${id}`, {
       params: { limit },
       timeout: AI_MATCH_TIMEOUT_MS,
     });
     return (data ?? []).map((item) => ({
-      userId: item.consultantId ? String(item.consultantId) : undefined,
+      userId: item.consultantId ? String(item.consultantId) : '',
       name: item.name,
-      relevanceScore: item.score,
-      justification: item.reasons?.join(' • ') ?? '',
-    })) as MatchConsultantDto[];
+      cvId: '',
+      score: item.score,
+      justification: item.reasons?.join(' • ') ?? null,
+    })) as MatchCandidateDto[];
   }
 }
 
@@ -57,10 +57,14 @@ export type AiMatchOptions = {
 
 /** Backwards-compatible alias. */
 export type AiQualityOptions = AiMatchOptions;
+export type AiRunMatchOptions = AiMatchOptions & { limit?: number };
 
-function aiMatchParams(opts?: AiMatchOptions): Record<string, string> | undefined {
+function aiMatchParams(opts?: AiRunMatchOptions): Record<string, string> | undefined {
   if (!opts) return undefined;
   const params: Record<string, string> = {};
+  if (typeof opts.limit === 'number' && Number.isFinite(opts.limit)) {
+    params.limit = String(opts.limit);
+  }
   if (opts.modelTier) {
     params.modelTier = opts.modelTier;
   } else if (opts.useHighestQualityModel) {
@@ -71,13 +75,32 @@ function aiMatchParams(opts?: AiMatchOptions): Record<string, string> | undefine
   }
   return Object.keys(params).length > 0 ? params : undefined;
 }
+export async function previewRequestMatches(id: number, limit = 10): Promise<MatchCandidateDto[]> {
+  const { data } = await apiClient.get<MatchCandidateDto[]>(`matches/requests/${id}/matches/preview`, {
+    params: { limit },
+  });
+  return data;
+}
+
+/**
+ * Deprecated endpoint client kept for backend compatibility.
+ * Preferred flow is /project-requests/{id}/matches/run.
+ */
+export async function runRequestMatches(id: number, opts?: AiRunMatchOptions): Promise<MatchCandidateDto[]> {
+  const { data } = await aiScoringClient.post<MatchCandidateDto[]>(
+    `matches/requests/${id}/matches/run`,
+    null,
+    { timeout: AI_MATCH_TIMEOUT_MS, params: aiMatchParams(opts) }
+  );
+  return data;
+}
 
 /**
  * Force a fresh AI re-analysis (POST re-analyze). Returns ranked consultants directly.
  * GET top-consultants stays cache-aware; model/weight params are only sent here.
  */
-export async function reAnalyzeRequest(id: number, opts?: AiMatchOptions): Promise<MatchConsultantDto[]> {
-  const { data } = await aiScoringClient.post<MatchConsultantDto[]>(
+export async function reAnalyzeRequest(id: number, opts?: AiMatchOptions): Promise<MatchCandidateDto[]> {
+  const { data } = await aiScoringClient.post<MatchCandidateDto[]>(
     `matches/requests/${id}/re-analyze`,
     null,
     { timeout: AI_MATCH_TIMEOUT_MS, params: aiMatchParams(opts) }

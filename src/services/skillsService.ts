@@ -1,5 +1,12 @@
 import apiClient from './apiClient';
-import type { SkillInCompanyDto, PageSkillSummaryDto, PageConsultantSummaryDto, ConsultantSummaryDto, RelationalSearchRequest } from '../types/api';
+import type {
+  SkillInCompanyDto,
+  PageSkillSummaryDto,
+  PageConsultantSummaryDto,
+  ConsultantSummaryDto,
+  RelationalSearchRequest,
+  SkillConsultantRankingDto,
+} from '../types/api';
 import { mapToConsultantSummaryDto, mapToConsultantSummaryPage, searchConsultantsRelational } from './consultantsService';
 
 // Legacy (deprecated) full aggregate. Prefer summary + consultants endpoints.
@@ -70,6 +77,26 @@ export async function listSkillNames(prefix?: string, limit: number = 100): Prom
   const { data } = await apiClient.get<string[]>('skills/names', { params });
   return data;
 }
+export async function listTopRankedConsultantsBySkill(
+  skill: string,
+  limit: number = 3
+): Promise<SkillConsultantRankingDto[]> {
+  const { data } = await apiClient.get<SkillConsultantRankingDto[]>(
+    `skills/${encodeURIComponent(skill)}/top-ranked-consultants`,
+    { params: { limit, onlyActiveCv: true } }
+  );
+  return data;
+}
+
+function toConsultantSummaryFromRanking(item: SkillConsultantRankingDto): ConsultantSummaryDto {
+  return {
+    userId: item.id ?? '',
+    name: item.name ?? '',
+    email: item.email ?? '',
+    bornYear: item.bornYear ?? 0,
+    defaultCvId: item.defaultCvId ?? '',
+  };
+}
 
 export async function listTopConsultantsBySkill(skill: string, limit: number = 3): Promise<ConsultantSummaryDto[]> {
   const fallback = async (): Promise<ConsultantSummaryDto[]> => {
@@ -85,6 +112,13 @@ export async function listTopConsultantsBySkill(skill: string, limit: number = 3
   if (hasReserved) {
     try { return await fallback(); } catch { /* fall through */ }
   }
+
+  try {
+    const ranked = await listTopRankedConsultantsBySkill(skill, limit);
+    if (Array.isArray(ranked) && ranked.length > 0) {
+      return ranked.map(toConsultantSummaryFromRanking);
+    }
+  } catch { /* ignore */ }
 
   try {
     const { data } = await apiClient.get<ConsultantSummaryDto[]>(`skills/${encodeURIComponent(skill)}/top-consultants`, { params: { limit } });

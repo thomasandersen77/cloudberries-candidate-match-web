@@ -11,7 +11,7 @@ import apiClient, { aiScoringClient } from './apiClient';
 import { runScoreForCandidate, recalculateScoreForCandidate, runScoreForAll } from './cvScoreService';
 import { reAnalyzeRequest } from './matchesRequestsService';
 import { recalculateMatches } from './newMatchesService';
-import { analyzeProjectRequest } from './projectRequestsService';
+import { analyzeProjectRequest, uploadProjectRequest } from './projectRequestsService';
 
 const mockedAi = aiScoringClient as unknown as { post: ReturnType<typeof vi.fn> };
 const mockedApi = apiClient as unknown as { post: ReturnType<typeof vi.fn> };
@@ -26,7 +26,16 @@ describe('useHighestQualityModel parameter', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockedAi.post.mockResolvedValue({ data: {} });
-    mockedApi.post.mockResolvedValue({ data: {} });
+    mockedApi.post.mockResolvedValue({
+      data: {
+        id: 1,
+        customerName: 'Test',
+        originalFilename: 't.pdf',
+        summary: 's',
+        mustRequirements: [],
+        shouldRequirements: [],
+      },
+    });
   });
 
   describe('cv-score: score single candidate', () => {
@@ -98,6 +107,20 @@ describe('useHighestQualityModel parameter', () => {
     it('sends true when on', async () => {
       await analyzeProjectRequest(1, { useHighestQualityModel: true });
       expect(lastParams(mockedAi.post)).toMatchObject({ useHighestQualityModel: 'true' });
+    });
+  });
+
+  describe('project requests: upload', () => {
+    it('omits the flag when off', async () => {
+      const file = new File(['pdf'], 'test.pdf', { type: 'application/pdf' });
+      await uploadProjectRequest(file, { useHighestQualityModel: false });
+      expect(lastParams(mockedApi.post)?.useHighestQualityModel).toBeUndefined();
+    });
+
+    it('sends true when on', async () => {
+      const file = new File(['pdf'], 'test.pdf', { type: 'application/pdf' });
+      await uploadProjectRequest(file, { useHighestQualityModel: true });
+      expect(lastParams(mockedApi.post)).toMatchObject({ useHighestQualityModel: 'true' });
     });
   });
 });

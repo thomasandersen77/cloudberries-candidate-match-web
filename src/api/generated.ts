@@ -657,6 +657,7 @@ export interface paths {
         };
         /**
          * Returns AI-enriched top consultants for a given project request
+         * @deprecated
          * @description Returns previously persisted LLM evaluation when present (no LLM call). On first access, triggers a fresh LLM run and persists the result. To force a fresh run, use `POST /matches/requests/{id}/re-analyze`.
          *
          */
@@ -688,7 +689,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["MatchConsultantDto"][];
+                        "application/json": components["schemas"]["MatchCandidateDto"][];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -713,7 +714,8 @@ export interface paths {
         put?: never;
         /**
          * Re-analyzes and re-ranks consultants for a project request
-         * @description Forces a fresh LLM evaluation and overwrites the cached result for the given project request. Use this for an explicit "Run again" action from the UI when the user wants updated matches.
+         * @deprecated
+         * @description Forces a fresh LLM evaluation and overwrites the cached result for the given project request. Use this for an explicit "Run again" action from the UI when the user wants updated matches. DEPRECATED: Use `POST /matches/requests/{id}/matches/run` instead.
          *
          */
         post: {
@@ -743,7 +745,108 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["MatchConsultantDto"][];
+                        "application/json": components["schemas"]["MatchCandidateDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/matches/requests/{id}/matches/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cheap candidate shortlist generation without LLM reasoning
+         * @deprecated
+         * @description Uses pgvector and skill matching to generate a quick preview of potential candidates. Does not call expensive LLMs.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of potential matches */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchCandidateDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/matches/requests/{id}/matches/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Explicitly triggers expensive AI matching for a shortlist
+         * @deprecated
+         * @description Triggers LLM reasoning for the top candidates identified for this project request. Persists results for later retrieval.
+         *
+         */
+        post: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                    /** @description Explicit model tier for the LLM call. When provided, takes precedence over `useHighestQualityModel`. FAST = fastest/cheapest, DEFAULT = balanced, QUALITY = highest quality. If omitted, the backend picks an operation-appropriate default.
+                     *      */
+                    modelTier?: components["parameters"]["ModelTierParam"];
+                    /** @description When true, backend requests the configured QUALITY model tier for this operation. The concrete model is configured server-side via ANTHROPIC_QUALITY_MODEL. If no quality model is configured, backend falls back to the default model.
+                     *      */
+                    useHighestQualityModel?: components["parameters"]["UseHighestQualityModelParam"];
+                    /** @description Percentage weight (0–100) given to CV quality when combining with skill match. The remaining percentage is given to skill match. Frontend typically offers 20, 30, 60 or 80. If omitted, the server default (50) is used.
+                     *      */
+                    cvWeightPercent?: components["parameters"]["CvWeightPercentParam"];
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of AI-enriched matches */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchCandidateDto"][];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -764,7 +867,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Trigger matching computation for a specific project request */
+        /**
+         * Trigger matching computation for a specific project request
+         * @deprecated
+         */
         post: {
             parameters: {
                 query?: {
@@ -812,7 +918,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the status of a matching job */
+        /**
+         * Get the status of a matching job
+         * @deprecated
+         */
         get: {
             parameters: {
                 query?: never;
@@ -1101,8 +1210,8 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Delete a project request
-         * @description Permanently deletes the project request and its associated data (e.g. extracted requirements, AI suggestions and computed matches). Idempotent: deleting an unknown id returns 404.
+         * Delete a project request permanently
+         * @description Permanently deletes the project request with the given id, including all associated requirements, AI suggestions and computed matches. Returns 204 on success, 404 if not found.
          *
          */
         delete: {
@@ -1116,7 +1225,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Project request deleted (no content) */
+                /** @description Project request deleted successfully */
                 204: {
                     headers: {
                         [name: string]: unknown;
@@ -1147,7 +1256,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Trigger AI analysis for an existing project request */
+        /**
+         * Trigger AI analysis for an existing project request
+         * @deprecated
+         */
         post: {
             parameters: {
                 query?: {
@@ -1175,6 +1287,191 @@ export interface paths {
                 default: components["responses"]["ErrorResponse"];
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests/{id}/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get persisted matching results for a project request
+         * @description Returns stored match results without triggering any new LLM computation.
+         *     Safe to call on page load or expand.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of stored candidate matches */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchCandidateDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests/{id}/matches/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cheap shortlist / preselection for a project request
+         * @description Returns a shortlist of candidates based on skills and semantic similarity.
+         *     Does NOT call Anthropic or any LLM.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Shortlist preview */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectMatchPreviewResponse"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests/{id}/matches/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Explicitly run AI matching for a project request
+         * @description Triggers LLM-based matching for a shortlist of candidates.
+         *     This is an expensive operation.
+         *
+         */
+        post: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                    /** @description When true, backend requests the configured QUALITY model tier for this operation. The concrete model is configured server-side via ANTHROPIC_QUALITY_MODEL. If no quality model is configured, backend falls back to the default model.
+                     *      */
+                    useHighestQualityModel?: components["parameters"]["UseHighestQualityModelParam"];
+                    modelTier?: components["schemas"]["ModelTier"];
+                    cvWeightPercent?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description AI matching results */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchCandidateDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests/{id}/matches/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get normalized matching status
+         * @description Returns the current status of matching for the project request.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Matching status */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectMatchStatusResponse"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1974,6 +2271,7 @@ export interface paths {
                     size?: components["parameters"]["SizeParam"];
                     /** @description Sort field(s), e.g. `name,asc`. Repeat for multi-sort. */
                     sort?: components["parameters"]["SortParam"];
+                    onlyActiveCv?: boolean;
                 };
                 header?: never;
                 path: {
@@ -2016,6 +2314,7 @@ export interface paths {
             parameters: {
                 query?: {
                     limit?: number;
+                    onlyActiveCv?: boolean;
                 };
                 header?: never;
                 path: {
@@ -2033,6 +2332,49 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ConsultantSummaryDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skills/{skill}/top-ranked-consultants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Top-N consultants for the given skill with detailed ranking evidence */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                    onlyActiveCv?: boolean;
+                };
+                header?: never;
+                path: {
+                    /** @description Skill name (URL-encoded by the client) */
+                    skill: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Top ranked consultants for the skill with evidence */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SkillConsultantRankingDto"][];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -2158,6 +2500,32 @@ export interface components {
             candidateId: number;
             name?: string | null;
             cvText: string;
+        };
+        SkillConsultantRankingDto: {
+            id?: string;
+            name?: string;
+            email?: string | null;
+            role?: string | null;
+            office?: string | null;
+            bornYear?: number | null;
+            defaultCvId?: string | null;
+            skill?: string;
+            /** Format: double */
+            skillScore?: number;
+            durationYears?: number;
+            projectHitCount?: number;
+            latestUsedYearMonth?: string | null;
+            cvQualityScore?: number | null;
+            evidence?: components["schemas"]["SkillEvidenceDto"][];
+        };
+        SkillEvidenceDto: {
+            source?: string;
+            skillName?: string;
+            customer?: string | null;
+            projectDescription?: string | null;
+            fromYearMonth?: string | null;
+            toYearMonth?: string | null;
+            durationYears?: number | null;
         };
         ConsultantSummaryDto: {
             userId: string;
@@ -2300,10 +2668,14 @@ export interface components {
             sort?: string[];
         };
         EmbeddingProviderInfo: {
-            providerName?: string;
-            modelName?: string;
+            provider?: string;
+            model?: string;
             dimension?: number;
             enabled?: boolean;
+            activeEmbeddingCount?: number;
+            semanticSearchReady?: boolean;
+            /** Format: int64 */
+            totalConsultantCount?: number;
         };
         ProjectRequestSummaryDto: {
             /** Format: int64 */
@@ -2339,13 +2711,20 @@ export interface components {
         };
         /** @enum {string} */
         CoverageStatus: "GREEN" | "YELLOW" | "RED" | "NEUTRAL";
-        MatchConsultantDto: {
+        MatchCandidateDto: {
             userId: string;
             name: string;
             cvId: string;
-            /** Format: double */
-            relevanceScore: number;
+            /**
+             * Format: double
+             * @description Match score from 0.0 to 10.0
+             */
+            score: number;
+            /** @description Match score from 0 to 100 */
+            scorePercent?: number;
             justification?: string | null;
+            skills?: string[];
+            email?: string | null;
         };
         TriggerMatchingResponse: {
             /** Format: int64 */
@@ -2361,6 +2740,43 @@ export interface components {
             lastUpdated?: string | null;
             error?: string | null;
         };
+        ProjectMatchPreviewResponse: {
+            /** Format: int64 */
+            projectRequestId?: number;
+            limit?: number;
+            semanticSearchReady?: boolean;
+            semanticSearchUsed?: boolean;
+            candidates?: components["schemas"]["MatchPreviewCandidateDto"][];
+        };
+        MatchPreviewCandidateDto: {
+            userId?: string;
+            cvId?: string;
+            name?: string;
+            /** Format: double */
+            skillScore?: number;
+            /** Format: double */
+            semanticScore?: number;
+            /** Format: double */
+            cvQualityScore?: number;
+            /** Format: double */
+            combinedScore?: number;
+            reason?: string;
+            email?: string | null;
+        };
+        ProjectMatchStatusResponse: {
+            /** Format: int64 */
+            projectRequestId?: number;
+            status?: components["schemas"]["MatchingStatus"];
+            /** Format: date-time */
+            lastUpdated?: string | null;
+            error?: string | null;
+            matchCount?: number;
+            semanticSearchReady?: boolean;
+        };
+        /** @enum {string} */
+        MatchingStatus: "NOT_STARTED" | "READY_FOR_PREVIEW" | "RUNNING" | "COMPLETED" | "FAILED";
+        /** @enum {string} */
+        ModelTier: "FAST" | "DEFAULT" | "QUALITY";
         ProjectRequestResponseDto: {
             /** Format: int64 */
             id?: number;

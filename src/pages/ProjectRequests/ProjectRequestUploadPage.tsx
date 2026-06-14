@@ -6,6 +6,8 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import type { ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
 import { uploadProjectRequest, listProjectRequestsPaged, getProjectRequestById, deleteProjectRequest } from '../../services/projectRequestsService';
+import HighQualityToggle from '../../components/HighQualityToggle';
+import { Link as RouterLink } from 'react-router-dom';
 
 const ProjectRequestUploadPage: React.FC = () => {
   const theme = useTheme();
@@ -23,6 +25,7 @@ const ProjectRequestUploadPage: React.FC = () => {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; label: string } | null>(null);
   const [sortField, setSortField] = useState<'uploadedAt' | 'customerName' | 'summary' | 'deadlineDate' | 'status'>('uploadedAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [highQualityAnalysis, setHighQualityAnalysis] = useState(false);
 
   const isPdf = useMemo(() => (file?.type === 'application/pdf') || (file?.name?.toLowerCase().endsWith('.pdf')), [file]);
 
@@ -40,7 +43,7 @@ const ProjectRequestUploadPage: React.FC = () => {
     setResult(null);
     setError(null);
     try {
-      const res = await uploadProjectRequest(file);
+      const res = await uploadProjectRequest(file, { useHighestQualityModel: highQualityAnalysis });
       setResult(res);
       // Refresh existing list after successful upload
       try {
@@ -170,11 +173,21 @@ const ProjectRequestUploadPage: React.FC = () => {
         Last opp kundeforspørsel (PDF)
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 760, lineHeight: 1.7, fontSize: { xs: '1.02rem', md: '1.06rem' } }}>
-        Her kan du laste opp en kundeforspørsel i PDF-format. Dokumentet vil analyseres av en AI, lagres i databasen,
-        og resultatet vises under. Dette kan ta litt tid, så vent til analysen er ferdig.
+        Her kan du laste opp en kundeforspørsel i PDF-format. Dokumentet analyseres og lagres.
+        Matching kjøres ikke automatisk — gå til Matcher når du vil finne kandidater.
       </Typography>
 
       <Paper elevation={0} sx={{ p: { xs: 2, md: 3 }, mb: 3, overflow: 'hidden' }}>
+        <Stack spacing={2} sx={{ mb: 2 }}>
+          <HighQualityToggle
+            checked={highQualityAnalysis}
+            onChange={setHighQualityAnalysis}
+            disabled={uploading}
+          />
+          <Typography variant="caption" color="text.secondary">
+            Valgfritt for PDF-analyse. Vanlig analyse er normalt tilstrekkelig.
+          </Typography>
+        </Stack>
         <Box
           sx={{
             p: { xs: 2, sm: 2.5 },
@@ -446,6 +459,8 @@ function ProjectRequestDetails({
         <RequirementPanel title="Bør-krav" rows={dto.shouldRequirements ?? []} tone="should" />
       </Stack>
 
+      {dto.id != null && <MatchingNextActions requestId={dto.id} />}
+
       {onDelete && (
         <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
           <Button
@@ -460,6 +475,19 @@ function ProjectRequestDetails({
         </Stack>
       )}
     </>
+  );
+}
+
+function MatchingNextActions({ requestId }: { requestId: number }) {
+  return (
+    <Alert severity="info" sx={{ mt: 2 }}>
+      Matching er ikke kjørt automatisk. Gå til Matcher for forhåndsvisning eller AI-matching.
+      <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+        <Button component={RouterLink} to={`/matches?requestId=${requestId}`} size="small" variant="contained">
+          Gå til Matcher
+        </Button>
+      </Stack>
+    </Alert>
   );
 }
 

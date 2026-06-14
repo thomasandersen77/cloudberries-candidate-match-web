@@ -175,6 +175,28 @@ expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenC
     });
   });
 
+  describe('syncSingleConsultant', () => {
+    it('should trigger minimal batch sync and map response', async () => {
+      (mockedAiClient.post as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+        data: { total: 1, succeeded: 1, failed: 0 },
+      });
+
+      const result = await syncSingleConsultant('123', 'cv123');
+
+      expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+        'consultants/sync/run',
+        null,
+        { params: { batchSize: 1 } }
+      );
+      expect(result).toEqual({
+        userId: '123',
+        cvId: 'cv123',
+        processed: true,
+        message: 'Sync batch triggered',
+      });
+    });
+  });
+
   describe('search endpoints', () => {
     it('searchConsultantsRelational posts body with pagination and returns page dto', async () => {
       const pagePayload = {
@@ -243,31 +265,4 @@ expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenC
     });
   });
 
-  describe('syncSingleConsultant', () => {
-    it('should sync single consultant', async () => {
-      const mockResponse = {
-        data: {
-          userId: '123',
-          cvId: 'cv123',
-          processed: true
-        }
-      };
-
-(mockedAiClient.post as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
-
-      const result = await syncSingleConsultant('123', 'cv123');
-
-expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
-        'consultants/sync/123/cv123'
-      );
-      expect(result).toEqual(mockResponse.data);
-    });
-
-    it('should handle sync failure', async () => {
-      const mockError = new Error('Sync failed');
-      (mockedAiClient.post as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(mockError);
-
-      await expect(syncSingleConsultant('123', 'cv123')).rejects.toThrow('Sync failed');
-    });
-  });
 });

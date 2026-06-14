@@ -116,6 +116,10 @@ const SemanticSearchPage: React.FC = () => {
   }, []);
 
   const submit = async () => {
+    if (embeddingInfo && embeddingInfo.semanticSearchReady === false) {
+      setError('Semantisk søk er ikke klart. Embeddings må genereres først.');
+      return;
+    }
     setLoading(true);
     setError(null);
     const timer = setTimeout(() => setShowSpinner(true), DELAYED_SPINNER_MS);
@@ -145,6 +149,12 @@ const SemanticSearchPage: React.FC = () => {
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Semantisk søk</Typography>
+
+      {embeddingInfo && embeddingInfo.semanticSearchReady === false && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Semantisk søk er ikke klart. Embeddings må genereres først. Gå til Embeddings-siden for å generere.
+        </Alert>
+      )}
 
       <Paper sx={{ p: 2, mb: 2 }}>
         <Stack spacing={2}>

@@ -12,7 +12,8 @@ import {
   Stack
 } from '@mui/material';
 import { getHealthStatus } from '../../services/healthService';
-import type { HealthResponse } from '../../types/api';
+import { getAiModels } from '../../services/adminService';
+import type { AiModelsResponse, HealthResponse } from '../../types/api';
 
 // A new component to render status with specific text and colors as requested.
 const StatusIndicator: React.FC<{ status: unknown; serviceName: string }> = ({ status, serviceName }) => {
@@ -32,9 +33,14 @@ const StatusIndicator: React.FC<{ status: unknown; serviceName: string }> = ({ s
 
 const HealthPage: React.FC = () => {
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [aiModels, setAiModels] = useState<AiModelsResponse | null>(null);
+  const [aiModelsError, setAiModelsError] = useState<string | null>(null);
 
   useEffect(() => {
     getHealthStatus().then(setHealth);
+    getAiModels()
+      .then(setAiModels)
+      .catch(() => setAiModelsError('Kunne ikke hente AI-modellkonfigurasjon.'));
   }, []);
 
   const details = (health?.details ?? {}) as Record<string, unknown>;
@@ -75,6 +81,25 @@ const HealthPage: React.FC = () => {
             })}
           </TableBody>
         </Table>
+      </Paper>
+
+      <Paper sx={{ p: { xs: 2, md: 3 }, mt: 3, overflowX: 'auto' }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>AI-modeller (admin)</Typography>
+        {aiModelsError && (
+          <Typography variant="body2" color="text.secondary">{aiModelsError}</Typography>
+        )}
+        {aiModels && (
+          <Table size="medium" sx={{ minWidth: 400 }}>
+            <TableBody>
+              <TableRow><TableCell sx={{ fontWeight: 500 }}>Provider</TableCell><TableCell>{aiModels.provider}</TableCell></TableRow>
+              <TableRow><TableCell sx={{ fontWeight: 500 }}>Rask modell (FAST)</TableCell><TableCell>{aiModels.fastModel}</TableCell></TableRow>
+              <TableRow><TableCell sx={{ fontWeight: 500 }}>Standard modell (DEFAULT)</TableCell><TableCell>{aiModels.defaultModel}</TableCell></TableRow>
+              <TableRow><TableCell sx={{ fontWeight: 500 }}>Kvalitetsmodell (QUALITY)</TableCell><TableCell>{aiModels.qualityModel}</TableCell></TableRow>
+              <TableRow><TableCell sx={{ fontWeight: 500 }}>Kvalitet konfigurert</TableCell><TableCell>{aiModels.qualityConfigured ? 'Ja' : 'Nei'}</TableCell></TableRow>
+              <TableRow><TableCell sx={{ fontWeight: 500 }}>Kvalitet faller tilbake til standard</TableCell><TableCell>{aiModels.qualityFallsBackToDefault ? 'Ja' : 'Nei'}</TableCell></TableRow>
+            </TableBody>
+          </Table>
+        )}
       </Paper>
     </Container>
   );
