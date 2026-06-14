@@ -22,7 +22,10 @@ vi.mock('../../api/matchingApi', () => ({
   }),
   runProjectMatching: vi.fn().mockResolvedValue({
     projectRequestId: 1,
-    matches: [{ userId: 'u1', name: 'Kari', cvId: 'c1', score: 90, justification: 'God match' }],
+    matches: [
+      { userId: 'u1', name: 'Thomas Andersen', cvId: 'c1', score: 8.3, scorePercent: 83, justification: 'God match' },
+      { userId: 'u2', name: 'Stine Holst', cvId: 'c2', score: 7.5, scorePercent: 75, justification: 'Sterk profil' },
+    ],
     lastUpdated: '2026-01-01T12:00:00Z',
   }),
 }));
@@ -84,5 +87,21 @@ describe('RequestMatchPanel', () => {
     await user.click(screen.getByRole('checkbox', { name: /Bruk høyeste kvalitet/i }));
     await user.click(screen.getByRole('button', { name: /^Kjør AI-matching$/i }));
     expect(await screen.findByText(/Dette kan bruke betydelig mer AI-kreditt/i)).toBeInTheDocument();
+  });
+
+  it('renders decimal AI match scores without integer truncation', async () => {
+    const api = await import('../../api/matchingApi');
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <RequestMatchPanel requestId={1} />
+      </MemoryRouter>,
+    );
+    await waitFor(() => screen.getByRole('button', { name: /^Kjør AI-matching$/i }));
+    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching$/i }));
+    await waitFor(() => expect(api.runProjectMatching).toHaveBeenCalled());
+    expect(await screen.findByText(/Thomas Andersen/)).toBeInTheDocument();
+    expect(screen.getByText(/score 8\.3/)).toBeInTheDocument();
+    expect(screen.getByText(/score 7\.5/)).toBeInTheDocument();
   });
 });

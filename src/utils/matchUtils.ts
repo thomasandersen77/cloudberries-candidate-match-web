@@ -4,6 +4,35 @@ import type { ScoreLevel, ScoreVisualization } from '../types/matches';
  * Utility functions for working with consultant match scores and visualization.
  */
 
+/** OpenAPI MatchCandidateDto.score is 0.0–10.0 (double). */
+export function formatMatchScore(score: number | null | undefined): string {
+  if (typeof score !== 'number' || Number.isNaN(score)) return '–';
+  return score.toFixed(1);
+}
+
+/** e.g. " • score 8.3" for AI match rows; empty string when score is missing. */
+export function formatMatchScoreSuffix(score: number | null | undefined): string {
+  const label = formatMatchScore(score);
+  return label === '–' ? '' : ` • score ${label}`;
+}
+
+/** Normalize assorted legacy scales to 0–1 for visualization thresholds. */
+export function normalizeMatchScoreForVisualization(score: number): number {
+  if (score <= 1) return score;
+  if (score <= 10) return score / 10;
+  return score / 100;
+}
+
+/**
+ * Display label for legacy MatchTop10ConsultantDto.matchScore values.
+ * Prefers OpenAPI 0–10 decimal form when the value fits that scale.
+ */
+export function formatLegacyMatchScoreLabel(matchScore: number): string {
+  if (matchScore <= 1) return `${(matchScore * 100).toFixed(1)}%`;
+  if (matchScore <= 10) return `score ${matchScore.toFixed(1)}`;
+  return `${matchScore}%`;
+}
+
 /**
  * Determines the score level based on the match score value.
  * 

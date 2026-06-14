@@ -9,7 +9,7 @@ vi.mock('./apiClient', () => {
 
 import apiClient, { aiScoringClient } from './apiClient';
 import { runScoreForCandidate, recalculateScoreForCandidate, runScoreForAll } from './cvScoreService';
-import { reAnalyzeRequest } from './matchesRequestsService';
+import { reAnalyzeRequest, runRequestMatches } from './matchesRequestsService';
 import { recalculateMatches } from './newMatchesService';
 import { analyzeProjectRequest, uploadProjectRequest } from './projectRequestsService';
 
@@ -83,6 +83,23 @@ describe('useHighestQualityModel parameter', () => {
     it('sends true when on', async () => {
       await reAnalyzeRequest(1, { useHighestQualityModel: true });
       expect(lastParams(mockedAi.post)).toMatchObject({ useHighestQualityModel: 'true' });
+    });
+  });
+
+  describe('matches: run', () => {
+    it('sends limit and cvWeightPercent without quality flag by default', async () => {
+      await runRequestMatches(11, { limit: 10, cvWeightPercent: 60 });
+      expect(lastParams(mockedAi.post)).toMatchObject({ limit: '10', cvWeightPercent: '60' });
+      expect(lastParams(mockedAi.post)?.useHighestQualityModel).toBeUndefined();
+    });
+
+    it('sends useHighestQualityModel when selected', async () => {
+      await runRequestMatches(11, { limit: 10, cvWeightPercent: 60, useHighestQualityModel: true });
+      expect(lastParams(mockedAi.post)).toMatchObject({
+        limit: '10',
+        cvWeightPercent: '60',
+        useHighestQualityModel: 'true',
+      });
     });
   });
 

@@ -75,6 +75,47 @@ describe('matchingApi', () => {
     });
   });
 
+  it('runProjectMatching sends limit and cvWeightPercent to primary endpoint', async () => {
+    mockedAi.post.mockResolvedValue({
+      data: [{ userId: '1', name: 'A', cvId: 'c', score: 8.3 }],
+      status: 200,
+    });
+    await runProjectMatching(11, { limit: 10, cvWeightPercent: 60 });
+    expect(mockedAi.post).toHaveBeenCalledWith(
+      'project-requests/11/matches/run',
+      null,
+      expect.objectContaining({
+        params: { limit: '10', cvWeightPercent: '60' },
+      }),
+    );
+    expect(reAnalyzeRequest).not.toHaveBeenCalled();
+  });
+
+  it('runProjectMatching omits useHighestQualityModel on primary endpoint by default', async () => {
+    mockedAi.post.mockResolvedValue({
+      data: [{ userId: '1', name: 'A', cvId: 'c', score: 7.5 }],
+      status: 200,
+    });
+    await runProjectMatching(11, { limit: 10, cvWeightPercent: 60 });
+    const config = mockedAi.post.mock.calls[0]?.[2] as { params?: Record<string, string> } | undefined;
+    expect(config?.params?.useHighestQualityModel).toBeUndefined();
+  });
+
+  it('runProjectMatching sends useHighestQualityModel on primary endpoint when selected', async () => {
+    mockedAi.post.mockResolvedValue({
+      data: [{ userId: '1', name: 'A', cvId: 'c', score: 6.5 }],
+      status: 200,
+    });
+    await runProjectMatching(11, { limit: 10, cvWeightPercent: 60, useHighestQualityModel: true });
+    expect(mockedAi.post).toHaveBeenCalledWith(
+      'project-requests/11/matches/run',
+      null,
+      expect.objectContaining({
+        params: { limit: '10', cvWeightPercent: '60', useHighestQualityModel: 'true' },
+      }),
+    );
+  });
+
   it('previewProjectMatches calls primary endpoint', async () => {
     mockedApi.get.mockResolvedValue({ data: { projectRequestId: 1, candidates: [] } });
     await previewProjectMatches(1, { limit: 5 });

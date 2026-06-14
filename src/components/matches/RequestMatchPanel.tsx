@@ -41,6 +41,7 @@ import {
   phaseLabel,
   type FrontendMatchPhase,
 } from '../../utils/matchStatusAdapter';
+import { formatMatchScore, formatMatchScoreSuffix } from '../../utils/matchUtils';
 
 const LIMIT_OPTIONS = [5, 10, 15] as const;
 const CV_WEIGHT_OPTIONS = [20, 30, 50, 60, 80] as const;
@@ -224,7 +225,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ sm: 'center' }}>
         <Typography variant="body2">
           <b>{s.name}</b>
-          {typeof s.score === 'number' ? ` • score ${s.score.toFixed(1)}` : ''}
+          {formatMatchScoreSuffix(s.score)}
         </Typography>
         <Stack direction="row" spacing={1}>
           {s.userId && (
@@ -338,7 +339,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
               <Paper key={c.userId ?? c.name} sx={{ p: 1 }}>
                 <Typography variant="body2">
                   <b>{c.name}</b>
-                  {typeof c.combinedScore === 'number' ? ` • ${c.combinedScore.toFixed(1)}` : ''}
+                  {typeof c.combinedScore === 'number' ? ` • rang ${formatMatchScore(c.combinedScore)}` : ''}
                 </Typography>
                 {c.reason && (
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>

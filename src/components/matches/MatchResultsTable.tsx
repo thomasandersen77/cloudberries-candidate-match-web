@@ -18,7 +18,8 @@ import { Person as PersonIcon } from '@mui/icons-material';
 import type { MatchResultsTableProps, MatchCandidate } from '../../types/matches';
 import {
   getScoreVisualizationFromScore,
-  formatScoreAsPercentage,
+  formatLegacyMatchScoreLabel,
+  normalizeMatchScoreForVisualization,
   truncateExplanation,
   formatRelativeTime,
   sortCandidatesByScore
@@ -101,7 +102,9 @@ interface MatchRowProps {
 }
 
 const MatchRow: React.FC<MatchRowProps> = ({ match, rank }) => {
-  const scoreViz = getScoreVisualizationFromScore(match.matchScore);
+  const normalizedScore = normalizeMatchScoreForVisualization(match.matchScore);
+  const scoreViz = getScoreVisualizationFromScore(normalizedScore);
+  const scoreLabel = formatLegacyMatchScoreLabel(match.matchScore);
   const truncatedExplanation = truncateExplanation(match.matchExplanation, 120);
   const hasMoreContent = match.matchExplanation && match.matchExplanation.length > 120;
 
@@ -135,9 +138,9 @@ const MatchRow: React.FC<MatchRowProps> = ({ match, rank }) => {
       </TableCell>
       
       <TableCell align="center">
-        <Tooltip title={`${scoreViz.description} - ${formatScoreAsPercentage(match.matchScore, 2)}`}>
+        <Tooltip title={`${scoreViz.description} - ${scoreLabel}`}>
           <Chip
-            label={formatScoreAsPercentage(match.matchScore)}
+            label={scoreLabel}
             size="small"
             sx={{
               backgroundColor: scoreViz.backgroundColor,
