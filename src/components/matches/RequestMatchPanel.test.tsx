@@ -23,8 +23,22 @@ vi.mock('../../api/matchingApi', () => ({
   runProjectMatching: vi.fn().mockResolvedValue({
     projectRequestId: 1,
     matches: [
-      { userId: 'u1', name: 'Thomas Andersen', cvId: 'c1', score: 8.3, scorePercent: 83, justification: 'God match' },
-      { userId: 'u2', name: 'Stine Holst', cvId: 'c2', score: 7.5, scorePercent: 75, justification: 'Sterk profil' },
+      {
+        userId: 'u1',
+        name: 'Thomas Andersen',
+        cvId: 'c1',
+        score: 8.3,
+        scorePercent: 83,
+        justification: 'God match med lang begrunnelse som skal vises når raden utvides.',
+      },
+      {
+        userId: 'u2',
+        name: 'Stine Holst',
+        cvId: 'c2',
+        score: 7.5,
+        scorePercent: 75,
+        justification: 'Sterk profil med relevant erfaring.',
+      },
     ],
     lastUpdated: '2026-01-01T12:00:00Z',
   }),
@@ -103,5 +117,29 @@ describe('RequestMatchPanel', () => {
     expect(await screen.findByText(/Thomas Andersen/)).toBeInTheDocument();
     expect(screen.getByText(/score 8\.3/)).toBeInTheDocument();
     expect(screen.getByText(/score 7\.5/)).toBeInTheDocument();
+  });
+
+  it('expands consultant details with accordion — only one open at a time', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <RequestMatchPanel requestId={1} />
+      </MemoryRouter>,
+    );
+    await waitFor(() => screen.getByRole('button', { name: /^Kjør AI-matching$/i }));
+    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching$/i }));
+    expect(await screen.findByText(/Thomas Andersen/)).toBeInTheDocument();
+
+    const expandThomas = screen.getByRole('button', { name: /Vis detaljer for Thomas Andersen/i });
+    const expandStine = screen.getByRole('button', { name: /Vis detaljer for Stine Holst/i });
+
+    await user.click(expandThomas);
+    expect(expandThomas).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText(/God match med lang begrunnelse/)).toBeVisible();
+
+    await user.click(expandStine);
+    expect(expandStine).toHaveAttribute('aria-expanded', 'true');
+    expect(expandThomas).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText(/Sterk profil med relevant erfaring/)).toBeVisible();
   });
 });

@@ -29,12 +29,11 @@ export type CvData = paths['/cv/{userId}']['get']['responses'][200]['content']['
 
 export type EmbeddingRunMissingResponse =
   paths['/embeddings/run/missing']['post']['responses'][200]['content']['application/json'];
-export type EmbeddingProviderInfo = components['schemas']['EmbeddingProviderInfo'] & {
-  /** Legacy aliases used by older UI code */
-  providerName?: string;
-  modelName?: string;
-  lastRebuildTime?: string | null;
-};
+export type EmbeddingUserCvRunResponse =
+  paths['/embeddings/run']['post']['responses'][200]['content']['application/json'];
+export type EmbeddingJasonRunResponse =
+  paths['/embeddings/run/jason']['post']['responses'][200]['content']['application/json'];
+export type EmbeddingProviderInfo = components['schemas']['EmbeddingProviderInfo'];
 
 export type CandidateDTO = components['schemas']['CandidateDTO'];
 export type CvScoreDto = components['schemas']['CvScoreDto'];
@@ -125,9 +124,6 @@ export type RagIngestDbResponse = {
 };
 
 // --- Legacy types (endpoints not in current OpenAPI spec) ---
-
-export type EmbeddingJasonRunResponse = { processedJason?: boolean };
-export type EmbeddingUserCvRunResponse = { userId: string; cvId: string; processed: boolean };
 
 export type MatchApiRequest = { projectRequestText: string };
 export type SkillsRequest = { skills: string[] };

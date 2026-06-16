@@ -5,19 +5,22 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
   Link as MuiLink,
   Paper,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
-  Tooltip,
   Typography,
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { Link as RouterLink } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import HighQualityToggle from '../HighQualityToggle';
@@ -45,6 +48,96 @@ import { formatMatchScore, formatMatchScoreSuffix } from '../../utils/matchUtils
 
 const LIMIT_OPTIONS = [5, 10, 15] as const;
 const CV_WEIGHT_OPTIONS = [20, 30, 50, 60, 80] as const;
+const DETAIL_PREVIEW_LENGTH = 140;
+
+function truncateDetail(text: string, maxLength = DETAIL_PREVIEW_LENGTH): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}…`;
+}
+
+type ExpandableConsultantRowProps = {
+  rowKey: string;
+  name: string;
+  scoreLabel: string;
+  detail?: string | null;
+  skills?: string[];
+  userId?: string | null;
+  expandedKey: string | null;
+  onToggle: (key: string) => void;
+};
+
+const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
+  rowKey,
+  name,
+  scoreLabel,
+  detail,
+  skills,
+  userId,
+  expandedKey,
+  onToggle,
+}) => {
+  const isExpanded = expandedKey === rowKey;
+  const hasDetail = Boolean(detail?.trim());
+  const hasSkills = (skills?.length ?? 0) > 0;
+  const canExpand = hasDetail || hasSkills;
+
+  return (
+    <Paper sx={{ p: 1 }}>
+      <Stack direction="row" spacing={0.5} alignItems="flex-start">
+        {canExpand ? (
+          <IconButton
+            size="small"
+            aria-label={isExpanded ? `Skjul detaljer for ${name}` : `Vis detaljer for ${name}`}
+            aria-expanded={isExpanded}
+            onClick={() => onToggle(rowKey)}
+            sx={{ mt: -0.25 }}
+          >
+            {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+          </IconButton>
+        ) : (
+          <Box sx={{ width: 34, flexShrink: 0 }} />
+        )}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ sm: 'center' }}>
+            <Typography variant="body2">
+              <b>{name}</b>
+              {scoreLabel}
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {userId && (
+                <MuiLink component={RouterLink} to={`/consultants/${userId}`} underline="hover">Se konsulent</MuiLink>
+              )}
+              {userId && (
+                <MuiLink component={RouterLink} to={`/cv/${userId}`} underline="hover">Se CV</MuiLink>
+              )}
+            </Stack>
+          </Stack>
+          {hasDetail && !isExpanded && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+              {truncateDetail(detail!)}
+            </Typography>
+          )}
+          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+            <Box sx={{ mt: 0.75 }}>
+              {hasDetail && (
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                  {detail}
+                </Typography>
+              )}
+              {hasSkills && (
+                <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: hasDetail ? 1 : 0 }}>
+                  {skills!.map((skill) => (
+                    <Chip key={skill} label={skill} size="small" variant="outlined" />
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          </Collapse>
+        </Box>
+      </Stack>
+    </Paper>
+  );
+};
 
 type PanelState = {
   phase: FrontendMatchPhase;
@@ -90,6 +183,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
   const [loadingRun, setLoadingRun] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingRun, setPendingRun] = useState<'run' | 'rerun' | null>(null);
+  const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
   const [state, setState] = useState<PanelState>({
     phase: 'NOT_STARTED',
     results: null,
@@ -135,6 +229,14 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
       }
     })();
   }, [refreshPersisted]);
+
+  const toggleExpandedRow = useCallback((key: string) => {
+    setExpandedRowKey((prev) => (prev === key ? null : key));
+  }, []);
+
+  useEffect(() => {
+    setExpandedRowKey(null);
+  }, [state.results, state.preview]);
 
   const handlePreview = async () => {
     setLoadingPreview(true);
@@ -219,32 +321,6 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
     }
     void executeRun();
   };
-
-  const renderConsultant = (s: MatchCandidateDto, key: string) => (
-    <Paper key={key} sx={{ p: 1 }}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ sm: 'center' }}>
-        <Typography variant="body2">
-          <b>{s.name}</b>
-          {formatMatchScoreSuffix(s.score)}
-        </Typography>
-        <Stack direction="row" spacing={1}>
-          {s.userId && (
-            <MuiLink component={RouterLink} to={`/consultants/${s.userId}`} underline="hover">Se konsulent</MuiLink>
-          )}
-          {s.userId && (
-            <MuiLink component={RouterLink} to={`/cv/${s.userId}`} underline="hover">Se CV</MuiLink>
-          )}
-        </Stack>
-      </Stack>
-      {s.justification && (
-        <Tooltip title={s.justification} placement="bottom-start">
-          <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }} color="text.secondary">
-            {s.justification.length > 140 ? `${s.justification.slice(0, 140)}…` : s.justification}
-          </Typography>
-        </Tooltip>
-      )}
-    </Paper>
-  );
 
   if (loadingInitial) {
     return (
@@ -335,19 +411,21 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
             {state.preview.semanticSearchUsed === false && ' — semantisk søk ikke brukt'}
           </Typography>
           <Stack spacing={0.75}>
-            {(state.preview.candidates ?? []).map((c) => (
-              <Paper key={c.userId ?? c.name} sx={{ p: 1 }}>
-                <Typography variant="body2">
-                  <b>{c.name}</b>
-                  {typeof c.combinedScore === 'number' ? ` • rang ${formatMatchScore(c.combinedScore)}` : ''}
-                </Typography>
-                {c.reason && (
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                    {c.reason}
-                  </Typography>
-                )}
-              </Paper>
-            ))}
+            {(state.preview.candidates ?? []).map((c) => {
+              const rowKey = `preview-${c.userId ?? c.name}`;
+              return (
+                <ExpandableConsultantRow
+                  key={rowKey}
+                  rowKey={rowKey}
+                  name={c.name ?? 'Ukjent'}
+                  scoreLabel={typeof c.combinedScore === 'number' ? ` • rang ${formatMatchScore(c.combinedScore)}` : ''}
+                  detail={c.reason}
+                  userId={c.userId}
+                  expandedKey={expandedRowKey}
+                  onToggle={toggleExpandedRow}
+                />
+              );
+            })}
           </Stack>
         </Box>
       )}
@@ -369,7 +447,22 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
               .slice()
               .sort((a: MatchCandidateDto, b: MatchCandidateDto) => (b.score ?? 0) - (a.score ?? 0))
               .slice(0, limit)
-              .map((s: MatchCandidateDto) => renderConsultant(s, s.userId ?? s.name))}
+              .map((s: MatchCandidateDto) => {
+                const rowKey = `ai-${s.userId ?? s.name}`;
+                return (
+                  <ExpandableConsultantRow
+                    key={rowKey}
+                    rowKey={rowKey}
+                    name={s.name}
+                    scoreLabel={formatMatchScoreSuffix(s.score)}
+                    detail={s.justification}
+                    skills={s.skills}
+                    userId={s.userId}
+                    expandedKey={expandedRowKey}
+                    onToggle={toggleExpandedRow}
+                  />
+                );
+              })}
           </Stack>
         </Box>
       ) : !state.preview && state.phase !== 'RUNNING' && (

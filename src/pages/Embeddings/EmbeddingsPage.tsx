@@ -69,8 +69,8 @@ const EmbeddingsPage: React.FC = () => {
         {status ? (
           <Stack spacing={0.5}>
             <Typography variant="body2"><strong>Aktiv:</strong> {status.enabled ? 'Ja' : 'Nei'}</Typography>
-            <Typography variant="body2"><strong>Leverandør:</strong> {status.provider ?? status.providerName ?? '–'}</Typography>
-            <Typography variant="body2"><strong>Modell:</strong> {status.model ?? status.modelName ?? '–'}</Typography>
+            <Typography variant="body2"><strong>Leverandør:</strong> {status.provider ?? '–'}</Typography>
+            <Typography variant="body2"><strong>Modell:</strong> {status.model ?? '–'}</Typography>
             <Typography variant="body2"><strong>Dimensjon:</strong> {status.dimension ?? '–'}</Typography>
             {typeof status.activeEmbeddingCount === 'number' && (
               <Typography variant="body2"><strong>Aktive embeddings:</strong> {status.activeEmbeddingCount}</Typography>
@@ -86,11 +86,6 @@ const EmbeddingsPage: React.FC = () => {
                 variant="outlined"
               />
             </Stack>
-            {status.lastRebuildTime && (
-              <Typography variant="caption" color="text.secondary">
-                Sist rebuild: {new Date(status.lastRebuildTime).toLocaleString('no-NO')}
-              </Typography>
-            )}
           </Stack>
         ) : !statusError && (
           <Typography variant="body2" color="text.secondary">Laster status…</Typography>
