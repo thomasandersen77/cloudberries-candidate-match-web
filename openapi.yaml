@@ -1713,6 +1713,15 @@ components:
           allOf:
             - $ref: '#/components/schemas/ChatScope'
           default: DATABASE
+        topK:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: >
+            How many consultants a search may return. Each hit costs prompt tokens, because the
+            model is given a summary card per consultant so it can cite them, so this is capped well
+            below what a raw search endpoint would allow.
 
     ChatAnswerKind:
       type: string

@@ -4,14 +4,24 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ChatAnalyzePage from '../ChatAnalyzePage';
 import { analyzeContent, clearAnalyzeConversation } from '../../../services/chatService';
+import { listProjectRequests } from '../../../services/projectRequestsService';
+import { runProjectMatching } from '../../../api/matchingApi';
 
 vi.mock('../../../services/chatService', () => ({
   analyzeContent: vi.fn(),
   clearAnalyzeConversation: vi.fn().mockResolvedValue(undefined)
 }));
+vi.mock('../../../services/projectRequestsService', () => ({
+  listProjectRequests: vi.fn().mockResolvedValue([])
+}));
+vi.mock('../../../api/matchingApi', () => ({
+  runProjectMatching: vi.fn().mockResolvedValue(undefined)
+}));
 
 const mockedAnalyze = vi.mocked(analyzeContent);
 const mockedClear = vi.mocked(clearAnalyzeConversation);
+const mockedListRequests = vi.mocked(listProjectRequests);
+const mockedRunMatching = vi.mocked(runProjectMatching);
 
 const factualAnswer = {
   conversationId: 'a92fb187-d0c4-4f97-8f5b-2cc1972203a5',
@@ -45,6 +55,7 @@ describe('ChatAnalyzePage', () => {
     sessionStorage.clear();
     vi.clearAllMocks();
     mockedClear.mockResolvedValue(undefined);
+    mockedListRequests.mockResolvedValue([] as never);
   });
 
   it('shows the answer, its kind and its sources', async () => {
@@ -247,6 +258,111 @@ describe('ChatAnalyzePage', () => {
     const second = mockedAnalyze.mock.calls[1][0] as { turnId?: string };
     expect(first.turnId).toBeTruthy();
     expect(second.turnId).toBe(first.turnId);
+  });
+
+  /**
+   * The dev proxy answers 500 with an empty body when the backend is not running, which is
+   * indistinguishable from an application error unless the message says which is more likely. A
+   * bare "Spørsmålet feilet" sent a reader looking for a bug that was not there.
+   */
+  it('says the server may be down when the failure looks like that', async () => {
+    mockedAnalyze.mockRejectedValueOnce({ response: { status: 500 } });
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('Hvem kan Kotlin?');
+
+    await waitFor(() => expect(screen.getByText(/Serveren svarte 500/)).toBeInTheDocument());
+    expect(screen.getByText(/backend ikke kjører/)).toBeInTheDocument();
+  });
+
+  it('says there was no answer at all when there is no response', async () => {
+    mockedAnalyze.mockRejectedValueOnce(new Error('Network Error'));
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('Hvem kan Kotlin?');
+
+    await waitFor(() => expect(screen.getByText(/Ingen svar fra serveren/)).toBeInTheDocument());
+  });
+
+  // ---------------------------------------------------- count, more, matching
+
+  it('sends the chosen result count and doubles it on vis flere', async () => {
+    const fiveHits = Array.from({ length: 5 }, (_, i) => ({
+      ref: `K${i + 1}`,
+      kind: 'CONSULTANT' as const,
+      label: `Konsulent ${i + 1}`,
+      consultantUserId: `user-${i + 1}`,
+      retrieval: { method: 'EXACT_SKILLS' as const, documentedSkills: [{ name: 'Kotlin', years: 5 }] }
+    }));
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer, answer: 'Fem treff.', answerKind: 'SEARCH_RESULT', sources: fiveHits
+    });
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('Hvem kan Kotlin?');
+    await waitFor(() => expect(mockedAnalyze).toHaveBeenCalled());
+    expect(mockedAnalyze.mock.calls[0][0]).toMatchObject({ topK: 5 });
+
+    fireEvent.click(await screen.findByRole('button', { name: /vis flere/i }));
+    await waitFor(() => expect(mockedAnalyze).toHaveBeenCalledTimes(2));
+    // A wider retrieval, not a page of a cached one, so the model can cite the wider set.
+    expect(mockedAnalyze.mock.calls[1][0]).toMatchObject({ content: 'Hvem kan Kotlin?', topK: 10 });
+  });
+
+  it('hands the picked consultants to the matching run for a chosen request', async () => {
+    mockedListRequests.mockResolvedValue([
+      { id: 8, customerName: 'Skatteetaten', title: 'Forespørsel' }
+    ] as never);
+    mockedRunMatching.mockResolvedValue(undefined as never);
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      answer: 'Ett treff.',
+      answerKind: 'SEARCH_RESULT',
+      sources: [{
+        ref: 'K1', kind: 'CONSULTANT' as const, label: 'Kari Nordmann',
+        consultantUserId: 'user-kari',
+        retrieval: { method: 'EXACT_SKILLS' as const, documentedSkills: [] }
+      }]
+    });
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('Hvem kan Kotlin?');
+    await waitFor(() => expect(screen.getByText('K1 Kari Nordmann')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /velg kari nordmann/i }));
+    await waitFor(() => expect(screen.getByText(/1 valgt/)).toBeInTheDocument());
+
+    fireEvent.mouseDown(screen.getByLabelText('Avrop'));
+    fireEvent.click(await screen.findByRole('option', { name: /Skatteetaten/ }));
+    fireEvent.click(screen.getByRole('button', { name: /kjør matching/i }));
+
+    // Named consultants go to the run endpoint verbatim, which skips preselection for them: an
+    // operator who has picked people should get those people evaluated.
+    await waitFor(() => expect(mockedRunMatching).toHaveBeenCalledWith(8, { consultantUserIds: ['user-kari'] }));
+  });
+
+  it('says so when the matching run could not be started', async () => {
+    mockedListRequests.mockResolvedValue([{ id: 8, customerName: 'Skatteetaten' }] as never);
+    mockedRunMatching.mockRejectedValue(new Error('boom') as never);
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      answerKind: 'SEARCH_RESULT',
+      sources: [{
+        ref: 'K1', kind: 'CONSULTANT' as const, label: 'Kari Nordmann',
+        consultantUserId: 'user-kari',
+        retrieval: { method: 'EXACT_SKILLS' as const, documentedSkills: [] }
+      }]
+    });
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('Hvem kan Kotlin?');
+    await waitFor(() => expect(screen.getByText('K1 Kari Nordmann')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('checkbox', { name: /velg kari nordmann/i }));
+    fireEvent.mouseDown(screen.getByLabelText('Avrop'));
+    fireEvent.click(await screen.findByRole('option', { name: /Skatteetaten/ }));
+    fireEvent.click(screen.getByRole('button', { name: /kjør matching/i }));
+
+    await waitFor(() => expect(screen.getByText(/Kunne ikke starte matchekjøringen/)).toBeInTheDocument());
   });
 
   it('says so when the server did not confirm the deletion', async () => {

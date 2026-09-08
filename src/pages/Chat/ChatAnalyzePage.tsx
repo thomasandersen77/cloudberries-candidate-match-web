@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Container, Typography, TextField, Button, Paper, CircularProgress, Stack,
   Box, Fade, Chip, Tooltip, ToggleButton, ToggleButtonGroup, Alert,
+  Checkbox, MenuItem, Select, FormControl, InputLabel, Snackbar,
   useTheme, useMediaQuery
 } from '@mui/material';
 import {
@@ -15,11 +16,15 @@ import {
   Storage as DatabaseIcon,
   // Not a globe. A globe reads as web access, and this mode has none; the point of the label is to
   // set that expectation, not to undercut it with the icon next to it.
-  AutoAwesome as GeneralIcon
+  AutoAwesome as GeneralIcon,
+  ExpandMore as MoreIcon,
+  Hub as MatchingIcon
 } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { analyzeContent, clearAnalyzeConversation } from '../../services/chatService';
+import { listProjectRequests } from '../../services/projectRequestsService';
+import { runProjectMatching } from '../../api/matchingApi';
 import { Link as RouterLink } from 'react-router-dom';
 import type { ChatAnswerKind, ChatScope, ChatSource, RetrievalMethod } from '../../types/api';
 
@@ -35,6 +40,8 @@ interface ChatMessage {
   latencyMs?: number;
   /** The question this answer replied to, so it can be re-asked in the other scope. */
   question?: string;
+  /** How many hits it was asked for, so "vis flere" knows what "flere" means. */
+  topK?: number;
 }
 
 /**
@@ -83,6 +90,13 @@ const SOURCE_ICONS = {
   STORED_MATCH: StoredMatchIcon
 } as const;
 
+// Matches the backend's cap. Each hit is a summary card in the prompt, so this is deliberately
+// well below what a raw search endpoint would allow.
+const MAX_TOP_K = 20;
+
+// The backend's default too, and the value the select starts on.
+const DEFAULT_TOP_K = 5;
+
 const MESSAGES_KEY = 'chatAnalyzeMessages';
 const CONVERSATION_KEY = 'chatAnalyzeConversationId';
 
@@ -92,11 +106,18 @@ const ChatAnalyzePage: React.FC = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [failedQuestion, setFailedQuestion] = useState<string | null>(null);
+  const [failureHint, setFailureHint] = useState<string | null>(null);
   const [scope, setScope] = useState<ChatScope>('DATABASE');
   const [clearFailed, setClearFailed] = useState(false);
   // The key for the attempt in flight. A retry reuses it, so a question the server already answered
   // before the response was lost comes back from the server instead of being asked again.
   const pendingTurnId = useRef<string | null>(null);
+  const [topK, setTopK] = useState(DEFAULT_TOP_K);
+  const [selected, setSelected] = useState<Record<string, string>>({});
+  const [requests, setRequests] = useState<Array<{ id: number; label: string }>>([]);
+  const [targetRequestId, setTargetRequestId] = useState<number | ''>('');
+  const [matchingBusy, setMatchingBusy] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -125,6 +146,17 @@ const ChatAnalyzePage: React.FC = () => {
     }
   }, [messages]);
 
+  // The picker for "send til matching". Loaded once; three rows today, and a select is honest at
+  // that size.
+  useEffect(() => {
+    listProjectRequests()
+      .then(list => setRequests(list.map(r => ({
+        id: Number(r.id),
+        label: [r.customerName, r.title].filter(Boolean).join(' — ').slice(0, 70)
+      })).filter(r => Number.isFinite(r.id))))
+      .catch(() => setRequests([]));
+  }, []);
+
   // Newest last, so the conversation reads top to bottom like every other chat. Optional call
   // because scrollIntoView is not universal: jsdom has no implementation, and a missing browser
   // API should not take the page down with it.
@@ -132,7 +164,11 @@ const ChatAnalyzePage: React.FC = () => {
     bottomRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
   }, [messages]);
 
-  const ask = useCallback(async (question: string, askScope: ChatScope = scope) => {
+  const ask = useCallback(async (
+    question: string,
+    askScope: ChatScope = scope,
+    askTopK: number = topK
+  ) => {
     if (!question.trim() || loading) return;
 
     const questionId = `${Date.now()}`;
@@ -145,6 +181,7 @@ const ChatAnalyzePage: React.FC = () => {
     ]);
     setContent('');
     setFailedQuestion(null);
+    setFailureHint(null);
     setLoading(true);
 
     try {
@@ -154,6 +191,7 @@ const ChatAnalyzePage: React.FC = () => {
       const res = await analyzeContent({
         content: question.trim(),
         scope: askScope,
+        topK: askTopK,
         turnId,
         ...(conversationId ? { conversationId } : {})
       });
@@ -178,18 +216,31 @@ const ChatAnalyzePage: React.FC = () => {
         sources: res.sources,
         modelUsed: res.modelUsed,
         latencyMs: res.latencyMs,
-        question: question.trim()
+        question: question.trim(),
+        topK: askTopK
       } : msg));
-    } catch {
+    } catch (err) {
       // Both bubbles go: the turn never reached the conversation, so leaving a question in the
       // transcript with no answer under it misrepresents what the conversation contains. The text
       // is kept in the retry banner instead, so nothing has to be retyped.
+      //
+      // The status matters to whoever has to act on it. A dev proxy pointing at a stopped backend
+      // answers 500 with an empty body, which is indistinguishable from an application error
+      // unless the message says which one is more likely.
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      setFailureHint(
+        status === undefined
+          ? 'Ingen svar fra serveren. Er backend startet?'
+          : status >= 500
+            ? `Serveren svarte ${status}. Det kan være at backend ikke kjører, eller en feil på serversiden.`
+            : `Serveren svarte ${status}.`
+      );
       setFailedQuestion(question.trim());
       setMessages(prev => prev.filter(msg => msg.id !== answerId && msg.id !== questionId));
     } finally {
       setLoading(false);
     }
-  }, [conversationId, loading, scope]);
+  }, [conversationId, loading, scope, topK]);
 
   const onNewConversation = useCallback(async () => {
     const previous = conversationId;
@@ -216,6 +267,36 @@ const ChatAnalyzePage: React.FC = () => {
       }
     }
   }, [conversationId]);
+
+  const toggleSelected = useCallback((userId: string, name: string) => {
+    setSelected(prev => {
+      const next = { ...prev };
+      if (userId in next) delete next[userId]; else next[userId] = name;
+      return next;
+    });
+  }, []);
+
+  /**
+   * Hands the chosen consultants to the matching pipeline rather than scoring them here.
+   *
+   * The run endpoint takes an explicit list and skips preselection for it, which is the point:
+   * preselection is a recall filter whose order correlates almost not at all with the model's, so
+   * an operator who has picked people should get those people evaluated.
+   */
+  const sendToMatching = useCallback(async () => {
+    const ids = Object.keys(selected);
+    if (ids.length === 0 || targetRequestId === '') return;
+    setMatchingBusy(true);
+    try {
+      await runProjectMatching(Number(targetRequestId), { consultantUserIds: ids });
+      setToast(`Matchekjøring startet for ${ids.length} konsulenter på avrop ${targetRequestId}.`);
+      setSelected({});
+    } catch {
+      setToast('Kunne ikke starte matchekjøringen. Ingenting er endret.');
+    } finally {
+      setMatchingBusy(false);
+    }
+  }, [selected, targetRequestId]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -255,9 +336,20 @@ const ChatAnalyzePage: React.FC = () => {
           return (
             <Paper key={hit.ref} variant="outlined" sx={{ p: 1.25 }}>
               <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  {hit.ref} {hit.label}
-                </Typography>
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  {hit.consultantUserId && (
+                    <Checkbox
+                      size="small"
+                      sx={{ p: 0.25 }}
+                      checked={hit.consultantUserId in selected}
+                      onChange={() => toggleSelected(hit.consultantUserId!, hit.label)}
+                      inputProps={{ 'aria-label': `Velg ${hit.label}` }}
+                    />
+                  )}
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {hit.ref} {hit.label}
+                  </Typography>
+                </Stack>
                 <Chip label={methodLabel[r.method]} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 20 }} />
               </Stack>
 
@@ -300,9 +392,16 @@ const ChatAnalyzePage: React.FC = () => {
     );
   };
 
+  /**
+   * The sources that are not already shown as result cards.
+   *
+   * A consultant hit appeared twice, once as a card and once as a chip with the same "K1 Kari
+   * Nordmann" label. Chips are for the sources a card cannot express: a request, a stored
+   * evaluation, a consultant read straight out of the database rather than found by a search.
+   */
   const SourceChips: React.FC<{ sources: ChatSource[] }> = ({ sources }) => (
     <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
-      {sources.map(source => {
+      {sources.filter(s => !s.retrieval).map(source => {
         const Icon = SOURCE_ICONS[source.kind];
         const detail = [
           source.originalFilename && `Dokument: ${source.originalFilename} (dokumenttype ikke verifisert)`,
@@ -411,6 +510,23 @@ const ChatAnalyzePage: React.FC = () => {
             {!isQuestion && message.sources && message.sources.length > 0 && (
               <>
                 <ResultCards sources={message.sources} />
+                {/*
+                  A bigger retrieval, not a page of a cached one: asking for more is a new search
+                  with a wider limit, and the model narrates the wider set so it can cite it.
+                */}
+                {message.answerKind === 'SEARCH_RESULT' && message.question &&
+                  (message.topK ?? DEFAULT_TOP_K) < MAX_TOP_K &&
+                  message.sources.filter(s => s.retrieval).length >= (message.topK ?? DEFAULT_TOP_K) && (
+                  <Button
+                    size="small"
+                    startIcon={<MoreIcon sx={{ fontSize: 16 }} />}
+                    onClick={() => ask(message.question!, 'DATABASE', Math.min((message.topK ?? DEFAULT_TOP_K) * 2, MAX_TOP_K))}
+                    disabled={loading}
+                    sx={{ mt: 0.5 }}
+                  >
+                    Vis flere
+                  </Button>
+                )}
                 <SourceChips sources={message.sources} />
               </>
             )}
@@ -504,12 +620,66 @@ const ChatAnalyzePage: React.FC = () => {
             <GeneralIcon sx={{ fontSize: 16, mr: 0.5 }} /> Generell AI
           </ToggleButton>
         </ToggleButtonGroup>
+        {scope === 'DATABASE' && (
+          <FormControl size="small" sx={{ minWidth: 96 }}>
+            <InputLabel id="topk-label">Treff</InputLabel>
+            <Select
+              labelId="topk-label"
+              label="Treff"
+              value={topK}
+              onChange={(e) => setTopK(Number(e.target.value))}
+            >
+              {[5, 10, 20].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+            </Select>
+          </FormControl>
+        )}
         <Typography variant="caption" color="text.secondary">
           {scope === 'DATABASE'
             ? 'Svarene bygger på konsulenter, CV-er, avrop og matcheresultater.'
             : 'Modellkunnskap – uten interne data og uten nettsøk.'}
         </Typography>
       </Stack>
+
+      {/* Appears only once someone has picked people, so it is out of the way until it is useful. */}
+      {Object.keys(selected).length > 0 && (
+        <Paper variant="outlined" sx={{ p: 1.5, mb: 2 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+            <Typography variant="body2" sx={{ flex: 1 }}>
+              {Object.keys(selected).length} valgt: {Object.values(selected).join(', ')}
+            </Typography>
+            <FormControl size="small" sx={{ minWidth: 220 }}>
+              <InputLabel id="target-request-label">Avrop</InputLabel>
+              <Select
+                labelId="target-request-label"
+                label="Avrop"
+                value={targetRequestId}
+                onChange={(e) => setTargetRequestId(e.target.value === '' ? '' : Number(e.target.value))}
+              >
+                {requests.map(r => <MenuItem key={r.id} value={r.id}>{r.id}: {r.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={matchingBusy ? <CircularProgress size={14} /> : <MatchingIcon sx={{ fontSize: 16 }} />}
+              onClick={sendToMatching}
+              disabled={matchingBusy || targetRequestId === ''}
+            >
+              Kjør matching
+            </Button>
+            <Button size="small" onClick={() => setSelected({})} disabled={matchingBusy}>
+              Nullstill
+            </Button>
+          </Stack>
+        </Paper>
+      )}
+
+      <Snackbar
+        open={toast !== null}
+        autoHideDuration={6000}
+        onClose={() => setToast(null)}
+        message={toast ?? ''}
+      />
 
       {clearFailed && (
         <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setClearFailed(false)}>
@@ -544,9 +714,14 @@ const ChatAnalyzePage: React.FC = () => {
       {failedQuestion && (
         <Paper elevation={0} sx={{ p: 1.5, mb: 2, bgcolor: 'error.light' }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-            <Typography variant="body2">
-              Spørsmålet feilet og er ikke lagt til samtalen: «{failedQuestion}»
-            </Typography>
+            <Box>
+              <Typography variant="body2">
+                Spørsmålet feilet og er ikke lagt til samtalen: «{failedQuestion}»
+              </Typography>
+              {failureHint && (
+                <Typography variant="caption" display="block">{failureHint}</Typography>
+              )}
+            </Box>
             <Button size="small" onClick={() => ask(failedQuestion)} disabled={loading}>
               Prøv igjen
             </Button>

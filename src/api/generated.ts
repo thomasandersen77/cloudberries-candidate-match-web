@@ -2712,6 +2712,12 @@ export interface components {
             turnId?: string | null;
             /** @default DATABASE */
             scope: components["schemas"]["ChatScope"];
+            /**
+             * @description How many consultants a search may return. Each hit costs prompt tokens, because the model is given a summary card per consultant so it can cite them, so this is capped well below what a raw search endpoint would allow.
+             *
+             * @default 5
+             */
+            topK: number;
         };
         /**
          * @description What kind of answer this is. STORED_MATCH reports a result an earlier matching run produced; AD_HOC_EVALUATION is an opinion produced just now and not saved anywhere. GENERAL is the model's own knowledge, with no database content behind it.
