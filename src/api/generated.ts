@@ -41,6 +41,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/project-requests/{id}/document-kind": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Record what kind of document a project request came from
+         * @description The upload cannot establish this, and a filename heuristic would put a weak inference in the database looking authoritative, so it is a decision someone makes. Until it is made the value is UNKNOWN and answers about the request say the kind is unverified rather than presenting a proposal's contents as a customer's demands.
+         *
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetDocumentKindRequest"];
+                };
+            };
+            responses: {
+                /** @description The recorded kind */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectRequestDocumentKindDto"];
+                    };
+                };
+                /** @description No such project request */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/chatbot/analyze": {
         parameters: {
             query?: never;
@@ -2626,6 +2680,20 @@ export interface components {
             cacheHitRate?: number;
             /** Format: double */
             estimatedCostUsd?: number;
+        };
+        /**
+         * @description What an uploaded project-request document actually is. One of the documents in this database is a consultancy's own proposal for a named consultant, and a matching run against it ranked that consultant near the top of his own competition. UNKNOWN means nobody has established which, and answers must say so rather than assume.
+         *
+         * @enum {string}
+         */
+        ProjectRequestDocumentKind: "CUSTOMER_REQUEST" | "BID_RESPONSE" | "UNKNOWN";
+        SetDocumentKindRequest: {
+            documentKind: components["schemas"]["ProjectRequestDocumentKind"];
+        };
+        ProjectRequestDocumentKindDto: {
+            /** Format: int64 */
+            id: number;
+            documentKind: components["schemas"]["ProjectRequestDocumentKind"];
         };
         ChatAnalyzeRequest: {
             /** @description Conversation to continue. Omit to start one; the server returns the id. */

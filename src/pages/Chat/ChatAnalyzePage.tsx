@@ -26,6 +26,7 @@ interface ChatMessage {
   answerKind?: ChatAnswerKind;
   sources?: ChatSource[];
   modelUsed?: string;
+  latencyMs?: number;
 }
 
 /**
@@ -151,7 +152,8 @@ const ChatAnalyzePage: React.FC = () => {
         loading: false,
         answerKind: res.answerKind,
         sources: res.sources,
-        modelUsed: res.modelUsed
+        modelUsed: res.modelUsed,
+        latencyMs: res.latencyMs
       } : msg));
     } catch {
       // Both bubbles go: the turn never reached the conversation, so leaving a question in the
@@ -308,12 +310,34 @@ const ChatAnalyzePage: React.FC = () => {
               <SourceChips sources={message.sources} />
             )}
 
-            <Chip
-              label={formatTimestamp(message.timestamp)}
-              size="small"
-              variant="outlined"
-              sx={{ mt: 0.5, height: 20, fontSize: '0.7rem', opacity: 0.7 }}
-            />
+            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+              <Chip
+                label={formatTimestamp(message.timestamp)}
+                size="small"
+                variant="outlined"
+                sx={{ height: 20, fontSize: '0.7rem', opacity: 0.7 }}
+              />
+              {/*
+                Whether a provider was called at all, and which model answered. The response has
+                carried this from the start; without showing it the only way to tell an answer read
+                straight out of the database from one a model wrote was to read the backend log.
+              */}
+              {!isQuestion && message.modelUsed && (
+                <Tooltip title={message.modelUsed === 'none'
+                  ? 'Svart uten å kalle en modell: grunnlaget var tomt.'
+                  : `Modell: ${message.modelUsed}`}>
+                  <Chip
+                    icon={message.modelUsed === 'none' ? undefined : <AiIcon sx={{ fontSize: 14 }} />}
+                    label={message.modelUsed === 'none'
+                      ? 'uten modellkall'
+                      : `${message.modelUsed}${message.latencyMs != null ? ` • ${(message.latencyMs / 1000).toFixed(1)} s` : ''}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ height: 20, fontSize: '0.7rem', opacity: 0.7 }}
+                  />
+                </Tooltip>
+              )}
+            </Stack>
           </Box>
 
           {isQuestion && (

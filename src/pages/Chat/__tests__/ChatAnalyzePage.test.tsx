@@ -59,6 +59,30 @@ describe('ChatAnalyzePage', () => {
     expect(screen.getByText('K1 Thomas Andersen')).toBeInTheDocument();
   });
 
+  /**
+   * Whether a model was called was only visible in the backend log. An answer read straight out of
+   * the database and one a model wrote looked identical in the UI.
+   */
+  it('shows which model answered, and says so when none did', async () => {
+    mockedAnalyze.mockResolvedValueOnce({ ...factualAnswer, latencyMs: 2783 });
+    render(<ChatAnalyzePage />);
+
+    ask('Hva kan Thomas Andersen best?');
+    await waitFor(() => expect(screen.getByText('claude-haiku-4-5 • 2.8 s')).toBeInTheDocument());
+
+    mockedAnalyze.mockResolvedValueOnce({
+      ...factualAnswer,
+      answer: 'Ingenting i basen dekker spørsmålet.',
+      answerKind: 'NO_GROUNDING',
+      sources: [],
+      modelUsed: 'none',
+      latencyMs: 48
+    });
+    ask('Hva er meningen med livet?');
+
+    await waitFor(() => expect(screen.getByText('uten modellkall')).toBeInTheDocument());
+  });
+
   it('sends no conversationId on the first turn and the server id on the next', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
     render(<ChatAnalyzePage />);

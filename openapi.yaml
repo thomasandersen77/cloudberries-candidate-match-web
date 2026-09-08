@@ -48,6 +48,38 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /project-requests/{id}/document-kind:
+    put:
+      tags: [ ProjectRequests ]
+      summary: Record what kind of document a project request came from
+      description: >
+        The upload cannot establish this, and a filename heuristic would put a weak inference in the
+        database looking authoritative, so it is a decision someone makes. Until it is made the
+        value is UNKNOWN and answers about the request say the kind is unverified rather than
+        presenting a proposal's contents as a customer's demands.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDocumentKindRequest'
+      responses:
+        '200':
+          description: The recorded kind
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRequestDocumentKindDto'
+        '404':
+          description: No such project request
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /chatbot/analyze:
     post:
       tags: [ Chat ]
@@ -1624,6 +1656,28 @@ components:
         totalInputTokens: { type: integer, format: int64 }
         cacheHitRate: { type: number, format: double }
         estimatedCostUsd: { type: number, format: double }
+
+    ProjectRequestDocumentKind:
+      type: string
+      description: >
+        What an uploaded project-request document actually is. One of the documents in this database
+        is a consultancy's own proposal for a named consultant, and a matching run against it ranked
+        that consultant near the top of his own competition. UNKNOWN means nobody has established
+        which, and answers must say so rather than assume.
+      enum: [ CUSTOMER_REQUEST, BID_RESPONSE, UNKNOWN ]
+
+    SetDocumentKindRequest:
+      type: object
+      required: [ documentKind ]
+      properties:
+        documentKind: { $ref: '#/components/schemas/ProjectRequestDocumentKind' }
+
+    ProjectRequestDocumentKindDto:
+      type: object
+      required: [ id, documentKind ]
+      properties:
+        id: { type: integer, format: int64 }
+        documentKind: { $ref: '#/components/schemas/ProjectRequestDocumentKind' }
 
     ChatAnalyzeRequest:
       type: object
