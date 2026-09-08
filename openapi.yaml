@@ -1679,6 +1679,17 @@ components:
         id: { type: integer, format: int64 }
         documentKind: { $ref: '#/components/schemas/ProjectRequestDocumentKind' }
 
+    ChatScope:
+      type: string
+      description: >
+        Which material the chat may answer from. DATABASE uses consultants, CVs, customer requests
+        and stored matching results. GENERAL answers from the model's own knowledge with no
+        Candidate Match data retrieved or sent. Chosen per question and never inferred: a question
+        naming a known technology is read as a consultant search, so "Hva er Kafka?" would be routed
+        to a search, while a misspelled name finds nothing at all.
+      enum: [ DATABASE, GENERAL ]
+      default: DATABASE
+
     ChatAnalyzeRequest:
       type: object
       required: [ content ]
@@ -1691,13 +1702,18 @@ components:
           type: string
           maxLength: 4000
           description: The question
+        scope:
+          allOf:
+            - $ref: '#/components/schemas/ChatScope'
+          default: DATABASE
 
     ChatAnswerKind:
       type: string
       description: >
         What kind of answer this is. STORED_MATCH reports a result an earlier matching run produced;
-        AD_HOC_EVALUATION is an opinion produced just now and not saved anywhere.
-      enum: [ FACTUAL, SEARCH_RESULT, STORED_MATCH, AD_HOC_EVALUATION, NO_GROUNDING ]
+        AD_HOC_EVALUATION is an opinion produced just now and not saved anywhere. GENERAL is the
+        model's own knowledge, with no database content behind it.
+      enum: [ FACTUAL, SEARCH_RESULT, STORED_MATCH, AD_HOC_EVALUATION, NO_GROUNDING, GENERAL ]
 
     ChatSourceKindDto:
       type: string

@@ -2695,18 +2695,27 @@ export interface components {
             id: number;
             documentKind: components["schemas"]["ProjectRequestDocumentKind"];
         };
+        /**
+         * @description Which material the chat may answer from. DATABASE uses consultants, CVs, customer requests and stored matching results. GENERAL answers from the model's own knowledge with no Candidate Match data retrieved or sent. Chosen per question and never inferred: a question naming a known technology is read as a consultant search, so "Hva er Kafka?" would be routed to a search, while a misspelled name finds nothing at all.
+         *
+         * @default DATABASE
+         * @enum {string}
+         */
+        ChatScope: "DATABASE" | "GENERAL";
         ChatAnalyzeRequest: {
             /** @description Conversation to continue. Omit to start one; the server returns the id. */
             conversationId?: string | null;
             /** @description The question */
             content: string;
+            /** @default DATABASE */
+            scope: components["schemas"]["ChatScope"];
         };
         /**
-         * @description What kind of answer this is. STORED_MATCH reports a result an earlier matching run produced; AD_HOC_EVALUATION is an opinion produced just now and not saved anywhere.
+         * @description What kind of answer this is. STORED_MATCH reports a result an earlier matching run produced; AD_HOC_EVALUATION is an opinion produced just now and not saved anywhere. GENERAL is the model's own knowledge, with no database content behind it.
          *
          * @enum {string}
          */
-        ChatAnswerKind: "FACTUAL" | "SEARCH_RESULT" | "STORED_MATCH" | "AD_HOC_EVALUATION" | "NO_GROUNDING";
+        ChatAnswerKind: "FACTUAL" | "SEARCH_RESULT" | "STORED_MATCH" | "AD_HOC_EVALUATION" | "NO_GROUNDING" | "GENERAL";
         /** @enum {string} */
         ChatSourceKindDto: "CONSULTANT" | "PROJECT_REQUEST" | "STORED_MATCH";
         ChatSource: {
