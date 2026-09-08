@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Collapse,
@@ -44,7 +45,8 @@ import {
   phaseLabel,
   type FrontendMatchPhase,
 } from '../../utils/matchStatusAdapter';
-import { formatMatchScore, formatMatchScoreSuffix } from '../../utils/matchUtils';
+import { formatMatchScoreSuffix, formatPercentScore } from '../../utils/matchUtils';
+import { getScoreColor } from '../../utils/scoreUtils';
 
 const LIMIT_OPTIONS = [5, 10, 15] as const;
 const CV_WEIGHT_OPTIONS = [20, 30, 50, 60, 80] as const;
@@ -59,22 +61,30 @@ type ExpandableConsultantRowProps = {
   rowKey: string;
   name: string;
   scoreLabel: string;
+  /** CV quality 0-100. A weak CV is not worth submitting however well the skills match. */
+  qualityScore?: number | null;
   detail?: string | null;
   skills?: string[];
   userId?: string | null;
   expandedKey: string | null;
   onToggle: (key: string) => void;
+  /** Only the preview rows are selectable; the AI results are already scored. */
+  selected?: boolean;
+  onSelectedChange?: (selected: boolean) => void;
 };
 
 const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
   rowKey,
   name,
   scoreLabel,
+  qualityScore,
   detail,
   skills,
   userId,
   expandedKey,
   onToggle,
+  selected,
+  onSelectedChange,
 }) => {
   const isExpanded = expandedKey === rowKey;
   const hasDetail = Boolean(detail?.trim());
@@ -84,6 +94,15 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
   return (
     <Paper sx={{ p: 1 }}>
       <Stack direction="row" spacing={0.5} alignItems="flex-start">
+        {onSelectedChange && (
+          <Checkbox
+            size="small"
+            checked={Boolean(selected)}
+            onChange={(e) => onSelectedChange(e.target.checked)}
+            inputProps={{ 'aria-label': `Ta med ${name} i AI-vurderingen` }}
+            sx={{ mt: -0.5 }}
+          />
+        )}
         {canExpand ? (
           <IconButton
             size="small"
@@ -102,6 +121,24 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
             <Typography variant="body2">
               <b>{name}</b>
               {scoreLabel}
+              {typeof qualityScore === 'number' && (
+                <Box
+                  component="span"
+                  aria-label={`CV-kvalitet ${Math.round(qualityScore)} av 100`}
+                  sx={{
+                    ml: 1,
+                    px: 0.75,
+                    py: 0.125,
+                    borderRadius: 1,
+                    fontSize: '0.75rem',
+                    color: '#fff',
+                    backgroundColor: getScoreColor(qualityScore),
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  CV {Math.round(qualityScore)}
+                </Box>
+              )}
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {userId && (
@@ -184,6 +221,14 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingRun, setPendingRun] = useState<'run' | 'rerun' | null>(null);
   const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
+  /**
+   * Who goes to the LLM. Empty means "let the backend preselect".
+   *
+   * Preselection is a recall filter, not a ranking: on the runs measured here its order and the
+   * LLM's agreed almost not at all, and the LLM's top pick sat outside preselection's top ten. A
+   * person who knows the customer picking from this list has better information than the score.
+   */
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [state, setState] = useState<PanelState>({
     phase: 'NOT_STARTED',
     results: null,
@@ -230,6 +275,22 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
     })();
   }, [refreshPersisted]);
 
+  const previewUserIds = useMemo(
+    () => (state.preview?.candidates ?? []).map((c) => c.userId).filter((id): id is string => Boolean(id)),
+    [state.preview],
+  );
+  const selectedCount = selectedUserIds.length;
+  const allPreviewSelected = previewUserIds.length > 0 && selectedCount === previewUserIds.length;
+
+  const toggleCandidate = useCallback((userId: string, selected: boolean) => {
+    setSelectedUserIds((prev) => (selected ? [...new Set([...prev, userId])] : prev.filter((id) => id !== userId)));
+  }, []);
+
+  const toggleAllCandidates = useCallback(
+    (selected: boolean) => setSelectedUserIds(selected ? previewUserIds : []),
+    [previewUserIds],
+  );
+
   const toggleExpandedRow = useCallback((key: string) => {
     setExpandedRowKey((prev) => (prev === key ? null : key));
   }, []);
@@ -237,6 +298,10 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
   useEffect(() => {
     setExpandedRowKey(null);
   }, [state.results, state.preview]);
+
+  useEffect(() => {
+    if (!state.preview) setSelectedUserIds([]);
+  }, [state.preview]);
 
   const handlePreview = async () => {
     setLoadingPreview(true);
@@ -253,6 +318,11 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
         }));
         return;
       }
+      // Everything previewed is ticked by default, so the button behaves as it always has until
+      // someone deliberately narrows it.
+      setSelectedUserIds(
+        (preview.candidates ?? []).map((c) => c.userId).filter((id): id is string => Boolean(id)),
+      );
       setState((prev) => ({
         ...prev,
         preview,
@@ -276,6 +346,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
         limit,
         useHighestQualityModel: highQuality,
         cvWeightPercent,
+        consultantUserIds: selectedUserIds,
       });
       if (!mountedRef.current) return;
       if ('async' in outcome && outcome.async) {
@@ -377,15 +448,25 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
       </Stack>
 
       <Typography variant="caption" color="text.secondary">
-        Forhåndsvisning bruker billig rangering uten full AI-vurdering. Kjør AI-matching for full vurdering.
+        Forhåndsvisning bruker billig rangering uten AI-kall. Uten et utvalg sender AI-matchingen
+        de 15 best rangerte.
       </Typography>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
         <Button size="small" variant="outlined" disabled={loadingPreview || loadingRun} onClick={() => void handlePreview()}>
           {loadingPreview ? 'Laster…' : 'Forhåndsvis kandidater'}
         </Button>
-        <Button size="small" variant="contained" disabled={loadingRun || loadingPreview} onClick={() => requestRun('run')}>
-          {loadingRun ? 'Kjører…' : 'Kjør AI-matching'}
+        <Button
+          size="small"
+          variant="contained"
+          disabled={loadingRun || loadingPreview || (Boolean(state.preview) && selectedCount === 0)}
+          onClick={() => requestRun('run')}
+        >
+          {loadingRun
+            ? 'Kjører…'
+            : selectedCount > 0
+              ? `Kjør AI-matching (${selectedCount})`
+              : 'Kjør AI-matching'}
         </Button>
         {hasAiResults && (
           <Button size="small" variant="outlined" color="secondary" disabled={loadingRun} onClick={() => requestRun('rerun')}>
@@ -400,15 +481,44 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
       {state.phase === 'RUNNING' && loadingRun && (
         <Stack direction="row" spacing={1} alignItems="center">
           <CircularProgress size={16} />
-          <Typography variant="body2">Kjører AI-vurdering på de best rangerte kandidatene…</Typography>
+          <Typography variant="body2">
+            {selectedCount > 0
+              ? `Kjører AI-vurdering på ${selectedCount} valgte kandidater…`
+              : 'Kjører AI-vurdering på de best rangerte kandidatene…'}
+          </Typography>
         </Stack>
       )}
 
       {state.preview && (state.preview.candidates?.length ?? 0) > 0 && (
         <Box>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Forhåndsvisning (uten full AI-vurdering)
-            {state.preview.semanticSearchUsed === false && ' — semantisk søk ikke brukt'}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            alignItems={{ sm: 'center' }}
+            justifyContent="space-between"
+            sx={{ mb: 1 }}
+          >
+            <Typography variant="subtitle2">
+              Forhåndsvisning (uten full AI-vurdering)
+              {state.preview.semanticSearchUsed === false && ' — semantisk søk ikke brukt'}
+            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="caption" color="text.secondary">
+                {selectedCount} av {previewUserIds.length} valgt
+              </Typography>
+              <Button
+                size="small"
+                variant="text"
+                disabled={loadingRun}
+                onClick={() => toggleAllCandidates(!allPreviewSelected)}
+              >
+                {allPreviewSelected ? 'Fjern alle' : 'Velg alle'}
+              </Button>
+            </Stack>
+          </Stack>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            Rangeringen her er et grovfilter og treffer dårlig på hvem AI-en ender opp med å
+            foretrekke. Huk av dem du faktisk vil ha vurdert.
           </Typography>
           <Stack spacing={0.75}>
             {(state.preview.candidates ?? []).map((c) => {
@@ -418,11 +528,17 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
                   key={rowKey}
                   rowKey={rowKey}
                   name={c.name ?? 'Ukjent'}
-                  scoreLabel={typeof c.combinedScore === 'number' ? ` • rang ${formatMatchScore(c.combinedScore)}` : ''}
+                  // Preselection scores are on a 0..1 scale; show them as a percentage.
+                  scoreLabel={typeof c.combinedScore === 'number' ? ` • rang ${formatPercentScore(c.combinedScore)}` : ''}
+                  qualityScore={typeof c.cvQualityScore === 'number' ? c.cvQualityScore * 100 : null}
                   detail={c.reason}
                   userId={c.userId}
                   expandedKey={expandedRowKey}
                   onToggle={toggleExpandedRow}
+                  selected={c.userId ? selectedUserIds.includes(c.userId) : false}
+                  onSelectedChange={
+                    c.userId ? (checked) => toggleCandidate(c.userId!, checked) : undefined
+                  }
                 />
               );
             })}

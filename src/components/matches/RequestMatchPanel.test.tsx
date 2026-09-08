@@ -18,7 +18,11 @@ vi.mock('../../api/matchingApi', () => ({
   previewProjectMatches: vi.fn().mockResolvedValue({
     projectRequestId: 1,
     semanticSearchReady: true,
-    candidates: [{ userId: 'u1', name: 'Kari', combinedScore: 0.8, reason: 'God overlap' }],
+    candidates: [
+      { userId: 'u1', name: 'Kari', combinedScore: 0.8, reason: 'God overlap' },
+      { userId: 'u2', name: 'Ola', combinedScore: 0.72, reason: 'Delvis overlap' },
+      { userId: 'u3', name: 'Nina', combinedScore: 0.69, reason: 'Svak overlap' },
+    ],
   }),
   runProjectMatching: vi.fn().mockResolvedValue({
     projectRequestId: 1,
@@ -86,8 +90,60 @@ describe('RequestMatchPanel', () => {
     await waitFor(() => expect(api.previewProjectMatches).toHaveBeenCalled());
     expect(api.runProjectMatching).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching$/i }));
+    // Everything previewed is ticked by default, so the button carries the count.
+    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching \(3\)$/i }));
     await waitFor(() => expect(api.runProjectMatching).toHaveBeenCalled());
+  });
+
+  it('sends only the ticked candidates to the AI', async () => {
+    // Preselection ranks for recall, and its order predicts the LLM's poorly, so who goes to the
+    // model is the operator's call rather than the score's.
+    const api = await import('../../api/matchingApi');
+    const user = userEvent.setup();
+    renderPanel();
+    await waitFor(() => screen.getByRole('button', { name: /Forhåndsvis kandidater/i }));
+    await user.click(screen.getByRole('button', { name: /Forhåndsvis kandidater/i }));
+    await screen.findByText(/3 av 3 valgt/);
+
+    await user.click(screen.getByRole('checkbox', { name: /Ta med Ola i AI-vurderingen/i }));
+    expect(await screen.findByText(/2 av 3 valgt/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching \(2\)$/i }));
+
+    await waitFor(() => expect(api.runProjectMatching).toHaveBeenCalled());
+    expect(vi.mocked(api.runProjectMatching).mock.calls[0][1]).toMatchObject({
+      consultantUserIds: ['u1', 'u3'],
+    });
+  });
+
+  it('lets the operator clear and restore the whole selection', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    await waitFor(() => screen.getByRole('button', { name: /Forhåndsvis kandidater/i }));
+    await user.click(screen.getByRole('button', { name: /Forhåndsvis kandidater/i }));
+    await screen.findByText(/3 av 3 valgt/);
+
+    await user.click(screen.getByRole('button', { name: /Fjern alle/i }));
+    expect(await screen.findByText(/0 av 3 valgt/)).toBeInTheDocument();
+    // Running zero candidates would spend a request on nothing.
+    expect(screen.getByRole('button', { name: /^Kjør AI-matching$/i })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: /Velg alle/i }));
+    expect(await screen.findByText(/3 av 3 valgt/)).toBeInTheDocument();
+  });
+
+  it('leaves the shortlist to the backend when there is no preview', async () => {
+    const api = await import('../../api/matchingApi');
+    const user = userEvent.setup();
+    renderPanel();
+    await waitFor(() => screen.getByRole('button', { name: /^Kjør AI-matching$/i }));
+
+    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching$/i }));
+
+    await waitFor(() => expect(api.runProjectMatching).toHaveBeenCalled());
+    expect(vi.mocked(api.runProjectMatching).mock.calls[0][1]).toMatchObject({
+      consultantUserIds: [],
+    });
   });
 
   it('shows confirmation when running with highest quality', async () => {
