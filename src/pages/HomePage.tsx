@@ -21,7 +21,7 @@ const iconFor = (path: string) => {
   if (path.includes('matches')) return <HubOutlinedIcon sx={{ fontSize: 22 }} />;
   if (path.includes('embeddings')) return <HubOutlinedIcon sx={{ fontSize: 22 }} />;
   if (path.includes('project-requests')) return <UploadFileOutlinedIcon sx={{ fontSize: 22 }} />;
-  if (path.includes('chat')) return <ChatOutlinedIcon sx={{ fontSize: 22 }} />;
+  if (path.includes('chat')) return <ChatOutlinedIcon sx={{ fontSize: 26 }} />;
   if (path.includes('health')) return <HealthAndSafetyOutlinedIcon sx={{ fontSize: 22 }} />;
   if (path.includes('stats')) return <BarChartOutlinedIcon sx={{ fontSize: 22 }} />;
   if (path.includes('semantic')) return <SearchOutlinedIcon sx={{ fontSize: 22 }} />;
@@ -35,14 +35,22 @@ const HomePage: React.FC = () => {
   const brand = BRANDING[brandTheme] ?? BRANDING.cloudberries;
   const heroBrandLabel = `${brand.displayName} Candidate Match`;
 
+  // The assistant is the way in for most questions, so it leads and takes the full width. It used
+  // to be the seventh card, titled "Chat Analyze" and described as "Analyser tekst med AI", which
+  // says nothing about it answering from the consultant and request data.
   const links = [
+    {
+      to: '/chat',
+      title: 'Assistent',
+      desc: 'Spør om konsulenter, avrop og tidligere vurderinger. Svarene bygger på databasen og viser kildene sine. Kan også svare generelt, uten interne data.',
+      featured: true,
+    },
     { to: '/consultants', title: 'Konsulenter', desc: 'Se liste over konsulenter og CV-kvalitet' },
     { to: '/skills', title: 'Ferdigheter', desc: 'Oversikt over ferdigheter og tilknyttede konsulenter' },
     { to: '/cv-score', title: 'CV-Score', desc: 'Analyser og sammenlign kandidat-CV-er' },
     { to: '/matches', title: 'Matcher', desc: 'Finn kandidatmatcher mot prosjekter' },
     { to: '/embeddings', title: 'Embeddings', desc: 'Kjør embedding-oppgaver' },
     { to: '/project-requests/upload', title: 'Last opp kundeforspørsel', desc: 'PDF, AI-analyse og lagring i databasen' },
-    { to: '/chat', title: 'Chat Analyze', desc: 'Analyser tekst med AI' },
     { to: '/health', title: 'Helse', desc: 'Systemstatus og tilgjengelighet' },
     { to: '/stats', title: 'Statistikk', desc: 'Programmeringsspråk og roller' },
     { to: '/search', title: 'Søk', desc: 'Søk i konsulenter og kompetanse' },
@@ -129,7 +137,7 @@ const HomePage: React.FC = () => {
 
       <Grid container spacing={{ xs: 2, md: 2.5 }}>
         {links.map((l) => (
-          <Grid item xs={12} sm={6} md={4} key={l.to}>
+          <Grid item xs={12} sm={l.featured ? 12 : 6} md={l.featured ? 12 : 4} key={l.to}>
             <Card
               elevation={0}
               sx={{
@@ -137,10 +145,12 @@ const HomePage: React.FC = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-                border: `1px solid ${theme.palette.divider}`,
-                background: isDark
-                  ? `linear-gradient(180deg, ${alpha('#fff', 0.015)} 0%, transparent 100%)`
-                  : `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.035)} 0%, transparent 100%)`,
+                border: `1px solid ${l.featured ? alpha(theme.palette.primary.main, 0.45) : theme.palette.divider}`,
+                background: l.featured
+                  ? `linear-gradient(115deg, ${alpha(theme.palette.primary.main, 0.14)} 0%, transparent 65%)`
+                  : isDark
+                    ? `linear-gradient(180deg, ${alpha('#fff', 0.015)} 0%, transparent 100%)`
+                    : `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.035)} 0%, transparent 100%)`,
                 '&:hover': {
                   transform: 'translateY(-2px)',
                   boxShadow: isDark
@@ -152,9 +162,15 @@ const HomePage: React.FC = () => {
             >
               <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, letterSpacing: '-0.02em', pr: 1 }}>
-                    {l.title}
-                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ pr: 1 }}>
+                    <Typography
+                      variant={l.featured ? 'h5' : 'h6'}
+                      sx={{ fontWeight: l.featured ? 700 : 600, letterSpacing: '-0.02em' }}
+                    >
+                      {l.title}
+                    </Typography>
+                    {l.featured && <Chip label="Start her" size="small" color="primary" />}
+                  </Stack>
                   <Box
                     sx={{
                       color: 'text.secondary',
@@ -176,8 +192,16 @@ const HomePage: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flex: 1, lineHeight: 1.6 }}>
                   {l.desc}
                 </Typography>
-                <Button component={RouterLink} to={l.to} variant="contained" color="primary" fullWidth sx={{ mt: 'auto' }}>
-                  Gå til {l.title}
+                <Button
+                  component={RouterLink}
+                  to={l.to}
+                  variant="contained"
+                  color="primary"
+                  fullWidth={!l.featured}
+                  size={l.featured ? 'large' : 'medium'}
+                  sx={{ mt: 'auto', alignSelf: l.featured ? 'flex-start' : undefined, px: l.featured ? 4 : undefined }}
+                >
+                  {l.featured ? 'Åpne assistenten' : `Gå til ${l.title}`}
                 </Button>
               </CardContent>
             </Card>

@@ -12,8 +12,11 @@ import HealthCheckIndicator from './HealthCheckIndicator';
 import { palettes, useColorMode } from '../theme';
 import { BRANDING } from '../config/branding';
 
+// The assistant sits second, right after the dashboard: it was not in the top navigation at all,
+// so the only way in was a card halfway down the front page.
 const topNavItems = [
   { label: 'Dashboard', to: '/' },
+  { label: 'Assistent', to: '/chat' },
   { label: 'Konsulenter', to: '/consultants' },
   { label: 'CV-Score', to: '/cv-score' },
   { label: 'Matcher', to: '/matches' },
