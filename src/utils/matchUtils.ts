@@ -233,3 +233,13 @@ export function formatRelativeTime(dateString: string): string {
     return 'Unknown time';
   }
 }
+/**
+ * Formats a 0..1 score as a whole percentage, e.g. 0.904 -> "90 %".
+ *
+ * Preselection reports skill, semantic, quality and combined scores on a 0..1 scale;
+ * `formatMatchScore` is for the 0-10 scale the AI match results use.
+ */
+export function formatPercentScore(score: number | null | undefined): string {
+  if (typeof score !== 'number' || Number.isNaN(score)) return '–';
+  return `${Math.round(score * 100)} %`;
+}

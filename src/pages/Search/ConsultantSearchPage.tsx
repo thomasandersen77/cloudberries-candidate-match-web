@@ -121,7 +121,7 @@ function parseRelationalFromSemantic(text: string, knownSkills: string[]): {
   return result;
 }
 
-import { compareByQualityThenName } from '../../utils/scoreUtils';
+import { compareByQualityThenName, getActiveQualityScore } from '../../utils/scoreUtils';
 import CvScoreBadge from '../../components/CvScoreBadge';
 
 const ResultsTable: React.FC<{
@@ -142,8 +142,7 @@ const ResultsTable: React.FC<{
         </TableHead>
         <TableBody>
 {items.slice().sort(compareByQualityThenName).map((c) => {
-            const activeCv = c.cvs?.find(cv => cv.active);
-            const quality = activeCv?.qualityScore ?? null;
+            const quality = getActiveQualityScore(c);
             const { displaySkills, remainingCount } = getSkillsDisplay(c, 3);
             return (
               <TableRow key={c.userId} hover>

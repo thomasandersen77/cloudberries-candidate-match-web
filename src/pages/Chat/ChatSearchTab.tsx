@@ -107,10 +107,11 @@ const ChatSearchTab = () => {
             const saved = sessionStorage.getItem(CHAT_SEARCH_CONV_KEY);
             if (saved) setConversationId(saved);
         } catch { /* empty */ }
-        try {
-            const fm = localStorage.getItem(CHAT_FORCE_MODE_KEY) as ForceMode | null;
-            if (fm && ['AUTO','STRUCTURED','SEMANTIC','HYBRID','RAG'].includes(fm)) setForceMode(fm);
-        } catch { /* empty */ }
+        // Force mode is deliberately NOT restored. It used to be, so a mode picked once (or set by a
+        // sample-query chip) applied silently to every later session and every freely typed query;
+        // that is how a query naming five technologies ended up in pure SEMANTIC and returned noise.
+        // Every visit starts in AUTO, where the interpreter picks the route. Clear the old key too.
+        try { localStorage.removeItem(CHAT_FORCE_MODE_KEY); } catch { /* empty */ }
         try {
             const tk = Number(localStorage.getItem(CHAT_TOPK_KEY));
             if (!Number.isNaN(tk) && tk >= 1 && tk <= 100) setTopK(tk);
@@ -128,10 +129,7 @@ const ChatSearchTab = () => {
         } catch { /* empty */ }
     }, []);
 
-    // persist prefs
-    useEffect(() => {
-        try { localStorage.setItem(CHAT_FORCE_MODE_KEY, forceMode); } catch { /* empty */ }
-    }, [forceMode]);
+    // persist prefs (force mode is per-session on purpose, see the load effect above)
     useEffect(() => {
         try { localStorage.setItem(CHAT_TOPK_KEY, String(topK)); } catch { /* empty */ }
     }, [topK]);

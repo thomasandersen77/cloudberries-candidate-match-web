@@ -9,7 +9,8 @@ import {
   TableBody,
   Paper,
   Chip,
-  Stack
+  Stack,
+  Alert
 } from '@mui/material';
 import { getHealthStatus } from '../../services/healthService';
 import { getAiModels } from '../../services/adminService';
@@ -35,9 +36,14 @@ const HealthPage: React.FC = () => {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [aiModels, setAiModels] = useState<AiModelsResponse | null>(null);
   const [aiModelsError, setAiModelsError] = useState<string | null>(null);
+  const [healthError, setHealthError] = useState<string | null>(null);
 
   useEffect(() => {
-    getHealthStatus().then(setHealth);
+    // Without a catch a failed health call leaves the page showing an empty table and no
+    // explanation, which reads as "everything is fine" rather than "backend unreachable".
+    getHealthStatus()
+      .then((h) => { setHealth(h); setHealthError(null); })
+      .catch(() => setHealthError('Kunne ikke hente systemstatus. Er backend tilgjengelig?'));
     getAiModels()
       .then(setAiModels)
       .catch(() => setAiModelsError('Kunne ikke hente AI-modellkonfigurasjon.'));
@@ -48,6 +54,9 @@ const HealthPage: React.FC = () => {
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Systemstatus</Typography>
+      {healthError && (
+        <Alert severity="error" sx={{ mb: 2 }}>{healthError}</Alert>
+      )}
       <Paper sx={{ p: { xs: 2, md: 3 }, overflowX: 'auto' }}>
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Overordnet status:</Typography>

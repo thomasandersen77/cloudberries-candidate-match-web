@@ -3,6 +3,7 @@ import {Avatar, Box, Button, Card, CardContent, Typography, Chip} from '@mui/mat
 import CvScoreBadge from './CvScoreBadge';
 import { useNavigate } from 'react-router-dom';
 import type { ConsultantWithCvDto } from '../types/api';
+import { getActiveQualityScore } from '../utils/scoreUtils';
 
 interface CandidateCardProps {
     consultant: ConsultantWithCvDto;
@@ -21,8 +22,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ consultant, matchPercenta
     };
 
     // Get the active CV for quality score display
-    const activeCv = consultant.cvs?.find(cv => cv.active);
-    const qualityScore = activeCv?.qualityScore || 0;
+    const qualityScore = getActiveQualityScore(consultant) ?? 0;
     
     return (
         <Card sx={{display: 'flex', mb: 2, alignItems: 'center', p: 1, borderRadius: 4}}>

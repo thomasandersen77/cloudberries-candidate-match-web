@@ -20,14 +20,36 @@ export function getScoreColor(score: number): string {
   return `hsl(${hue}deg 70% 45%)`;
 }
 
-export function getActiveQualityScore(c: { cvs?: Array<{ active?: boolean; qualityScore?: number | null }> }): number | null {
-  const activeCv = c?.cvs?.find(cv => cv.active);
-  const q = activeCv?.qualityScore;
-  if (typeof q === 'number' && !Number.isNaN(q)) return clamp(q, 0, 100);
+type CvLike = { active?: boolean; qualityScore?: number | null };
+
+/** Anything that may carry a CV quality score, in any of the shapes the API returns. */
+export type QualityScoreSource = {
+  qualityScore?: number | null;
+  cvData?: CvLike | null;
+  cvs?: Array<CvLike>;
+};
+
+/**
+ * CV quality on a 0–100 scale, or null when the consultant has no scored CV.
+ *
+ * Consultant endpoints return the score at the top level as `qualityScore`, and the CV payload as
+ * a single `cvData` object. The `cvs` array is only produced by a few legacy shapes, so it is
+ * checked last rather than first.
+ */
+export function getActiveQualityScore(c: QualityScoreSource): number | null {
+  const candidates: Array<number | null | undefined> = [
+    c?.qualityScore,
+    c?.cvData?.qualityScore,
+    c?.cvs?.find(cv => cv.active)?.qualityScore,
+    c?.cvs?.find(cv => typeof cv.qualityScore === 'number')?.qualityScore,
+  ];
+  for (const q of candidates) {
+    if (typeof q === 'number' && !Number.isNaN(q)) return clamp(q, 0, 100);
+  }
   return null;
 }
 
-export function compareByQualityThenName<T extends { name: string; cvs?: Array<{ active?: boolean; qualityScore?: number | null }> }>(a: T, b: T): number {
+export function compareByQualityThenName<T extends { name: string } & QualityScoreSource>(a: T, b: T): number {
   const qa = getActiveQualityScore(a);
   const qb = getActiveQualityScore(b);
   if (qa !== null && qb !== null && qa !== qb) return qb - qa; // desc

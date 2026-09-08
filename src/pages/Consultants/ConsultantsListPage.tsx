@@ -13,15 +13,14 @@ import SyncNotificationPanel from '../../components/Sync/SyncNotificationPanel';
 import type { SyncNotification } from '../../components/Sync/SyncNotificationPanel';
 import ScoringOverlay from '../../components/ScoringOverlay';
 import { getSkillsDisplay } from '../../utils/skillUtils';
-import { compareByQualityThenName } from '../../utils/scoreUtils';
+import { compareByQualityThenName, getActiveQualityScore } from '../../utils/scoreUtils';
 import CvScoreBadge from '../../components/CvScoreBadge';
 
 // Mobile consultant card component
 const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetailsClick: () => void; onCvClick: () => void }> = ({ 
   consultant, onDetailsClick, onCvClick 
 }) => {
-  const activeCv = consultant.cvs?.find(cv => cv.active);
-  const quality = activeCv?.qualityScore ?? null;
+  const quality = getActiveQualityScore(consultant);
   const { displaySkills, remainingCount } = getSkillsDisplay(consultant, 3);
 
   return (
@@ -450,8 +449,7 @@ const fetchData = async () => {
                     </TableHead>
                     <TableBody>
                     {pagedConsultants.map((c, idx) => {
-                      const activeCv = c.cvs?.find(cv => cv.active);
-                      const quality = activeCv?.qualityScore ?? null;
+                      const quality = getActiveQualityScore(c);
                       const { displaySkills: topSkills, remainingCount } = getSkillsDisplay(c, 3);
                       const { displaySkills: tabletSkills, remainingCount: tabletRemaining } = getSkillsDisplay(c, 2);
                       
