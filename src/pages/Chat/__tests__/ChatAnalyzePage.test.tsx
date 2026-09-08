@@ -89,13 +89,17 @@ describe('ChatAnalyzePage', () => {
 
     ask('Hva kan Thomas Andersen best?');
     await waitFor(() => expect(mockedAnalyze).toHaveBeenCalledTimes(1));
-    expect(mockedAnalyze.mock.calls[0][0]).toEqual({ content: 'Hva kan Thomas Andersen best?' });
+    expect(mockedAnalyze.mock.calls[0][0]).toEqual({
+      content: 'Hva kan Thomas Andersen best?',
+      scope: 'DATABASE'
+    });
 
     ask('Og hva mer?');
     await waitFor(() => expect(mockedAnalyze).toHaveBeenCalledTimes(2));
     // Without this the backend mints a new id per turn and the conversation has no memory.
     expect(mockedAnalyze.mock.calls[1][0]).toEqual({
       content: 'Og hva mer?',
+      scope: 'DATABASE',
       conversationId: factualAnswer.conversationId
     });
   });
@@ -113,6 +117,88 @@ describe('ChatAnalyzePage', () => {
 
     await waitFor(() => expect(screen.getByText('Ny AI-vurdering')).toBeInTheDocument());
     expect(screen.queryByText('Tidligere match')).not.toBeInTheDocument();
+  });
+
+  // ------------------------------------------------------------------ scope
+
+  /**
+   * The mode is chosen, never inferred. In DATABASE a question naming a known technology is read as
+   * a consultant search, so "Hva er Kafka?" returns people rather than an explanation; guessing
+   * between "general question" and "found nothing" would answer the wrong one confidently.
+   */
+  it('sends the internal-data scope by default', async () => {
+    mockedAnalyze.mockResolvedValue(factualAnswer);
+    render(<ChatAnalyzePage />);
+
+    ask('Hvem kan Kafka?');
+
+    await waitFor(() => expect(mockedAnalyze).toHaveBeenCalled());
+    expect(mockedAnalyze.mock.calls[0][0]).toMatchObject({ scope: 'DATABASE' });
+  });
+
+  it('sends the general scope once the switch is flipped', async () => {
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      answer: 'Kafka er en distribuert meldingslogg.',
+      answerKind: 'GENERAL',
+      sources: []
+    });
+    render(<ChatAnalyzePage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generell AI' }));
+    ask('Hva er Kafka?');
+
+    await waitFor(() => expect(mockedAnalyze).toHaveBeenCalled());
+    expect(mockedAnalyze.mock.calls[0][0]).toMatchObject({ scope: 'GENERAL' });
+    await waitFor(() => expect(screen.getByText('Generelt AI-svar')).toBeInTheDocument());
+  });
+
+  /**
+   * Offered after the fact rather than as a mode the reader had to predict: the point where they
+   * learn nothing in the database covered the question is the point to offer the alternative.
+   */
+  it('offers a general answer after a question found no grounding', async () => {
+    mockedAnalyze.mockResolvedValueOnce({
+      ...factualAnswer,
+      answer: 'Jeg fant ingenting i basen som spørsmålet peker på.',
+      answerKind: 'NO_GROUNDING',
+      sources: [],
+      modelUsed: 'none'
+    });
+    render(<ChatAnalyzePage />);
+
+    ask('Hvordan bør et tilbud struktureres?');
+    await waitFor(() => expect(screen.getByText('Uten grunnlag')).toBeInTheDocument());
+
+    mockedAnalyze.mockResolvedValueOnce({
+      ...factualAnswer,
+      answer: 'Et tilbud bør starte med sammendrag.',
+      answerKind: 'GENERAL',
+      sources: []
+    });
+    fireEvent.click(screen.getByRole('button', { name: /spør modellen generelt/i }));
+
+    await waitFor(() => expect(screen.getByText('Generelt AI-svar')).toBeInTheDocument());
+    // The same question, in the other scope, without retyping it.
+    expect(mockedAnalyze.mock.calls[1][0]).toMatchObject({
+      content: 'Hvordan bør et tilbud struktureres?',
+      scope: 'GENERAL'
+    });
+  });
+
+  it('says so when the server did not confirm the deletion', async () => {
+    mockedAnalyze.mockResolvedValue(factualAnswer);
+    mockedClear.mockRejectedValueOnce(new Error('offline'));
+    render(<ChatAnalyzePage />);
+
+    ask('Hva kan Thomas Andersen best?');
+    await waitFor(() => expect(screen.getByText(/sterkest på Kotlin/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /ny samtale/i }));
+
+    // Saying nothing left the impression the turns were gone when they were not; they quote CV and
+    // document text and only expire after 24 hours.
+    await waitFor(() => expect(screen.getByText(/serveren svarte ikke på slettingen/i)).toBeInTheDocument());
   });
 
   it('clears the conversation on the server too', async () => {
