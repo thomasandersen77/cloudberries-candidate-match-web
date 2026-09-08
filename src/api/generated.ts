@@ -2707,6 +2707,9 @@ export interface components {
             conversationId?: string | null;
             /** @description The question */
             content: string;
+            /** @description Idempotency key for this attempt. Send the same value when retrying a question whose outcome is unknown — a network failure after the server answered — and the stored answer comes back instead of a second model call and a second turn.
+             *      */
+            turnId?: string | null;
             /** @default DATABASE */
             scope: components["schemas"]["ChatScope"];
         };
@@ -2718,6 +2721,30 @@ export interface components {
         ChatAnswerKind: "FACTUAL" | "SEARCH_RESULT" | "STORED_MATCH" | "AD_HOC_EVALUATION" | "NO_GROUNDING" | "GENERAL";
         /** @enum {string} */
         ChatSourceKindDto: "CONSULTANT" | "PROJECT_REQUEST" | "STORED_MATCH";
+        /**
+         * @description How a consultant came to be on a list. Deliberately not called a match: in this system a match is a candidate scored against a request's requirements by the matching pipeline. EXACT_SKILLS is documented skill rows, SEMANTIC is vector similarity against CV sections, HYBRID is exact criteria filtering the pool with similarity ordering what is left.
+         *
+         * @enum {string}
+         */
+        RetrievalMethodDto: "EXACT_SKILLS" | "SEMANTIC" | "HYBRID";
+        DocumentedSkillDto: {
+            name: string;
+            /** @description Years the CV records for it, when it records any. */
+            years?: number | null;
+        };
+        RetrievalDetailsDto: {
+            method: components["schemas"]["RetrievalMethodDto"];
+            documentedSkills?: components["schemas"]["DocumentedSkillDto"][];
+            cvQualityScore?: number | null;
+            /**
+             * Format: double
+             * @description Cosine similarity for a vector search hit. Not a match percentage and must not be shown as one: two unrelated CVs sit around 0.80 with the current model, so the absolute value carries little and a small difference carries none. Use it for ordering.
+             *
+             */
+            semanticSimilarity?: number | null;
+            /** @description The CV section that scored highest, for a vector search hit. */
+            bestChunkLabel?: string | null;
+        };
         ChatSource: {
             /** @description The reference the answer cites */
             ref: string;
@@ -2733,6 +2760,8 @@ export interface components {
             matchResultId?: number | null;
             /** Format: date-time */
             evaluatedAt?: string | null;
+            /** @description Set on a consultant found by a search, for rendering a result card. */
+            retrieval?: components["schemas"]["RetrievalDetailsDto"] | null;
         };
         ChatAnalyzeResponse: {
             conversationId: string;

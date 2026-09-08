@@ -27,7 +27,7 @@ export async function clearAnalyzeConversation(conversationId: string): Promise<
   await aiScoringClient.delete(`chatbot/analyze/${encodeURIComponent(conversationId)}`);
 }
 
-/** Legacy: chatbot/search is not in OpenAPI spec */
+/** The advanced search tab. Now in the root OpenAPI spec; ChatSearchTab is its only caller. */
 export async function searchChat(payload: ChatSearchRequest): Promise<ChatSearchResponse> {
   const { data } = await aiScoringClient.post<ChatSearchResponse>('chatbot/search', payload);
   return data;

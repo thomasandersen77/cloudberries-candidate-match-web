@@ -13,12 +13,15 @@ import {
   Badge as ConsultantIcon,
   History as StoredMatchIcon,
   Storage as DatabaseIcon,
-  Public as GeneralIcon
+  // Not a globe. A globe reads as web access, and this mode has none; the point of the label is to
+  // set that expectation, not to undercut it with the icon next to it.
+  AutoAwesome as GeneralIcon
 } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { analyzeContent, clearAnalyzeConversation } from '../../services/chatService';
-import type { ChatAnswerKind, ChatScope, ChatSource } from '../../types/api';
+import { Link as RouterLink } from 'react-router-dom';
+import type { ChatAnswerKind, ChatScope, ChatSource, RetrievalMethod } from '../../types/api';
 
 interface ChatMessage {
   id: string;
@@ -70,7 +73,7 @@ const ANSWER_KIND_LABELS: Record<ChatAnswerKind, { label: string; color: 'defaul
   GENERAL: {
     label: 'Generelt AI-svar',
     color: 'warning',
-    help: 'Modellens egen kunnskap. Ingen konsulent-, avrops- eller matchedata er brukt.'
+    help: 'Modellens egen kunnskap, uten interne data og uten nettsøk.'
   }
 };
 
@@ -91,6 +94,9 @@ const ChatAnalyzePage: React.FC = () => {
   const [failedQuestion, setFailedQuestion] = useState<string | null>(null);
   const [scope, setScope] = useState<ChatScope>('DATABASE');
   const [clearFailed, setClearFailed] = useState(false);
+  // The key for the attempt in flight. A retry reuses it, so a question the server already answered
+  // before the response was lost comes back from the server instead of being asked again.
+  const pendingTurnId = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -142,11 +148,16 @@ const ChatAnalyzePage: React.FC = () => {
     setLoading(true);
 
     try {
+      const turnId = pendingTurnId.current ?? crypto.randomUUID();
+      pendingTurnId.current = turnId;
+
       const res = await analyzeContent({
         content: question.trim(),
         scope: askScope,
+        turnId,
         ...(conversationId ? { conversationId } : {})
       });
+      pendingTurnId.current = null;
 
       // The server mints the id on the first turn; sending it back is what continues the
       // conversation, so it has to be kept before the next question is asked.
@@ -215,6 +226,79 @@ const ChatAnalyzePage: React.FC = () => {
 
   const formatTimestamp = (date: Date) =>
     date.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
+
+  /**
+   * A search hit as a card rather than a chip.
+   *
+   * The answer text says the same in prose, but a reader wants to act on it: which criteria the CV
+   * documents and for how long, which section the hit came from, and a way into the profile. None
+   * of that should be read back out of a sentence.
+   *
+   * The similarity is shown as a similarity, never as a percentage match. Two unrelated CVs sit
+   * around 0.80 with the current embedding model, so the number orders a list and says nothing on
+   * its own.
+   */
+  const ResultCards: React.FC<{ sources: ChatSource[] }> = ({ sources }) => {
+    const hits = sources.filter(s => s.kind === 'CONSULTANT' && s.retrieval);
+    if (hits.length === 0) return null;
+
+    const methodLabel: Record<RetrievalMethod, string> = {
+      EXACT_SKILLS: 'Dokumenterte ferdigheter',
+      SEMANTIC: 'Likhet i CV-tekst',
+      HYBRID: 'Krav filtrert, likhet rangert'
+    };
+
+    return (
+      <Stack spacing={1} sx={{ mt: 1, width: '100%' }}>
+        {hits.map(hit => {
+          const r = hit.retrieval!;
+          return (
+            <Paper key={hit.ref} variant="outlined" sx={{ p: 1.25 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  {hit.ref} {hit.label}
+                </Typography>
+                <Chip label={methodLabel[r.method]} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 20 }} />
+              </Stack>
+
+              {r.documentedSkills && r.documentedSkills.length > 0 && (
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                  Oppfyller: {r.documentedSkills.map(sk => sk.name + (sk.years != null ? ` (${sk.years} år)` : '')).join(', ')}
+                </Typography>
+              )}
+              {r.bestChunkLabel && (
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Traff i CV-en: {r.bestChunkLabel}
+                </Typography>
+              )}
+              <Stack direction="row" spacing={1.5} sx={{ mt: 0.5 }}>
+                {r.cvQualityScore != null && (
+                  <Typography variant="caption" color="text.secondary">CV-kvalitet {r.cvQualityScore}</Typography>
+                )}
+                {r.semanticSimilarity != null && (
+                  <Tooltip title="Likhet i CV-teksten, ikke en matchprosent. To urelaterte CV-er ligger rundt 0,80.">
+                    <Typography variant="caption" color="text.secondary">
+                      Likhet {r.semanticSimilarity.toFixed(2)}
+                    </Typography>
+                  </Tooltip>
+                )}
+                {hit.consultantUserId && (
+                  <Typography
+                    component={RouterLink}
+                    to={`/consultants/${hit.consultantUserId}`}
+                    variant="caption"
+                    sx={{ color: 'primary.main' }}
+                  >
+                    Se CV
+                  </Typography>
+                )}
+              </Stack>
+            </Paper>
+          );
+        })}
+      </Stack>
+    );
+  };
 
   const SourceChips: React.FC<{ sources: ChatSource[] }> = ({ sources }) => (
     <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
@@ -325,7 +409,10 @@ const ChatAnalyzePage: React.FC = () => {
             )}
 
             {!isQuestion && message.sources && message.sources.length > 0 && (
-              <SourceChips sources={message.sources} />
+              <>
+                <ResultCards sources={message.sources} />
+                <SourceChips sources={message.sources} />
+              </>
             )}
 
             {/*
@@ -420,7 +507,7 @@ const ChatAnalyzePage: React.FC = () => {
         <Typography variant="caption" color="text.secondary">
           {scope === 'DATABASE'
             ? 'Svarene bygger på konsulenter, CV-er, avrop og matcheresultater.'
-            : 'Generelt AI-svar – konsulent-, avrops- og matchedata brukes ikke.'}
+            : 'Modellkunnskap – uten interne data og uten nettsøk.'}
         </Typography>
       </Stack>
 

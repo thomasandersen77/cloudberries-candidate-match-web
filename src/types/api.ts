@@ -17,6 +17,9 @@ export type ChatAnalyzeResponse = components['schemas']['ChatAnalyzeResponse'];
 export type ChatAnswerKind = components['schemas']['ChatAnswerKind'];
 export type ChatSource = components['schemas']['ChatSource'];
 export type ChatSourceKind = components['schemas']['ChatSourceKindDto'];
+export type RetrievalDetails = components['schemas']['RetrievalDetailsDto'];
+export type RetrievalMethod = components['schemas']['RetrievalMethodDto'];
+export type DocumentedSkill = components['schemas']['DocumentedSkillDto'];
 
 export type RagChatRequest = components['schemas']['RagChatRequest'];
 export type SourceDocument = components['schemas']['SourceDocument'];

@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import ChatAnalyzePage from '../ChatAnalyzePage';
 import { analyzeContent, clearAnalyzeConversation } from '../../../services/chatService';
 
@@ -48,7 +49,7 @@ describe('ChatAnalyzePage', () => {
 
   it('shows the answer, its kind and its sources', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Hva kan Thomas Andersen best?');
 
@@ -65,7 +66,7 @@ describe('ChatAnalyzePage', () => {
    */
   it('shows which model answered, and says so when none did', async () => {
     mockedAnalyze.mockResolvedValueOnce({ ...factualAnswer, latencyMs: 2783 });
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Hva kan Thomas Andersen best?');
     await waitFor(() => expect(screen.getByText('claude-haiku-4-5 • 2.8 s')).toBeInTheDocument());
@@ -85,19 +86,20 @@ describe('ChatAnalyzePage', () => {
 
   it('sends no conversationId on the first turn and the server id on the next', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Hva kan Thomas Andersen best?');
     await waitFor(() => expect(mockedAnalyze).toHaveBeenCalledTimes(1));
-    expect(mockedAnalyze.mock.calls[0][0]).toEqual({
+    expect(mockedAnalyze.mock.calls[0][0]).toMatchObject({
       content: 'Hva kan Thomas Andersen best?',
       scope: 'DATABASE'
     });
+    expect((mockedAnalyze.mock.calls[0][0] as { conversationId?: string }).conversationId).toBeUndefined();
 
     ask('Og hva mer?');
     await waitFor(() => expect(mockedAnalyze).toHaveBeenCalledTimes(2));
     // Without this the backend mints a new id per turn and the conversation has no memory.
-    expect(mockedAnalyze.mock.calls[1][0]).toEqual({
+    expect(mockedAnalyze.mock.calls[1][0]).toMatchObject({
       content: 'Og hva mer?',
       scope: 'DATABASE',
       conversationId: factualAnswer.conversationId
@@ -111,7 +113,7 @@ describe('ChatAnalyzePage', () => {
       answerKind: 'AD_HOC_EVALUATION',
       modelUsed: 'matching/DEFAULT'
     });
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Passer Thomas til avrop 8?');
 
@@ -128,7 +130,7 @@ describe('ChatAnalyzePage', () => {
    */
   it('sends the internal-data scope by default', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Hvem kan Kafka?');
 
@@ -143,7 +145,7 @@ describe('ChatAnalyzePage', () => {
       answerKind: 'GENERAL',
       sources: []
     });
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     fireEvent.click(screen.getByRole('button', { name: 'Generell AI' }));
     ask('Hva er Kafka?');
@@ -165,7 +167,7 @@ describe('ChatAnalyzePage', () => {
       sources: [],
       modelUsed: 'none'
     });
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Hvordan bør et tilbud struktureres?');
     await waitFor(() => expect(screen.getByText('Uten grunnlag')).toBeInTheDocument());
@@ -186,10 +188,71 @@ describe('ChatAnalyzePage', () => {
     });
   });
 
+  // ---------------------------------------------------------- result cards
+
+  /**
+   * The answer text says the same in prose; a reader wants to act on it. The similarity is shown as
+   * a similarity and never as a percentage match: two unrelated CVs sit around 0.80 with the
+   * current embedding model, so the number orders a list and says nothing on its own.
+   */
+  it('renders a search hit as a card with its criteria and CV section', async () => {
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      answer: 'Kari passer på Kotlin [K1].',
+      answerKind: 'SEARCH_RESULT',
+      sources: [
+        {
+          ref: 'K1',
+          kind: 'CONSULTANT' as const,
+          label: 'Kari Nordmann',
+          consultantUserId: 'user-kari',
+          consultantCvId: 'cv-kari',
+          retrieval: {
+            method: 'HYBRID' as const,
+            documentedSkills: [{ name: 'Kotlin', years: 9 }],
+            cvQualityScore: 76,
+            semanticSimilarity: 0.86,
+            bestChunkLabel: 'Prosjekt: Skatteetaten'
+          }
+        }
+      ]
+    });
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('Hvem har jobbet med modernisering av Java-systemer?');
+
+    await waitFor(() => expect(screen.getByText('Krav filtrert, likhet rangert')).toBeInTheDocument());
+    expect(screen.getByText('Oppfyller: Kotlin (9 år)')).toBeInTheDocument();
+    expect(screen.getByText('Traff i CV-en: Prosjekt: Skatteetaten')).toBeInTheDocument();
+    expect(screen.getByText('CV-kvalitet 76')).toBeInTheDocument();
+    // A similarity, not a percentage.
+    expect(screen.getByText('Likhet 0.86')).toBeInTheDocument();
+    expect(screen.queryByText(/86 ?%/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Se CV' })).toHaveAttribute('href', '/consultants/user-kari');
+  });
+
+  it('reuses the turn id when retrying, so the server can replay its answer', async () => {
+    mockedAnalyze.mockRejectedValueOnce(new Error('network'));
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('Hvem kan Kotlin?');
+    await waitFor(() => expect(screen.getByText(/Spørsmålet feilet/)).toBeInTheDocument());
+
+    mockedAnalyze.mockResolvedValueOnce(factualAnswer);
+    fireEvent.click(screen.getByRole('button', { name: /prøv igjen/i }));
+    await waitFor(() => expect(mockedAnalyze).toHaveBeenCalledTimes(2));
+
+    // The client cannot tell whether the first attempt was saved; the same key lets the server say.
+    const first = mockedAnalyze.mock.calls[0][0] as { turnId?: string };
+    const second = mockedAnalyze.mock.calls[1][0] as { turnId?: string };
+    expect(first.turnId).toBeTruthy();
+    expect(second.turnId).toBe(first.turnId);
+  });
+
   it('says so when the server did not confirm the deletion', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
     mockedClear.mockRejectedValueOnce(new Error('offline'));
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Hva kan Thomas Andersen best?');
     await waitFor(() => expect(screen.getByText(/sterkest på Kotlin/)).toBeInTheDocument());
@@ -203,7 +266,7 @@ describe('ChatAnalyzePage', () => {
 
   it('clears the conversation on the server too', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Hva kan Thomas Andersen best?');
     await waitFor(() => expect(screen.getByText(/sterkest på Kotlin/)).toBeInTheDocument());
@@ -218,7 +281,7 @@ describe('ChatAnalyzePage', () => {
 
   it('keeps the question and offers a retry when the call fails', async () => {
     mockedAnalyze.mockRejectedValueOnce(new Error('boom'));
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Hvem kan Kotlin?');
 
@@ -249,7 +312,7 @@ describe('ChatAnalyzePage', () => {
         '| Einar Flobak | 7 år |'
       ].join('\n')
     });
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Hvem kan Kotlin?');
 
@@ -275,7 +338,7 @@ describe('ChatAnalyzePage', () => {
         }
       ]
     });
-    render(<ChatAnalyzePage />);
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
     ask('Hva krever avrop 10?');
 
