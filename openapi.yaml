@@ -197,6 +197,34 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /consultants/{userId}/with-cv:
+    get:
+      tags: [ Consultants ]
+      summary: Get one consultant with CV data
+      operationId: getConsultantWithCv
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: onlyActiveCv
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Consultant with CV data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultantWithCvDto'
+        '404':
+          description: Consultant not found
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /consultants/{userId}/cvs:
     get:
       tags: [ Consultants ]
@@ -303,6 +331,32 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /consultants/sync/{userId}/{cvId}:
+    post:
+      tags: [ Consultants ]
+      summary: Synchronize one consultant and the current CV from Flowcase
+      operationId: syncSingleConsultant
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: cvId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Single consultant sync summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultantSyncResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /cv/{userId}:
     get:
       tags: [ CV ]
@@ -323,6 +377,36 @@ paths:
                 additionalProperties: true
         default:
           $ref: '#/components/responses/ErrorResponse'
+
+  /consultants/embeddings/chunks/rebuild:
+    post:
+      tags: [ Embeddings ]
+      summary: Build the per-section CV chunk corpus used by chunked semantic search
+      description: >-
+        Splits every eligible CV into semantic chunks (one per project experience and key
+        qualification, plus skills and credentials) and embeds each one. Must be run once before
+        `embedding.chunking.enabled` has any effect; until chunks exist, semantic search falls back
+        to whole-CV vectors on its own. Safe to re-run: unchanged CVs are skipped by content hash,
+        and a provider rate limit stops the run cleanly so a later run resumes where it left off.
+      operationId: rebuildCvChunks
+      parameters:
+        - in: query
+          name: force
+          schema:
+            type: boolean
+            default: false
+          description: Re-embed even when the CV content hash is unchanged.
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Cap the number of consultants processed, for a partial run.
+      responses:
+        '200':
+          description: Chunk rebuild summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChunkRebuildResult' }
 
   /embeddings/run/missing:
     post:
@@ -805,6 +889,12 @@ paths:
         - in: query
           name: cvWeightPercent
           schema: { type: integer, minimum: 0, maximum: 100 }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunMatchingRequest'
       responses:
         '200':
           description: AI matching results
@@ -813,6 +903,39 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/MatchCandidateDto' }
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /project-requests/{id}/matches/{consultantUserId}/proposal:
+    post:
+      tags: [ Matches ]
+      summary: Generate the offer-ready evaluation for one consultant
+      description: |
+        Second matching stage. `/matches/run` scores the shortlist with a screening prompt,
+        because only the score and the summary are stored; the per-requirement justifications and
+        the proposal paragraphs are roughly four fifths of the output tokens. Call this once a
+        consultant has been picked to bid.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: path
+          name: consultantUserId
+          required: true
+          description: Flowcase user id, as returned in `MatchCandidateDto.id`.
+          schema: { type: string }
+        - in: query
+          name: modelTier
+          schema: { $ref: '#/components/schemas/ModelTier' }
+        - $ref: '#/components/parameters/UseHighestQualityModelParam'
+      responses:
+        '200':
+          description: Full candidate evaluation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateMatchEvaluation'
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -1569,6 +1692,23 @@ components:
         bornYear: { type: integer }
         defaultCvId: { type: string }
 
+    ConsultantSyncResponse:
+      type: object
+      required: [ total, totalInDatabase, attempted, succeeded, failed, skipped, created, updated, skippedReasons ]
+      properties:
+        total: { type: integer }
+        totalInDatabase: { type: integer, format: int64 }
+        attempted: { type: integer }
+        succeeded: { type: integer }
+        failed: { type: integer }
+        skipped: { type: integer }
+        created: { type: integer }
+        updated: { type: integer }
+        skippedReasons:
+          type: object
+          additionalProperties:
+            type: integer
+
     PageConsultantSummaryDto:
       type: object
       properties:
@@ -1588,9 +1728,28 @@ components:
         userId: { type: string }
         name: { type: string }
         cvId: { type: string }
+        email: { type: string, nullable: true }
+        office: { type: string, nullable: true }
+        role: { type: string, nullable: true }
+        qualityScore:
+          type: integer
+          nullable: true
+          description: >-
+            CV quality score 0-100 for the consultant's active CV, or the first CV that has one.
+            Surfaced at the top level so result lists can show how sellable a CV is without
+            unpacking the nested CV payload.
         skills:
           type: array
           items: { type: string }
+        semanticScore:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Cosine similarity to the search query, 0..1 where 1 is identical. Set by semantic and
+            hybrid search only; null for results that did not come from a vector search. Embedding
+            models keep unrelated items well above 0, so read this relative to the rest of the
+            result set rather than as an absolute percentage.
         cvs:
           type: array
           items: { $ref: '#/components/schemas/ConsultantCvDto' }
@@ -1749,7 +1908,26 @@ components:
           items: { type: string }
         minQualityScore: { type: integer, nullable: true }
         onlyActiveCv: { type: boolean, default: false }
+        minSimilarity:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Cosine similarity in 0..1 below which a hit is discarded. Omit to use the server default;
+            pass 0.0 to disable filtering for this request.
         pagination: { $ref: '#/components/schemas/PaginationDto' }
+
+    ChunkRebuildResult:
+      type: object
+      properties:
+        processed: { type: integer }
+        created: { type: integer }
+        updated: { type: integer }
+        skipped: { type: integer, description: Unchanged since the last run. }
+        failed: { type: integer }
+        totalChunks: { type: integer, description: Chunks written across all processed CVs. }
+        provider: { type: string }
+        model: { type: string }
 
     SemanticSearchRequest:
       type: object
@@ -1761,6 +1939,13 @@ components:
         topK: { type: integer, default: 10 }
         minQualityScore: { type: integer, nullable: true }
         onlyActiveCv: { type: boolean, default: false }
+        minSimilarity:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Cosine similarity in 0..1 below which a hit is discarded. Omit to use the server default;
+            pass 0.0 to disable filtering for this request.
         pagination: { $ref: '#/components/schemas/PaginationDto' }
 
     PaginationDto:
@@ -1867,6 +2052,9 @@ components:
 
     MatchPreviewCandidateDto:
       type: object
+      description: >-
+        A preselected candidate. skillScore, semanticScore, cvQualityScore and combinedScore are all
+        on a 0..1 scale where 1 is best; combinedScore is the weighted sum of the other three.
       properties:
         userId: { type: string }
         cvId: { type: string }
@@ -1877,6 +2065,54 @@ components:
         combinedScore: { type: number, format: double }
         reason: { type: string }
         email: { type: string, nullable: true }
+
+    RunMatchingRequest:
+      type: object
+      description: |
+        Optional body for an AI matching run. Naming candidates skips preselection entirely.
+        Preselection is a recall filter and its ordering predicts the LLM's ranking poorly, so a
+        person picking from the free preview generally has better information than the score.
+      properties:
+        consultantUserIds:
+          type: array
+          description: Flowcase user ids from the preview. Absent or empty means use preselection.
+          items: { type: string }
+
+    CandidateMatchEvaluation:
+      type: object
+      description: Full second-stage evaluation of one consultant against a project request.
+      required: [ totalScore, summary ]
+      properties:
+        consultantName: { type: string }
+        totalScore:
+          type: string
+          description: Weighted total on a 0-10 scale, serialised as a string.
+        summary: { type: string }
+        matchTimeSeconds: { type: integer }
+        requirements:
+          type: array
+          items: { $ref: '#/components/schemas/CandidateMatchRequirement' }
+        cvImprovements:
+          type: array
+          items: { type: string }
+
+    CandidateMatchRequirement:
+      type: object
+      required: [ name, score ]
+      properties:
+        name: { type: string }
+        isMustHave:
+          type: boolean
+          description: MÅ-krav count double towards the weighted total.
+        score: { type: string }
+        justification:
+          type: string
+          description: Internal, evidence-based reasoning for the score.
+        proposalText:
+          type: string
+          description: Paragraph written to be pasted into an offer.
+        yearsOfExperience: { type: string }
+        comment: { type: string }
 
     ProjectMatchStatusResponse:
       type: object

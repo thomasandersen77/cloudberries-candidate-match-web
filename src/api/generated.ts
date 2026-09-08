@@ -334,6 +334,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/consultants/{userId}/with-cv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one consultant with CV data */
+        get: operations["getConsultantWithCv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/consultants/{userId}/cvs": {
         parameters: {
             query?: never;
@@ -487,6 +504,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/consultants/sync/{userId}/{cvId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Synchronize one consultant and the current CV from Flowcase */
+        post: operations["syncSingleConsultant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cv/{userId}": {
         parameters: {
             query?: never;
@@ -522,6 +556,26 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultants/embeddings/chunks/rebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build the per-section CV chunk corpus used by chunked semantic search
+         * @description Splits every eligible CV into semantic chunks (one per project experience and key qualification, plus skills and credentials) and embeds each one. Must be run once before `embedding.chunking.enabled` has any effect; until chunks exist, semantic search falls back to whole-CV vectors on its own. Safe to re-run: unchanged CVs are skipped by content hash, and a provider rate limit stops the run cleanly so a later run resumes where it left off.
+         */
+        post: operations["rebuildCvChunks"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1416,7 +1470,11 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["RunMatchingRequest"];
+                };
+            };
             responses: {
                 /** @description AI matching results */
                 200: {
@@ -1425,6 +1483,59 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["MatchCandidateDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-requests/{id}/matches/{consultantUserId}/proposal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate the offer-ready evaluation for one consultant
+         * @description Second matching stage. `/matches/run` scores the shortlist with a screening prompt,
+         *     because only the score and the summary are stored; the per-requirement justifications and
+         *     the proposal paragraphs are roughly four fifths of the output tokens. Call this once a
+         *     consultant has been picked to bid.
+         *
+         */
+        post: {
+            parameters: {
+                query?: {
+                    modelTier?: components["schemas"]["ModelTier"];
+                    /** @description When true, backend requests the configured QUALITY model tier for this operation. The concrete model is configured server-side via ANTHROPIC_QUALITY_MODEL. If no quality model is configured, backend falls back to the default model.
+                     *      */
+                    useHighestQualityModel?: components["parameters"]["UseHighestQualityModelParam"];
+                };
+                header?: never;
+                path: {
+                    id: number;
+                    /** @description Flowcase user id, as returned in `MatchCandidateDto.id`. */
+                    consultantUserId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Full candidate evaluation */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CandidateMatchEvaluation"];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -2535,6 +2646,20 @@ export interface components {
             bornYear: number;
             defaultCvId: string;
         };
+        ConsultantSyncResponse: {
+            total: number;
+            /** Format: int64 */
+            totalInDatabase: number;
+            attempted: number;
+            succeeded: number;
+            failed: number;
+            skipped: number;
+            created: number;
+            updated: number;
+            skippedReasons: {
+                [key: string]: number;
+            };
+        };
         PageConsultantSummaryDto: {
             content?: components["schemas"]["ConsultantSummaryDto"][];
             /** Format: int64 */
@@ -2549,7 +2674,17 @@ export interface components {
             userId: string;
             name: string;
             cvId: string;
+            email?: string | null;
+            office?: string | null;
+            role?: string | null;
+            /** @description CV quality score 0-100 for the consultant's active CV, or the first CV that has one. Surfaced at the top level so result lists can show how sellable a CV is without unpacking the nested CV payload. */
+            qualityScore?: number | null;
             skills: string[];
+            /**
+             * Format: double
+             * @description Cosine similarity to the search query, 0..1 where 1 is identical. Set by semantic and hybrid search only; null for results that did not come from a vector search. Embedding models keep unrelated items well above 0, so read this relative to the rest of the result set rather than as an absolute percentage.
+             */
+            semanticScore?: number | null;
             cvs: components["schemas"]["ConsultantCvDto"][];
         };
         ConsultantCvDto: {
@@ -2645,7 +2780,24 @@ export interface components {
             minQualityScore?: number | null;
             /** @default false */
             onlyActiveCv: boolean;
+            /**
+             * Format: double
+             * @description Cosine similarity in 0..1 below which a hit is discarded. Omit to use the server default; pass 0.0 to disable filtering for this request.
+             */
+            minSimilarity?: number | null;
             pagination?: components["schemas"]["PaginationDto"];
+        };
+        ChunkRebuildResult: {
+            processed?: number;
+            created?: number;
+            updated?: number;
+            /** @description Unchanged since the last run. */
+            skipped?: number;
+            failed?: number;
+            /** @description Chunks written across all processed CVs. */
+            totalChunks?: number;
+            provider?: string;
+            model?: string;
         };
         SemanticSearchRequest: {
             text: string;
@@ -2658,6 +2810,11 @@ export interface components {
             minQualityScore?: number | null;
             /** @default false */
             onlyActiveCv: boolean;
+            /**
+             * Format: double
+             * @description Cosine similarity in 0..1 below which a hit is discarded. Omit to use the server default; pass 0.0 to disable filtering for this request.
+             */
+            minSimilarity?: number | null;
             pagination?: components["schemas"]["PaginationDto"];
         };
         PaginationDto: {
@@ -2748,6 +2905,7 @@ export interface components {
             semanticSearchUsed?: boolean;
             candidates?: components["schemas"]["MatchPreviewCandidateDto"][];
         };
+        /** @description A preselected candidate. skillScore, semanticScore, cvQualityScore and combinedScore are all on a 0..1 scale where 1 is best; combinedScore is the weighted sum of the other three. */
         MatchPreviewCandidateDto: {
             userId?: string;
             cvId?: string;
@@ -2762,6 +2920,36 @@ export interface components {
             combinedScore?: number;
             reason?: string;
             email?: string | null;
+        };
+        /** @description Optional body for an AI matching run. Naming candidates skips preselection entirely.
+         *     Preselection is a recall filter and its ordering predicts the LLM's ranking poorly, so a
+         *     person picking from the free preview generally has better information than the score.
+         *      */
+        RunMatchingRequest: {
+            /** @description Flowcase user ids from the preview. Absent or empty means use preselection. */
+            consultantUserIds?: string[];
+        };
+        /** @description Full second-stage evaluation of one consultant against a project request. */
+        CandidateMatchEvaluation: {
+            consultantName?: string;
+            /** @description Weighted total on a 0-10 scale, serialised as a string. */
+            totalScore: string;
+            summary: string;
+            matchTimeSeconds?: number;
+            requirements?: components["schemas"]["CandidateMatchRequirement"][];
+            cvImprovements?: string[];
+        };
+        CandidateMatchRequirement: {
+            name: string;
+            /** @description MÅ-krav count double towards the weighted total. */
+            isMustHave?: boolean;
+            score: string;
+            /** @description Internal, evidence-based reasoning for the score. */
+            justification?: string;
+            /** @description Paragraph written to be pasted into an offer. */
+            proposalText?: string;
+            yearsOfExperience?: string;
+            comment?: string;
         };
         ProjectMatchStatusResponse: {
             /** Format: int64 */
@@ -3036,6 +3224,38 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getConsultantWithCv: {
+        parameters: {
+            query?: {
+                onlyActiveCv?: boolean;
+            };
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Consultant with CV data */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultantWithCvDto"];
+                };
+            };
+            /** @description Consultant not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["ErrorResponse"];
+        };
+    };
     searchConsultantsRelational: {
         parameters: {
             query?: never;
@@ -3084,6 +3304,55 @@ export interface operations {
                 };
             };
             default: components["responses"]["ErrorResponse"];
+        };
+    };
+    syncSingleConsultant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+                cvId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Single consultant sync summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultantSyncResponse"];
+                };
+            };
+            default: components["responses"]["ErrorResponse"];
+        };
+    };
+    rebuildCvChunks: {
+        parameters: {
+            query?: {
+                /** @description Re-embed even when the CV content hash is unchanged. */
+                force?: boolean;
+                /** @description Cap the number of consultants processed, for a partial run. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Chunk rebuild summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChunkRebuildResult"];
+                };
+            };
         };
     };
     scoreCandidate: {

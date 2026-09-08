@@ -25,6 +25,14 @@ export type MatchingQualityOptions = {
   /** Default false — only send when user opts in. */
   useHighestQualityModel?: boolean;
   cvWeightPercent?: number;
+  /**
+   * Flowcase user ids to send to the LLM. Omitted means "use the preselection shortlist".
+   *
+   * Preselection is a recall filter, and its ordering turned out to be a poor predictor of how
+   * the LLM ranks the same people, so letting the operator pick from the free preview beats
+   * trusting the combined score to pick for them.
+   */
+  consultantUserIds?: string[];
 };
 
 function runParams(opts?: MatchingQualityOptions): Record<string, string> | undefined {
@@ -177,9 +185,10 @@ export async function runProjectMatching(
 ): Promise<ProjectMatchResults | { async: true; requestId: number }> {
   const limit = opts?.limit ?? 10;
   try {
+    const chosen = opts?.consultantUserIds?.filter(Boolean) ?? [];
     const { data, status } = await aiScoringClient.post<MatchCandidateDto[]>(
       `project-requests/${id}/matches/run`,
-      null,
+      chosen.length > 0 ? { consultantUserIds: chosen } : null,
       { params: runParams({ ...opts, limit }), timeout: AI_MATCH_TIMEOUT_MS },
     );
     if (status === 202) {
