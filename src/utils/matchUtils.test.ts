@@ -21,15 +21,18 @@ describe('formatMatchScore', () => {
 });
 
 describe('formatMatchScoreSuffix', () => {
-  it('formats AI match line suffix', () => {
-    expect(formatMatchScoreSuffix(8.3)).toBe(' • score 8.3');
+  // The scale is part of the label. The matches page shows the preview's ranking as a percentage
+  // right above these rows, so a bare "score 5.8" next to "rang 61 %" reads as the worse of the
+  // two when it is the more favourable.
+  it('formats AI match line suffix with its scale', () => {
+    expect(formatMatchScoreSuffix(8.3)).toBe(' • score 8.3 / 10');
     expect(formatMatchScoreSuffix(undefined)).toBe('');
   });
 });
 
 describe('formatLegacyMatchScoreLabel', () => {
   it('uses decimal score form for 0–10 scale', () => {
-    expect(formatLegacyMatchScoreLabel(8.3)).toBe('score 8.3');
+    expect(formatLegacyMatchScoreLabel(8.3)).toBe('score 8.3 / 10');
   });
 
   it('uses percent for 0–100 legacy integers', () => {

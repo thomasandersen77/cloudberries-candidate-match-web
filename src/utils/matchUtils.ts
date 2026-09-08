@@ -10,10 +10,17 @@ export function formatMatchScore(score: number | null | undefined): string {
   return score.toFixed(1);
 }
 
-/** e.g. " • score 8.3" for AI match rows; empty string when score is missing. */
+/**
+ * e.g. " • score 8.3 / 10" for AI match rows; empty string when score is missing.
+ *
+ * The scale is spelled out because two different numbers appear on the same page: the preview's
+ * ranking is a percentage of a weighted 0..1 signal, and this is the model's evaluation on the
+ * 0-10 scale its schema declares. A bare "score 5.8" next to "rang 61 %" reads as the worse of the
+ * two when it is in fact the more favourable.
+ */
 export function formatMatchScoreSuffix(score: number | null | undefined): string {
   const label = formatMatchScore(score);
-  return label === '–' ? '' : ` • score ${label}`;
+  return label === '–' ? '' : ` • score ${label} / 10`;
 }
 
 /** Normalize assorted legacy scales to 0–1 for visualization thresholds. */
@@ -29,7 +36,7 @@ export function normalizeMatchScoreForVisualization(score: number): number {
  */
 export function formatLegacyMatchScoreLabel(matchScore: number): string {
   if (matchScore <= 1) return `${(matchScore * 100).toFixed(1)}%`;
-  if (matchScore <= 10) return `score ${matchScore.toFixed(1)}`;
+  if (matchScore <= 10) return `score ${matchScore.toFixed(1)} / 10`;
   return `${matchScore}%`;
 }
 
