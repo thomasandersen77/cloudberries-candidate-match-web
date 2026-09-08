@@ -2774,9 +2774,33 @@ export interface components {
             answer: string;
             answerKind: components["schemas"]["ChatAnswerKind"];
             sources: components["schemas"]["ChatSource"][];
+            /**
+             * @description Per-consultant scores, present only when the turn ran a comparison and empty otherwise. Additive: a client that ignores it keeps working, and one that reads it can render a table without parsing the answer text.
+             *
+             * @default []
+             */
+            comparison: components["schemas"]["CandidateComparison"][];
             modelUsed: string;
             /** Format: int64 */
             latencyMs: number;
+        };
+        /** @description One consultant's screening score from a chat comparison. Produced by the same matching prompt, schema and tier as every other score in the product, so the numbers are comparable.
+         *      */
+        CandidateComparison: {
+            /** @description Reference used in the answer text, e.g. K1 */
+            ref: string;
+            consultantUserId: string;
+            name: string;
+            /**
+             * Format: double
+             * @description Screening score on the 0.0-10.0 scale, absent when this consultant was not scored
+             * @example 7.4
+             */
+            score?: number | null;
+            summary?: string | null;
+            /** @description Set when the consultant could not be scored. The score is then absent rather than zero: a failed call is not a bad candidate, and ranking it last would be a claim the run cannot support.
+             *      */
+            notScoredReason?: string | null;
         };
         AIResponseModel: {
             content?: string;

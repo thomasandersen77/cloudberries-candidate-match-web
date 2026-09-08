@@ -20,6 +20,8 @@ export type ChatSourceKind = components['schemas']['ChatSourceKindDto'];
 export type RetrievalDetails = components['schemas']['RetrievalDetailsDto'];
 export type RetrievalMethod = components['schemas']['RetrievalMethodDto'];
 export type DocumentedSkill = components['schemas']['DocumentedSkillDto'];
+// Til stede bare på en sammenligningstur, og tom ellers.
+export type CandidateComparison = components['schemas']['CandidateComparison'];
 
 export type RagChatRequest = components['schemas']['RagChatRequest'];
 export type SourceDocument = components['schemas']['SourceDocument'];

@@ -3,6 +3,7 @@ import {
   Container, Typography, TextField, Button, Paper, CircularProgress, Stack,
   Box, Fade, Chip, Tooltip, ToggleButton, ToggleButtonGroup, Alert,
   Checkbox, MenuItem, Select, FormControl, InputLabel, Snackbar,
+  Table, TableHead, TableBody, TableRow, TableCell, Link as MuiLink,
   useTheme, useMediaQuery
 } from '@mui/material';
 import {
@@ -26,7 +27,9 @@ import { analyzeContent, clearAnalyzeConversation } from '../../services/chatSer
 import { listProjectRequests } from '../../services/projectRequestsService';
 import { runProjectMatching } from '../../api/matchingApi';
 import { Link as RouterLink } from 'react-router-dom';
-import type { ChatAnswerKind, ChatScope, ChatSource, RetrievalMethod } from '../../types/api';
+import type {
+  CandidateComparison, ChatAnswerKind, ChatScope, ChatSource, RetrievalMethod
+} from '../../types/api';
 
 interface ChatMessage {
   id: string;
@@ -42,6 +45,8 @@ interface ChatMessage {
   question?: string;
   /** How many hits it was asked for, so "vis flere" knows what "flere" means. */
   topK?: number;
+  /** Per-consultant scores when the turn ran a comparison. Empty on every other turn. */
+  comparison?: CandidateComparison[];
 }
 
 /**
@@ -217,7 +222,8 @@ const ChatAnalyzePage: React.FC = () => {
         modelUsed: res.modelUsed,
         latencyMs: res.latencyMs,
         question: question.trim(),
-        topK: askTopK
+        topK: askTopK,
+        comparison: res.comparison
       } : msg));
     } catch (err) {
       // Both bubbles go: the turn never reached the conversation, so leaving a question in the
@@ -319,6 +325,58 @@ const ChatAnalyzePage: React.FC = () => {
    * around 0.80 with the current embedding model, so the number orders a list and says nothing on
    * its own.
    */
+  /**
+   * A comparison as a table, from the typed field rather than parsed out of the prose.
+   *
+   * Every score here comes from the same screening prompt, schema and tier, which is what makes
+   * the rows comparable at all. A candidate the run could not score shows no number: a failed call
+   * is not a bad candidate, and a zero would rank it last on evidence nobody has.
+   */
+  const ComparisonTable: React.FC<{ rows: CandidateComparison[] }> = ({ rows }) => (
+    <Box sx={{ mt: 1, overflowX: 'auto' }}>
+      <Table size="small" sx={{ minWidth: 380 }}>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ fontWeight: 600 }}>Konsulent</TableCell>
+            <TableCell sx={{ fontWeight: 600 }} align="right">Score</TableCell>
+            <TableCell sx={{ fontWeight: 600 }} />
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map(row => (
+            <TableRow key={row.ref} hover>
+              <TableCell>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {row.ref} {row.name}
+                </Typography>
+              </TableCell>
+              <TableCell align="right">
+                {typeof row.score === 'number' ? (
+                  <Typography variant="body2">{row.score.toFixed(1)} / 10</Typography>
+                ) : (
+                  <Tooltip title={row.notScoredReason ?? 'Ikke vurdert'}>
+                    <Typography variant="body2" color="text.secondary">ikke vurdert</Typography>
+                  </Tooltip>
+                )}
+              </TableCell>
+              <TableCell align="right">
+                {row.consultantUserId && (
+                  <MuiLink
+                    component={RouterLink}
+                    to={`/consultants/${row.consultantUserId}`}
+                    variant="caption"
+                  >
+                    Se CV
+                  </MuiLink>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Box>
+  );
+
   const ResultCards: React.FC<{ sources: ChatSource[] }> = ({ sources }) => {
     const hits = sources.filter(s => s.kind === 'CONSULTANT' && s.retrieval);
     if (hits.length === 0) return null;
@@ -398,10 +456,15 @@ const ChatAnalyzePage: React.FC = () => {
    * A consultant hit appeared twice, once as a card and once as a chip with the same "K1 Kari
    * Nordmann" label. Chips are for the sources a card cannot express: a request, a stored
    * evaluation, a consultant read straight out of the database rather than found by a search.
+   *
+   * [alreadyShown] does the same for a comparison, whose rows carry no retrieval details and so
+   * would otherwise appear both in the table and as chips underneath it.
    */
-  const SourceChips: React.FC<{ sources: ChatSource[] }> = ({ sources }) => (
+  const SourceChips: React.FC<{ sources: ChatSource[]; alreadyShown?: Set<string> }> = ({
+    sources, alreadyShown
+  }) => (
     <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
-      {sources.filter(s => !s.retrieval).map(source => {
+      {sources.filter(s => !s.retrieval && !alreadyShown?.has(s.ref)).map(source => {
         const Icon = SOURCE_ICONS[source.kind];
         const detail = [
           source.originalFilename && `Dokument: ${source.originalFilename} (dokumenttype ikke verifisert)`,
@@ -507,6 +570,10 @@ const ChatAnalyzePage: React.FC = () => {
               </Tooltip>
             )}
 
+            {!isQuestion && message.comparison && message.comparison.length > 0 && (
+              <ComparisonTable rows={message.comparison} />
+            )}
+
             {!isQuestion && message.sources && message.sources.length > 0 && (
               <>
                 <ResultCards sources={message.sources} />
@@ -527,7 +594,10 @@ const ChatAnalyzePage: React.FC = () => {
                     Vis flere
                   </Button>
                 )}
-                <SourceChips sources={message.sources} />
+                <SourceChips
+                  sources={message.sources}
+                  alreadyShown={new Set(message.comparison?.map(c => c.ref) ?? [])}
+                />
               </>
             )}
 

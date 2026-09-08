@@ -206,6 +206,96 @@ describe('ChatAnalyzePage', () => {
    * a similarity and never as a percentage match: two unrelated CVs sit around 0.80 with the
    * current embedding model, so the number orders a list and says nothing on its own.
    */
+  /**
+   * A comparison is read from the typed field, not parsed out of the prose. The scores come from
+   * one screening prompt on one scale, which is the only reason the rows can be put side by side.
+   */
+  it('renders a comparison as a table from the typed field', async () => {
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      answer: 'Ny sammenligning mot avrop 8.',
+      answerKind: 'AD_HOC_EVALUATION',
+      sources: [],
+      comparison: [
+        { ref: 'K2', consultantUserId: 'user-joachim', name: 'Joachim Lous', score: 7.9 },
+        { ref: 'K1', consultantUserId: 'user-thomas', name: 'Thomas Andersen', score: 7.4 }
+      ]
+    } as never);
+
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    ask('Hvem passer best av Joachim og Thomas?');
+
+    expect(await screen.findByText('K2 Joachim Lous')).toBeInTheDocument();
+    expect(screen.getByText('7.9 / 10')).toBeInTheDocument();
+    expect(screen.getByText('7.4 / 10')).toBeInTheDocument();
+  });
+
+  /**
+   * A candidate the run could not score shows no number. A zero would rank it last on evidence
+   * nobody has, and a failed call is not a bad candidate.
+   */
+  it('shows a candidate that could not be scored without inventing a number', async () => {
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      answer: 'Ny sammenligning, 1 av 2 vurdert.',
+      answerKind: 'AD_HOC_EVALUATION',
+      sources: [],
+      comparison: [
+        { ref: 'K1', consultantUserId: 'user-thomas', name: 'Thomas Andersen', score: 7.4 },
+        {
+          ref: 'K2', consultantUserId: 'user-einar', name: 'Einar Flobak',
+          notScoredReason: 'Vurderingen feilet for denne konsulenten.'
+        }
+      ]
+    } as never);
+
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    ask('Hvem passer best?');
+
+    expect(await screen.findByText('ikke vurdert')).toBeInTheDocument();
+    expect(screen.queryByText('0.0 / 10')).not.toBeInTheDocument();
+  });
+
+  /**
+   * A comparison row and a source chip for the same person is the same duplication the search
+   * cards already had: "K1 Thomas Andersen" in the table and again as a chip underneath it.
+   */
+  it('does not repeat a compared consultant as a source chip', async () => {
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      answer: 'Ny sammenligning mot avrop 8.',
+      answerKind: 'AD_HOC_EVALUATION',
+      sources: [
+        { ref: 'A1', kind: 'PROJECT_REQUEST' as const, label: 'Skatteetaten' },
+        {
+          ref: 'K1', kind: 'CONSULTANT' as const, label: 'Thomas Andersen',
+          consultantUserId: 'user-thomas', consultantCvId: 'cv-thomas'
+        }
+      ],
+      comparison: [
+        { ref: 'K1', consultantUserId: 'user-thomas', name: 'Thomas Andersen', score: 7.4 }
+      ]
+    } as never);
+
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    ask('Hvem passer best?');
+
+    expect(await screen.findByText('K1 Thomas Andersen')).toBeInTheDocument();
+    // Once, in the table. The request keeps its chip: a table row cannot express it.
+    expect(screen.getAllByText('K1 Thomas Andersen')).toHaveLength(1);
+    expect(screen.getByText(/A1 Skatteetaten/)).toBeInTheDocument();
+  });
+
+  it('renders no table on a turn that produced no comparison', async () => {
+    mockedAnalyze.mockResolvedValue({ ...factualAnswer, comparison: [] } as never);
+
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    ask('Hva kan Thomas Andersen best?');
+
+    await screen.findByText(/sterkest på Kotlin/);
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
   it('renders a search hit as a card with its criteria and CV section', async () => {
     mockedAnalyze.mockResolvedValue({
       ...factualAnswer,
