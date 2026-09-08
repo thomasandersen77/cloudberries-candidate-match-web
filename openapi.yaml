@@ -51,20 +51,42 @@ paths:
   /chatbot/analyze:
     post:
       tags: [ Chat ]
-      summary: Analyze content with AI
+      summary: Ask a question about consultants and customer requests
+      description: >
+        Answers from the database. The evidence is selected before the model is called and returned
+        alongside the answer, so the caller can show what it rested on. Omit conversationId to start
+        a conversation; send back the one in the response to continue it.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AIAnalysisRequest'
+              $ref: '#/components/schemas/ChatAnalyzeRequest'
       responses:
         '200':
-          description: Analysis result
+          description: A grounded answer with its sources
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AIResponseModel'
+                $ref: '#/components/schemas/ChatAnalyzeResponse'
+        '400':
+          description: Empty or oversized content
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /chatbot/analyze/{conversationId}:
+    delete:
+      tags: [ Chat ]
+      summary: Forget a conversation
+      description: Deletes its turns and the entities it was about.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Forgotten
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -1603,11 +1625,59 @@ components:
         cacheHitRate: { type: number, format: double }
         estimatedCostUsd: { type: number, format: double }
 
-    AIAnalysisRequest:
+    ChatAnalyzeRequest:
       type: object
       required: [ content ]
       properties:
-        content: { type: string, description: Content to analyze }
+        conversationId:
+          type: string
+          nullable: true
+          description: Conversation to continue. Omit to start one; the server returns the id.
+        content:
+          type: string
+          maxLength: 4000
+          description: The question
+
+    ChatAnswerKind:
+      type: string
+      description: >
+        What kind of answer this is. STORED_MATCH reports a result an earlier matching run produced;
+        AD_HOC_EVALUATION is an opinion produced just now and not saved anywhere.
+      enum: [ FACTUAL, SEARCH_RESULT, STORED_MATCH, AD_HOC_EVALUATION, NO_GROUNDING ]
+
+    ChatSourceKindDto:
+      type: string
+      enum: [ CONSULTANT, PROJECT_REQUEST, STORED_MATCH ]
+
+    ChatSource:
+      type: object
+      required: [ ref, kind, label ]
+      properties:
+        ref: { type: string, description: The reference the answer cites, e.g. K1 }
+        kind: { $ref: '#/components/schemas/ChatSourceKindDto' }
+        label: { type: string }
+        consultantUserId: { type: string, nullable: true }
+        consultantCvId: { type: string, nullable: true }
+        projectRequestId: { type: integer, format: int64, nullable: true }
+        originalFilename:
+          type: string
+          nullable: true
+          description: The uploaded document a request came from. Its kind is not verified.
+        matchResultId: { type: integer, format: int64, nullable: true }
+        evaluatedAt: { type: string, format: date-time, nullable: true }
+
+    ChatAnalyzeResponse:
+      type: object
+      required: [ conversationId, answer, answerKind, sources, modelUsed, latencyMs ]
+      properties:
+        conversationId: { type: string }
+        answer: { type: string }
+        answerKind: { $ref: '#/components/schemas/ChatAnswerKind' }
+        sources:
+          type: array
+          items: { $ref: '#/components/schemas/ChatSource' }
+        modelUsed: { type: string }
+        latencyMs: { type: integer, format: int64 }
 
     AIResponseModel:
       type: object

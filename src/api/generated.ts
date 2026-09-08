@@ -50,7 +50,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Analyze content with AI */
+        /**
+         * Ask a question about consultants and customer requests
+         * @description Answers from the database. The evidence is selected before the model is called and returned alongside the answer, so the caller can show what it rested on. Omit conversationId to start a conversation; send back the one in the response to continue it.
+         *
+         */
         post: {
             parameters: {
                 query?: never;
@@ -60,23 +64,70 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["AIAnalysisRequest"];
+                    "application/json": components["schemas"]["ChatAnalyzeRequest"];
                 };
             };
             responses: {
-                /** @description Analysis result */
+                /** @description A grounded answer with its sources */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AIResponseModel"];
+                        "application/json": components["schemas"]["ChatAnalyzeResponse"];
                     };
+                };
+                /** @description Empty or oversized content */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 default: components["responses"]["ErrorResponse"];
             };
         };
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chatbot/analyze/{conversationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Forget a conversation
+         * @description Deletes its turns and the entities it was about.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    conversationId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Forgotten */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -2576,9 +2627,44 @@ export interface components {
             /** Format: double */
             estimatedCostUsd?: number;
         };
-        AIAnalysisRequest: {
-            /** @description Content to analyze */
+        ChatAnalyzeRequest: {
+            /** @description Conversation to continue. Omit to start one; the server returns the id. */
+            conversationId?: string | null;
+            /** @description The question */
             content: string;
+        };
+        /**
+         * @description What kind of answer this is. STORED_MATCH reports a result an earlier matching run produced; AD_HOC_EVALUATION is an opinion produced just now and not saved anywhere.
+         *
+         * @enum {string}
+         */
+        ChatAnswerKind: "FACTUAL" | "SEARCH_RESULT" | "STORED_MATCH" | "AD_HOC_EVALUATION" | "NO_GROUNDING";
+        /** @enum {string} */
+        ChatSourceKindDto: "CONSULTANT" | "PROJECT_REQUEST" | "STORED_MATCH";
+        ChatSource: {
+            /** @description The reference the answer cites */
+            ref: string;
+            kind: components["schemas"]["ChatSourceKindDto"];
+            label: string;
+            consultantUserId?: string | null;
+            consultantCvId?: string | null;
+            /** Format: int64 */
+            projectRequestId?: number | null;
+            /** @description The uploaded document a request came from. Its kind is not verified. */
+            originalFilename?: string | null;
+            /** Format: int64 */
+            matchResultId?: number | null;
+            /** Format: date-time */
+            evaluatedAt?: string | null;
+        };
+        ChatAnalyzeResponse: {
+            conversationId: string;
+            answer: string;
+            answerKind: components["schemas"]["ChatAnswerKind"];
+            sources: components["schemas"]["ChatSource"][];
+            modelUsed: string;
+            /** Format: int64 */
+            latencyMs: number;
         };
         AIResponseModel: {
             content?: string;
