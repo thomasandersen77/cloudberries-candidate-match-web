@@ -2718,6 +2718,12 @@ export interface components {
              * @default 5
              */
             topK: number;
+            /**
+             * Format: int64
+             * @description A request the reader picked from the alternatives on an earlier answer. Send the id from ChatReading.alternatives rather than re-sending the wording that was ambiguous, which would only reach the same ambiguity again.
+             *
+             */
+            pinnedRequestId?: number | null;
         };
         /**
          * @description What kind of answer this is. STORED_MATCH reports a result an earlier matching run produced; AD_HOC_EVALUATION is an opinion produced just now and not saved anywhere. GENERAL is the model's own knowledge, with no database content behind it.
@@ -2780,9 +2786,46 @@ export interface components {
              * @default []
              */
             comparison: components["schemas"]["CandidateComparison"][];
+            /**
+             * @description How the question's entities were read, when a reader has to be able to check or reject it: a corrected spelling, a tie between rows, or a reference that matched nothing. Additive like comparison. Typed rather than folded into the answer text because the corrections are made by the server and not by the model, and prose the model writes is prose the model can reword, bury or omit.
+             *
+             * @default []
+             */
+            readings: components["schemas"]["ChatReading"][];
             modelUsed: string;
             /** Format: int64 */
             latencyMs: number;
+        };
+        /** @description One entity in the question and what became of it. */
+        ChatReading: {
+            kind: components["schemas"]["ChatSourceKindDto"];
+            /** @description Exactly as the reader wrote it, never rewritten. */
+            written: string;
+            /** @description What it was read as; absent when nothing matched. */
+            readAs?: string | null;
+            /**
+             * @description What happened to the reading. CORRECTED was placed but not as written; AMBIGUOUS means several rows fit and none wins; NOT_FOUND means nothing in the database matched.
+             *
+             * @enum {string}
+             */
+            status: "CORRECTED" | "AMBIGUOUS" | "NOT_FOUND";
+            /**
+             * @description How the reading was arrived at, which is a different question from how it turned out. Kept apart from status so a client can show an exact database hit and a model's proposal differently even when both end in CORRECTED.
+             *
+             * @enum {string}
+             */
+            origin: "DATABASE_EXACT" | "DATABASE_FUZZY" | "MODEL_SUGGESTED";
+            /**
+             * @description Candidates to choose between, with ids so that picking one is unambiguous. Empty when nothing matched: the whole index is not a list of near misses for a word that matched none of it.
+             *
+             * @default []
+             */
+            alternatives: components["schemas"]["ChatReadingAlternative"][];
+        };
+        ChatReadingAlternative: {
+            /** @description Request id, or consultant user id, depending on the reading's kind. */
+            id: string;
+            label: string;
         };
         /** @description One consultant's screening score from a chat comparison. Produced by the same matching prompt, schema and tier as every other score in the product, so the numbers are comparable.
          *      */

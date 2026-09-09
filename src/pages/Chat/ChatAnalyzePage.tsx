@@ -28,7 +28,7 @@ import { listProjectRequests } from '../../services/projectRequestsService';
 import { runProjectMatching } from '../../api/matchingApi';
 import { Link as RouterLink } from 'react-router-dom';
 import type {
-  CandidateComparison, ChatAnswerKind, ChatScope, ChatSource, RetrievalMethod
+  CandidateComparison, ChatAnswerKind, ChatReading, ChatScope, ChatSource, RetrievalMethod
 } from '../../types/api';
 
 interface ChatMessage {
@@ -47,6 +47,8 @@ interface ChatMessage {
   topK?: number;
   /** Per-consultant scores when the turn ran a comparison. Empty on every other turn. */
   comparison?: CandidateComparison[];
+  /** Corrections, ties and misses in how the question was read. Empty on a clean turn. */
+  readings?: ChatReading[];
 }
 
 /**
@@ -172,7 +174,14 @@ const ChatAnalyzePage: React.FC = () => {
   const ask = useCallback(async (
     question: string,
     askScope: ChatScope = scope,
-    askTopK: number = topK
+    askTopK: number = topK,
+    /**
+     * A request the reader picked from the alternatives on an earlier answer.
+     *
+     * Sent as an id rather than as text. Re-sending the wording that was ambiguous would only
+     * reach the same ambiguity again, and the reader would be asked the same question twice.
+     */
+    pinnedRequestId?: number
   ) => {
     if (!question.trim() || loading) return;
 
@@ -198,6 +207,7 @@ const ChatAnalyzePage: React.FC = () => {
         scope: askScope,
         topK: askTopK,
         turnId,
+        ...(pinnedRequestId !== undefined ? { pinnedRequestId } : {}),
         ...(conversationId ? { conversationId } : {})
       });
       pendingTurnId.current = null;
@@ -223,7 +233,8 @@ const ChatAnalyzePage: React.FC = () => {
         latencyMs: res.latencyMs,
         question: question.trim(),
         topK: askTopK,
-        comparison: res.comparison
+        comparison: res.comparison,
+        readings: res.readings
       } : msg));
     } catch (err) {
       // Both bubbles go: the turn never reached the conversation, so leaving a question in the
@@ -325,6 +336,70 @@ const ChatAnalyzePage: React.FC = () => {
    * around 0.80 with the current embedding model, so the number orders a list and says nothing on
    * its own.
    */
+  /**
+   * What the question was read as, and what the reader can do about it.
+   *
+   * Rendered from the typed field, outside the answer bubble, because the correction is made by
+   * the server and not by the model: prose the model writes is prose the model can reword, bury or
+   * leave out, and a silent correction takes from the reader the one signal that something was
+   * guessed. The reader's own words are never rewritten; the reading is shown beside them.
+   *
+   * An ambiguity is a choice, so it gets buttons carrying ids. A button that re-sent the wording
+   * would only reach the same ambiguity again. A miss carries no buttons: the whole index is not a
+   * list of near misses for a word that matched none of it.
+   */
+  const ReadingNotices: React.FC<{
+    readings: ChatReading[];
+    question?: string;
+    disabled: boolean;
+    onPick: (reading: ChatReading, id: string) => void;
+  }> = ({ readings, question, disabled, onPick }) => (
+    <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+      {readings.map((reading, index) => {
+        const label = reading.status === 'CORRECTED'
+          ? `«${reading.written}» er lest som ${reading.readAs}`
+          : reading.status === 'AMBIGUOUS'
+            ? `«${reading.written}» passer flere`
+            : `Fant ikke «${reading.written}»`;
+        return (
+          <Box key={`${reading.written}-${index}`}>
+            <Tooltip
+              title={reading.origin === 'MODEL_SUGGESTED'
+                ? 'Tolket av en modell og deretter slått opp i basen'
+                : reading.origin === 'DATABASE_FUZZY'
+                  ? 'Nærmeste treff i basen, ikke skrevet slik'
+                  : 'Slått opp direkte i basen'}
+            >
+              <Chip
+                size="small"
+                label={label}
+                color={reading.status === 'CORRECTED' ? 'info' : 'warning'}
+                variant={reading.origin === 'DATABASE_EXACT' ? 'filled' : 'outlined'}
+                sx={{ height: 22, fontSize: '0.7rem' }}
+              />
+            </Tooltip>
+            {reading.alternatives.length > 0 && question && (
+              <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
+                {reading.alternatives.map(alternative => (
+                  <Button
+                    key={alternative.id}
+                    size="small"
+                    variant="outlined"
+                    disabled={disabled}
+                    onClick={() => onPick(reading, alternative.id)}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    {alternative.label}
+                  </Button>
+                ))}
+              </Stack>
+            )}
+          </Box>
+        );
+      })}
+    </Stack>
+  );
+
   /**
    * A comparison as a table, from the typed field rather than parsed out of the prose.
    *
@@ -568,6 +643,18 @@ const ChatAnalyzePage: React.FC = () => {
               <Tooltip title={kind.help}>
                 <Chip label={kind.label} size="small" color={kind.color} sx={{ mt: 0.5, height: 22, fontSize: '0.7rem' }} />
               </Tooltip>
+            )}
+
+            {!isQuestion && message.readings && message.readings.length > 0 && (
+              <ReadingNotices
+                readings={message.readings}
+                question={message.question}
+                disabled={loading}
+                onPick={(reading, id) => {
+                  if (reading.kind !== 'PROJECT_REQUEST' || !message.question) return;
+                  ask(message.question, 'DATABASE', message.topK ?? DEFAULT_TOP_K, Number(id));
+                }}
+              />
             )}
 
             {!isQuestion && message.comparison && message.comparison.length > 0 && (

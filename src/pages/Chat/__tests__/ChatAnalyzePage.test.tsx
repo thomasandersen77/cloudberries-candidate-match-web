@@ -553,4 +553,66 @@ describe('ChatAnalyzePage', () => {
       screen.getByLabelText(/dokumenttype ikke verifisert/i)
     ).toBeInTheDocument();
   });
+
+  it('offers the candidates as buttons and picks one by id, not by re-sending the wording', async () => {
+    // The wording is what was ambiguous. A button that re-sent it would reach the same tie again
+    // and ask the reader the same question a second time.
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      answer: 'Jeg fant 2 avrop som passer «sparebank». Hvilket mener du?',
+      answerKind: 'NO_GROUNDING' as const,
+      sources: [],
+      modelUsed: 'none',
+      readings: [
+        {
+          kind: 'PROJECT_REQUEST' as const,
+          written: 'sparebank',
+          status: 'AMBIGUOUS' as const,
+          origin: 'DATABASE_EXACT' as const,
+          alternatives: [
+            { id: '9002', label: 'Sparebank 1 Østlandet' },
+            { id: '9003', label: 'Sparebank 1 Nord-Norge' }
+          ]
+        }
+      ]
+    });
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('Hva krever Sparebank-avropet?');
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Sparebank 1 Østlandet' })).toBeInTheDocument()
+    );
+    mockedAnalyze.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Sparebank 1 Østlandet' }));
+
+    await waitFor(() => expect(mockedAnalyze).toHaveBeenCalled());
+    expect(mockedAnalyze.mock.calls[0][0]).toMatchObject({
+      content: 'Hva krever Sparebank-avropet?',
+      pinnedRequestId: 9002
+    });
+  });
+
+  it('says a name was corrected instead of quietly using the corrected one', async () => {
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      readings: [
+        {
+          kind: 'CONSULTANT' as const,
+          written: 'Joacim',
+          readAs: 'Joachim Lous',
+          status: 'CORRECTED' as const,
+          origin: 'DATABASE_FUZZY' as const,
+          alternatives: []
+        }
+      ]
+    });
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('Hva kan Joacim?');
+
+    await waitFor(() =>
+      expect(screen.getByText('«Joacim» er lest som Joachim Lous')).toBeInTheDocument()
+    );
+  });
 });
