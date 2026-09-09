@@ -2741,7 +2741,8 @@ export interface components {
         RetrievalMethodDto: "EXACT_SKILLS" | "SEMANTIC" | "HYBRID";
         DocumentedSkillDto: {
             name: string;
-            /** @description Years the CV records for it, when it records any. */
+            /** @description Years the CV records for it. Null means no duration is recorded, which the database expresses as either NULL or 0; both are normalised to null here, so null is unknown and never zero. Render it as unknown rather than as a number: 17% of skill rows have no duration, and an unrecorded one is not evidence of a short one.
+             *      */
             years?: number | null;
         };
         RetrievalDetailsDto: {

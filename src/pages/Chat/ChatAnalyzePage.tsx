@@ -49,6 +49,14 @@ interface ChatMessage {
   comparison?: CandidateComparison[];
   /** Corrections, ties and misses in how the question was read. Empty on a clean turn. */
   readings?: ChatReading[];
+  /**
+   * The alternative already picked on this answer, if one was.
+   *
+   * A choice is answered once. While the buttons stayed live it was possible to pick Ostlandet,
+   * read the answer, then pick Nord-Norge on the same question and get a second, contradictory
+   * answer to it, at the cost of another model call.
+   */
+  pickedAlternativeId?: string;
 }
 
 /**
@@ -352,8 +360,10 @@ const ChatAnalyzePage: React.FC = () => {
     readings: ChatReading[];
     question?: string;
     disabled: boolean;
+    /** Set once this choice has been answered, so it cannot be answered a second time. */
+    pickedId?: string;
     onPick: (reading: ChatReading, id: string) => void;
-  }> = ({ readings, question, disabled, onPick }) => (
+  }> = ({ readings, question, disabled, pickedId, onPick }) => (
     <Stack spacing={0.5} sx={{ mt: 0.5 }}>
       {readings.map((reading, index) => {
         const label = reading.status === 'CORRECTED'
@@ -384,8 +394,8 @@ const ChatAnalyzePage: React.FC = () => {
                   <Button
                     key={alternative.id}
                     size="small"
-                    variant="outlined"
-                    disabled={disabled}
+                    variant={pickedId === alternative.id ? 'contained' : 'outlined'}
+                    disabled={disabled || pickedId !== undefined}
                     onClick={() => onPick(reading, alternative.id)}
                     sx={{ textTransform: 'none' }}
                   >
@@ -488,7 +498,12 @@ const ChatAnalyzePage: React.FC = () => {
 
               {r.documentedSkills && r.documentedSkills.length > 0 && (
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                  Oppfyller: {r.documentedSkills.map(sk => sk.name + (sk.years != null ? ` (${sk.years} år)` : '')).join(', ')}
+                  {/*
+                    A missing duration is said, not left out. The database expresses "not recorded"
+                    as NULL or as 0 on 17% of skill rows, and a bare name reads as "no years" as
+                    readily as "none recorded". Only one of those is what the row means.
+                  */}
+                  Oppfyller: {r.documentedSkills.map(sk => `${sk.name} (${sk.years != null ? `${sk.years} år` : 'ukjent varighet'})`).join(', ')}
                 </Typography>
               )}
               {r.bestChunkLabel && (
@@ -650,8 +665,11 @@ const ChatAnalyzePage: React.FC = () => {
                 readings={message.readings}
                 question={message.question}
                 disabled={loading}
+                pickedId={message.pickedAlternativeId}
                 onPick={(reading, id) => {
                   if (reading.kind !== 'PROJECT_REQUEST' || !message.question) return;
+                  setMessages(prev => prev.map(m =>
+                    m.id === message.id ? { ...m, pickedAlternativeId: id } : m));
                   ask(message.question, 'DATABASE', message.topK ?? DEFAULT_TOP_K, Number(id));
                 }}
               />

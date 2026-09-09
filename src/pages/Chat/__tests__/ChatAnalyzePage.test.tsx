@@ -593,6 +593,72 @@ describe('ChatAnalyzePage', () => {
     });
   });
 
+  it('answers a choice once, and locks the alternatives after it is answered', async () => {
+    // While the buttons stayed live it was possible to pick Østlandet, read the answer, then pick
+    // Nord-Norge on the same question and get a second, contradictory answer to it.
+    // Ambiguous first, then the answer the choice produces, so only one turn carries buttons.
+    mockedAnalyze
+      .mockResolvedValueOnce({
+        ...factualAnswer,
+        answer: 'Jeg fant 2 avrop som passer «sparebank». Hvilket mener du?',
+        answerKind: 'NO_GROUNDING' as const,
+        sources: [],
+        modelUsed: 'none',
+        readings: [
+          {
+            kind: 'PROJECT_REQUEST' as const,
+            written: 'sparebank',
+            status: 'AMBIGUOUS' as const,
+            origin: 'DATABASE_EXACT' as const,
+            alternatives: [
+              { id: '9002', label: 'Sparebank 1 Østlandet' },
+              { id: '9003', label: 'Sparebank 1 Nord-Norge' }
+            ]
+          }
+        ]
+      })
+      .mockResolvedValue({ ...factualAnswer, answer: 'Avropet krever Java og Kafka [A1].' });
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('Hva krever Sparebank-avropet?');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Sparebank 1 Østlandet' })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sparebank 1 Østlandet' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Sparebank 1 Nord-Norge' })).toBeDisabled()
+    );
+    expect(screen.getByRole('button', { name: 'Sparebank 1 Østlandet' })).toBeDisabled();
+  });
+
+  it('calls a missing duration unknown rather than showing zero years', async () => {
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      answerKind: 'SEARCH_RESULT' as const,
+      sources: [
+        {
+          ref: 'K1',
+          kind: 'CONSULTANT' as const,
+          label: 'Johan Loudon',
+          consultantUserId: 'user-johan',
+          retrieval: {
+            method: 'EXACT_SKILLS' as const,
+            documentedSkills: [{ name: 'Java', years: null }, { name: 'Kafka', years: 6 }]
+          }
+        }
+      ]
+    });
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    ask('hvem kan java');
+
+    await waitFor(() => expect(screen.getByText(/Oppfyller:/)).toBeInTheDocument());
+    expect(screen.getByText(/Java \(ukjent varighet\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/0 år/)).not.toBeInTheDocument();
+  });
+
   it('says a name was corrected instead of quietly using the corrected one', async () => {
     mockedAnalyze.mockResolvedValue({
       ...factualAnswer,
