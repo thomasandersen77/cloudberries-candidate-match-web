@@ -3327,12 +3327,19 @@ export interface components {
             id?: number;
             customerName?: string | null;
             title?: string | null;
+            /** @description The position asked for, in the document's own words. Not the document's heading: a tender titled "Tilbudsinnbydelse minikonkurranse" asks for a "Backend utvikler i Team Spleiselaget".
+             *      */
+            role?: string | null;
             summary?: string | null;
             originalFilename?: string | null;
             /** Format: date-time */
             uploadedAt?: string | null;
             /** Format: date-time */
             deadlineDate?: string | null;
+            /** Format: date-time */
+            startDate?: string | null;
+            /** Format: date-time */
+            endDate?: string | null;
             status?: components["schemas"]["RequestStatus"];
             mustRequirements?: components["schemas"]["ProjectRequirementDto"][];
             shouldRequirements?: components["schemas"]["ProjectRequirementDto"][];

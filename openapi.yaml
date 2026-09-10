@@ -2490,10 +2490,19 @@ components:
         id: { type: integer, format: int64 }
         customerName: { type: string, nullable: true }
         title: { type: string, nullable: true }
+        role:
+          type: string
+          nullable: true
+          description: >
+            The position asked for, in the document's own words. Not the document's heading: a
+            tender titled "Tilbudsinnbydelse minikonkurranse" asks for a "Backend utvikler i Team
+            Spleiselaget".
         summary: { type: string, nullable: true }
         originalFilename: { type: string, nullable: true }
         uploadedAt: { type: string, format: date-time, nullable: true }
         deadlineDate: { type: string, format: date-time, nullable: true }
+        startDate: { type: string, format: date-time, nullable: true }
+        endDate: { type: string, format: date-time, nullable: true }
         status: { $ref: '#/components/schemas/RequestStatus' }
         mustRequirements:
           type: array
