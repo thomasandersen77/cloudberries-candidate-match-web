@@ -115,6 +115,461 @@ const DEFAULT_TOP_K = 5;
 const MESSAGES_KEY = 'chatAnalyzeMessages';
 const CONVERSATION_KEY = 'chatAnalyzeConversationId';
 
+const formatTimestamp = (date: Date) =>
+  date.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
+
+/*
+ * The message components live at module scope, not inside ChatAnalyzePage.
+ *
+ * Declared in the page's body they were rebuilt on every render, and a new function identity is a
+ * different component type to React: the whole transcript was unmounted and mounted again on each
+ * keystroke, Fade animations and all, which is what the flicker was. They take what they need as
+ * props for the same reason.
+ */
+/**
+ * What the question was read as, and what the reader can do about it.
+ *
+ * Rendered from the typed field, outside the answer bubble, because the correction is made by
+ * the server and not by the model: prose the model writes is prose the model can reword, bury or
+ * leave out, and a silent correction takes from the reader the one signal that something was
+ * guessed. The reader's own words are never rewritten; the reading is shown beside them.
+ *
+ * An ambiguity is a choice, so it gets buttons carrying ids. A button that re-sent the wording
+ * would only reach the same ambiguity again. A miss carries no buttons: the whole index is not a
+ * list of near misses for a word that matched none of it.
+ */
+const ReadingNotices: React.FC<{
+  readings: ChatReading[];
+  question?: string;
+  disabled: boolean;
+  /** Set once this choice has been answered, so it cannot be answered a second time. */
+  pickedId?: string;
+  onPick: (reading: ChatReading, id: string) => void;
+}> = ({ readings, question, disabled, pickedId, onPick }) => (
+  <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+    {readings.map((reading, index) => {
+      const label = reading.status === 'CORRECTED'
+        ? `«${reading.written}» er lest som ${reading.readAs}`
+        : reading.status === 'AMBIGUOUS'
+          ? `«${reading.written}» passer flere`
+          : `Fant ikke «${reading.written}»`;
+      return (
+        <Box key={`${reading.written}-${index}`}>
+          <Tooltip
+            title={reading.origin === 'MODEL_SUGGESTED'
+              ? 'Tolket av en modell og deretter slått opp i basen'
+              : reading.origin === 'DATABASE_FUZZY'
+                ? 'Nærmeste treff i basen, ikke skrevet slik'
+                : 'Slått opp direkte i basen'}
+          >
+            <Chip
+              size="small"
+              label={label}
+              color={reading.status === 'CORRECTED' ? 'info' : 'warning'}
+              variant={reading.origin === 'DATABASE_EXACT' ? 'filled' : 'outlined'}
+              sx={{ height: 22, fontSize: '0.7rem' }}
+            />
+          </Tooltip>
+          {reading.alternatives.length > 0 && question && (
+            <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
+              {reading.alternatives.map(alternative => (
+                <Button
+                  key={alternative.id}
+                  size="small"
+                  variant={pickedId === alternative.id ? 'contained' : 'outlined'}
+                  disabled={disabled || pickedId !== undefined}
+                  onClick={() => onPick(reading, alternative.id)}
+                  sx={{ textTransform: 'none' }}
+                >
+                  {alternative.label}
+                </Button>
+              ))}
+            </Stack>
+          )}
+        </Box>
+      );
+    })}
+  </Stack>
+);
+
+/**
+ * A comparison as a table, from the typed field rather than parsed out of the prose.
+ *
+ * Every score here comes from the same screening prompt, schema and tier, which is what makes
+ * the rows comparable at all. A candidate the run could not score shows no number: a failed call
+ * is not a bad candidate, and a zero would rank it last on evidence nobody has.
+ */
+const ComparisonTable: React.FC<{ rows: CandidateComparison[] }> = ({ rows }) => (
+  <Box sx={{ mt: 1, overflowX: 'auto' }}>
+    <Table size="small" sx={{ minWidth: 380 }}>
+      <TableHead>
+        <TableRow>
+          <TableCell sx={{ fontWeight: 600 }}>Konsulent</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="right">Score</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {rows.map(row => (
+          <TableRow key={row.ref} hover>
+            <TableCell>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {row.ref} {row.name}
+              </Typography>
+            </TableCell>
+            <TableCell align="right">
+              {typeof row.score === 'number' ? (
+                <Typography variant="body2">{row.score.toFixed(1)} / 10</Typography>
+              ) : (
+                <Tooltip title={row.notScoredReason ?? 'Ikke vurdert'}>
+                  <Typography variant="body2" color="text.secondary">ikke vurdert</Typography>
+                </Tooltip>
+              )}
+            </TableCell>
+            <TableCell align="right">
+              {row.consultantUserId && (
+                <MuiLink
+                  component={RouterLink}
+                  to={`/consultants/${row.consultantUserId}`}
+                  variant="caption"
+                >
+                  Se CV
+                </MuiLink>
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </Box>
+);
+
+/**
+ * A search hit as a card rather than a chip.
+ *
+ * The answer text says the same in prose, but a reader wants to act on it: which criteria the CV
+ * documents and for how long, which section the hit came from, and a way into the profile. None
+ * of that should be read back out of a sentence.
+ *
+ * The similarity is shown as a similarity, never as a percentage match. Two unrelated CVs sit
+ * around 0.80 with the current embedding model, so the number orders a list and says nothing on
+ * its own.
+ */
+const ResultCards: React.FC<{
+  sources: ChatSource[];
+  selected: Record<string, string>;
+  onToggleSelect: (userId: string, label: string) => void;
+}> = ({ sources, selected, onToggleSelect }) => {
+  const hits = sources.filter(s => s.kind === 'CONSULTANT' && s.retrieval);
+  if (hits.length === 0) return null;
+
+  const methodLabel: Record<RetrievalMethod, string> = {
+    EXACT_SKILLS: 'Dokumenterte ferdigheter',
+    SEMANTIC: 'Likhet i CV-tekst',
+    HYBRID: 'Krav filtrert, likhet rangert'
+  };
+
+  return (
+    <Stack spacing={1} sx={{ mt: 1, width: '100%' }}>
+      {hits.map(hit => {
+        const r = hit.retrieval!;
+        return (
+          <Paper key={hit.ref} variant="outlined" sx={{ p: 1.25 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+              <Stack direction="row" alignItems="center" spacing={0.5}>
+                {hit.consultantUserId && (
+                  <Checkbox
+                    size="small"
+                    sx={{ p: 0.25 }}
+                    checked={hit.consultantUserId in selected}
+                    onChange={() => onToggleSelect(hit.consultantUserId!, hit.label)}
+                    inputProps={{ 'aria-label': `Velg ${hit.label}` }}
+                  />
+                )}
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  {hit.ref} {hit.label}
+                </Typography>
+              </Stack>
+              <Chip label={methodLabel[r.method]} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 20 }} />
+            </Stack>
+
+            {r.documentedSkills && r.documentedSkills.length > 0 && (
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                {/*
+                  A missing duration is said, not left out. The database expresses "not recorded"
+                  as NULL or as 0 on 17% of skill rows, and a bare name reads as "no years" as
+                  readily as "none recorded". Only one of those is what the row means.
+                */}
+                Oppfyller: {r.documentedSkills.map(sk => `${sk.name} (${sk.years != null ? `${sk.years} år` : 'ukjent varighet'})`).join(', ')}
+              </Typography>
+            )}
+            {r.bestChunkLabel && (
+              <Typography variant="caption" color="text.secondary" display="block">
+                Traff i CV-en: {r.bestChunkLabel}
+              </Typography>
+            )}
+            <Stack direction="row" spacing={1.5} sx={{ mt: 0.5 }}>
+              {r.cvQualityScore != null && (
+                <Typography variant="caption" color="text.secondary">CV-kvalitet {r.cvQualityScore}</Typography>
+              )}
+              {r.semanticSimilarity != null && (
+                <Tooltip title="Likhet i CV-teksten, ikke en matchprosent. To urelaterte CV-er ligger rundt 0,80.">
+                  <Typography variant="caption" color="text.secondary">
+                    Likhet {r.semanticSimilarity.toFixed(2)}
+                  </Typography>
+                </Tooltip>
+              )}
+              {hit.consultantUserId && (
+                <Typography
+                  component={RouterLink}
+                  to={`/consultants/${hit.consultantUserId}`}
+                  variant="caption"
+                  sx={{ color: 'primary.main' }}
+                >
+                  Se CV
+                </Typography>
+              )}
+            </Stack>
+          </Paper>
+        );
+      })}
+    </Stack>
+  );
+};
+
+/**
+ * The sources that are not already shown as result cards.
+ *
+ * A consultant hit appeared twice, once as a card and once as a chip with the same "K1 Kari
+ * Nordmann" label. Chips are for the sources a card cannot express: a request, a stored
+ * evaluation, a consultant read straight out of the database rather than found by a search.
+ *
+ * [alreadyShown] does the same for a comparison, whose rows carry no retrieval details and so
+ * would otherwise appear both in the table and as chips underneath it.
+ */
+const SourceChips: React.FC<{ sources: ChatSource[]; alreadyShown?: Set<string> }> = ({
+  sources, alreadyShown
+}) => (
+  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+    {sources.filter(s => !s.retrieval && !alreadyShown?.has(s.ref)).map(source => {
+      const Icon = SOURCE_ICONS[source.kind];
+      const detail = [
+        source.originalFilename && `Dokument: ${source.originalFilename} (dokumenttype ikke verifisert)`,
+        source.consultantCvId && `CV: ${source.consultantCvId}`,
+        source.projectRequestId != null && `Avrop ${source.projectRequestId}`,
+        source.matchResultId != null && `Kjøring ${source.matchResultId}`,
+        source.evaluatedAt && `Vurdert ${new Date(source.evaluatedAt).toLocaleDateString('no-NO')}`
+      ].filter(Boolean).join(' • ');
+
+      return (
+        <Tooltip key={source.ref} title={detail || source.label}>
+          <Chip
+            icon={<Icon sx={{ fontSize: 16 }} />}
+            label={`${source.ref} ${source.label}`}
+            size="small"
+            variant="outlined"
+            sx={{ maxWidth: 320, fontSize: '0.7rem' }}
+          />
+        </Tooltip>
+      );
+    })}
+  </Stack>
+);
+
+const MessageBubble: React.FC<{
+  message: ChatMessage;
+  isMobile: boolean;
+  loading: boolean;
+  selected: Record<string, string>;
+  onToggleSelect: (userId: string, label: string) => void;
+  onAsk: (question: string, askScope?: ChatScope, askTopK?: number, pinnedRequestId?: number) => void;
+  onPickAlternative: (messageId: string, alternativeId: string) => void;
+}> = ({ message, isMobile, loading, selected, onToggleSelect, onAsk, onPickAlternative }) => {
+  const isQuestion = message.type === 'question';
+  const kind = message.answerKind ? ANSWER_KIND_LABELS[message.answerKind] : null;
+
+  return (
+    <Fade in timeout={300}>
+      <Box sx={{ display: 'flex', justifyContent: isQuestion ? 'flex-end' : 'flex-start', mb: 2, alignItems: 'flex-start' }}>
+        {!isQuestion && (
+          <Box sx={{ mr: 1, mt: 0.5 }}>
+            <AiIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+          </Box>
+        )}
+
+        <Box sx={{
+          maxWidth: isMobile ? '90%' : '78%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: isQuestion ? 'flex-end' : 'flex-start'
+        }}>
+          <Paper
+            elevation={1}
+            sx={{
+              p: 2,
+              backgroundColor: isQuestion ? 'primary.main' : 'grey.100',
+              color: isQuestion ? 'primary.contrastText' : 'text.primary',
+              borderRadius: 2,
+              borderTopRightRadius: isQuestion ? 0.5 : 2,
+              borderTopLeftRadius: isQuestion ? 2 : 0.5,
+              wordBreak: 'break-word'
+            }}
+          >
+            {message.loading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={16} />
+                <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+                  Henter grunnlag og svarer...
+                </Typography>
+              </Box>
+            ) : isQuestion ? (
+              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', fontSize: isMobile ? '0.9rem' : '1rem' }}>
+                {message.content}
+              </Typography>
+            ) : (
+              <Box sx={{
+                '& p': { fontSize: isMobile ? '0.9rem' : '1rem', lineHeight: 1.5, margin: '0.5em 0' },
+                '& p:first-of-type': { marginTop: 0 },
+                '& p:last-child': { marginBottom: 0 },
+                '& h1, & h2, & h3, & h4, & h5, & h6': { margin: '1em 0 0.5em 0', fontSize: '1rem' },
+                '& ul, & ol': { paddingLeft: '1.5em', margin: '0.5em 0' },
+                '& li': { margin: '0.25em 0' },
+                '& code': { backgroundColor: 'rgba(0,0,0,0.06)', padding: '0.2em 0.4em', borderRadius: '3px', fontSize: '0.85em' },
+                '& pre': { backgroundColor: 'rgba(0,0,0,0.06)', padding: '1em', borderRadius: '4px', overflowX: 'auto' },
+                '& blockquote': { borderLeft: '3px solid', borderColor: 'divider', margin: '0.5em 0', paddingLeft: '0.75em' },
+                '& a': { color: 'primary.main' },
+                // A table is wider than a chat bubble more often than not, so it scrolls inside
+                // its own box rather than pushing the conversation sideways.
+                '& .md-table-wrap': { overflowX: 'auto', margin: '0.5em 0' },
+                '& table': { borderCollapse: 'collapse', fontSize: '0.85rem' },
+                '& th, & td': { border: '1px solid', borderColor: 'divider', padding: '0.3em 0.6em', textAlign: 'left' },
+                '& th': { backgroundColor: 'rgba(0,0,0,0.04)', fontWeight: 600 }
+              }}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    table: ({ children }) => (
+                      <Box className="md-table-wrap"><table>{children}</table></Box>
+                    )
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              </Box>
+            )}
+          </Paper>
+
+          {!isQuestion && kind && (
+            <Tooltip title={kind.help}>
+              <Chip label={kind.label} size="small" color={kind.color} sx={{ mt: 0.5, height: 22, fontSize: '0.7rem' }} />
+            </Tooltip>
+          )}
+
+          {!isQuestion && message.readings && message.readings.length > 0 && (
+            <ReadingNotices
+              readings={message.readings}
+              question={message.question}
+              disabled={loading}
+              pickedId={message.pickedAlternativeId}
+              onPick={(reading, id) => {
+                if (reading.kind !== 'PROJECT_REQUEST' || !message.question) return;
+                onPickAlternative(message.id, id);
+                onAsk(message.question, 'DATABASE', message.topK ?? DEFAULT_TOP_K, Number(id));
+              }}
+            />
+          )}
+
+          {!isQuestion && message.comparison && message.comparison.length > 0 && (
+            <ComparisonTable rows={message.comparison} />
+          )}
+
+          {!isQuestion && message.sources && message.sources.length > 0 && (
+            <>
+              <ResultCards
+                sources={message.sources}
+                selected={selected}
+                onToggleSelect={onToggleSelect}
+              />
+              {/*
+                A bigger retrieval, not a page of a cached one: asking for more is a new search
+                with a wider limit, and the model narrates the wider set so it can cite it.
+              */}
+              {message.answerKind === 'SEARCH_RESULT' && message.question &&
+                (message.topK ?? DEFAULT_TOP_K) < MAX_TOP_K &&
+                message.sources.filter(s => s.retrieval).length >= (message.topK ?? DEFAULT_TOP_K) && (
+                <Button
+                  size="small"
+                  startIcon={<MoreIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => onAsk(message.question!, 'DATABASE', Math.min((message.topK ?? DEFAULT_TOP_K) * 2, MAX_TOP_K))}
+                  disabled={loading}
+                  sx={{ mt: 0.5 }}
+                >
+                  Vis flere
+                </Button>
+              )}
+              <SourceChips
+                sources={message.sources}
+                alreadyShown={new Set(message.comparison?.map(c => c.ref) ?? [])}
+              />
+            </>
+          )}
+
+          {/*
+            Offered after the fact rather than as a mode the reader had to predict. Nothing in the
+            database covered the question, and this is the point where they find that out.
+          */}
+          {!isQuestion && message.answerKind === 'NO_GROUNDING' && message.question && (
+            <Button
+              size="small"
+              startIcon={<GeneralIcon sx={{ fontSize: 16 }} />}
+              onClick={() => onAsk(message.question!, 'GENERAL')}
+              disabled={loading}
+              sx={{ mt: 0.5 }}
+            >
+              Spør modellen generelt
+            </Button>
+          )}
+
+          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+            <Chip
+              label={formatTimestamp(message.timestamp)}
+              size="small"
+              variant="outlined"
+              sx={{ height: 20, fontSize: '0.7rem', opacity: 0.7 }}
+            />
+            {/*
+              Whether a provider was called at all, and which model answered. The response has
+              carried this from the start; without showing it the only way to tell an answer read
+              straight out of the database from one a model wrote was to read the backend log.
+            */}
+            {!isQuestion && message.modelUsed && (
+              <Tooltip title={message.modelUsed === 'none'
+                ? 'Svart uten å kalle en modell: grunnlaget var tomt.'
+                : `Modell: ${message.modelUsed}`}>
+                <Chip
+                  icon={message.modelUsed === 'none' ? undefined : <AiIcon sx={{ fontSize: 14 }} />}
+                  label={message.modelUsed === 'none'
+                    ? 'uten modellkall'
+                    : `${message.modelUsed}${message.latencyMs != null ? ` • ${(message.latencyMs / 1000).toFixed(1)} s` : ''}`}
+                  size="small"
+                  variant="outlined"
+                  sx={{ height: 20, fontSize: '0.7rem', opacity: 0.7 }}
+                />
+              </Tooltip>
+            )}
+          </Stack>
+        </Box>
+
+        {isQuestion && (
+          <Box sx={{ ml: 1, mt: 0.5 }}>
+            <PersonIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+          </Box>
+        )}
+      </Box>
+    </Fade>
+  );
+};
+
 const ChatAnalyzePage: React.FC = () => {
   const [content, setContent] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -330,437 +785,6 @@ const ChatAnalyzePage: React.FC = () => {
     }
   }, [ask, content]);
 
-  const formatTimestamp = (date: Date) =>
-    date.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
-
-  /**
-   * A search hit as a card rather than a chip.
-   *
-   * The answer text says the same in prose, but a reader wants to act on it: which criteria the CV
-   * documents and for how long, which section the hit came from, and a way into the profile. None
-   * of that should be read back out of a sentence.
-   *
-   * The similarity is shown as a similarity, never as a percentage match. Two unrelated CVs sit
-   * around 0.80 with the current embedding model, so the number orders a list and says nothing on
-   * its own.
-   */
-  /**
-   * What the question was read as, and what the reader can do about it.
-   *
-   * Rendered from the typed field, outside the answer bubble, because the correction is made by
-   * the server and not by the model: prose the model writes is prose the model can reword, bury or
-   * leave out, and a silent correction takes from the reader the one signal that something was
-   * guessed. The reader's own words are never rewritten; the reading is shown beside them.
-   *
-   * An ambiguity is a choice, so it gets buttons carrying ids. A button that re-sent the wording
-   * would only reach the same ambiguity again. A miss carries no buttons: the whole index is not a
-   * list of near misses for a word that matched none of it.
-   */
-  const ReadingNotices: React.FC<{
-    readings: ChatReading[];
-    question?: string;
-    disabled: boolean;
-    /** Set once this choice has been answered, so it cannot be answered a second time. */
-    pickedId?: string;
-    onPick: (reading: ChatReading, id: string) => void;
-  }> = ({ readings, question, disabled, pickedId, onPick }) => (
-    <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-      {readings.map((reading, index) => {
-        const label = reading.status === 'CORRECTED'
-          ? `«${reading.written}» er lest som ${reading.readAs}`
-          : reading.status === 'AMBIGUOUS'
-            ? `«${reading.written}» passer flere`
-            : `Fant ikke «${reading.written}»`;
-        return (
-          <Box key={`${reading.written}-${index}`}>
-            <Tooltip
-              title={reading.origin === 'MODEL_SUGGESTED'
-                ? 'Tolket av en modell og deretter slått opp i basen'
-                : reading.origin === 'DATABASE_FUZZY'
-                  ? 'Nærmeste treff i basen, ikke skrevet slik'
-                  : 'Slått opp direkte i basen'}
-            >
-              <Chip
-                size="small"
-                label={label}
-                color={reading.status === 'CORRECTED' ? 'info' : 'warning'}
-                variant={reading.origin === 'DATABASE_EXACT' ? 'filled' : 'outlined'}
-                sx={{ height: 22, fontSize: '0.7rem' }}
-              />
-            </Tooltip>
-            {reading.alternatives.length > 0 && question && (
-              <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
-                {reading.alternatives.map(alternative => (
-                  <Button
-                    key={alternative.id}
-                    size="small"
-                    variant={pickedId === alternative.id ? 'contained' : 'outlined'}
-                    disabled={disabled || pickedId !== undefined}
-                    onClick={() => onPick(reading, alternative.id)}
-                    sx={{ textTransform: 'none' }}
-                  >
-                    {alternative.label}
-                  </Button>
-                ))}
-              </Stack>
-            )}
-          </Box>
-        );
-      })}
-    </Stack>
-  );
-
-  /**
-   * A comparison as a table, from the typed field rather than parsed out of the prose.
-   *
-   * Every score here comes from the same screening prompt, schema and tier, which is what makes
-   * the rows comparable at all. A candidate the run could not score shows no number: a failed call
-   * is not a bad candidate, and a zero would rank it last on evidence nobody has.
-   */
-  const ComparisonTable: React.FC<{ rows: CandidateComparison[] }> = ({ rows }) => (
-    <Box sx={{ mt: 1, overflowX: 'auto' }}>
-      <Table size="small" sx={{ minWidth: 380 }}>
-        <TableHead>
-          <TableRow>
-            <TableCell sx={{ fontWeight: 600 }}>Konsulent</TableCell>
-            <TableCell sx={{ fontWeight: 600 }} align="right">Score</TableCell>
-            <TableCell sx={{ fontWeight: 600 }} />
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map(row => (
-            <TableRow key={row.ref} hover>
-              <TableCell>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {row.ref} {row.name}
-                </Typography>
-              </TableCell>
-              <TableCell align="right">
-                {typeof row.score === 'number' ? (
-                  <Typography variant="body2">{row.score.toFixed(1)} / 10</Typography>
-                ) : (
-                  <Tooltip title={row.notScoredReason ?? 'Ikke vurdert'}>
-                    <Typography variant="body2" color="text.secondary">ikke vurdert</Typography>
-                  </Tooltip>
-                )}
-              </TableCell>
-              <TableCell align="right">
-                {row.consultantUserId && (
-                  <MuiLink
-                    component={RouterLink}
-                    to={`/consultants/${row.consultantUserId}`}
-                    variant="caption"
-                  >
-                    Se CV
-                  </MuiLink>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Box>
-  );
-
-  const ResultCards: React.FC<{ sources: ChatSource[] }> = ({ sources }) => {
-    const hits = sources.filter(s => s.kind === 'CONSULTANT' && s.retrieval);
-    if (hits.length === 0) return null;
-
-    const methodLabel: Record<RetrievalMethod, string> = {
-      EXACT_SKILLS: 'Dokumenterte ferdigheter',
-      SEMANTIC: 'Likhet i CV-tekst',
-      HYBRID: 'Krav filtrert, likhet rangert'
-    };
-
-    return (
-      <Stack spacing={1} sx={{ mt: 1, width: '100%' }}>
-        {hits.map(hit => {
-          const r = hit.retrieval!;
-          return (
-            <Paper key={hit.ref} variant="outlined" sx={{ p: 1.25 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  {hit.consultantUserId && (
-                    <Checkbox
-                      size="small"
-                      sx={{ p: 0.25 }}
-                      checked={hit.consultantUserId in selected}
-                      onChange={() => toggleSelected(hit.consultantUserId!, hit.label)}
-                      inputProps={{ 'aria-label': `Velg ${hit.label}` }}
-                    />
-                  )}
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    {hit.ref} {hit.label}
-                  </Typography>
-                </Stack>
-                <Chip label={methodLabel[r.method]} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 20 }} />
-              </Stack>
-
-              {r.documentedSkills && r.documentedSkills.length > 0 && (
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                  {/*
-                    A missing duration is said, not left out. The database expresses "not recorded"
-                    as NULL or as 0 on 17% of skill rows, and a bare name reads as "no years" as
-                    readily as "none recorded". Only one of those is what the row means.
-                  */}
-                  Oppfyller: {r.documentedSkills.map(sk => `${sk.name} (${sk.years != null ? `${sk.years} år` : 'ukjent varighet'})`).join(', ')}
-                </Typography>
-              )}
-              {r.bestChunkLabel && (
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Traff i CV-en: {r.bestChunkLabel}
-                </Typography>
-              )}
-              <Stack direction="row" spacing={1.5} sx={{ mt: 0.5 }}>
-                {r.cvQualityScore != null && (
-                  <Typography variant="caption" color="text.secondary">CV-kvalitet {r.cvQualityScore}</Typography>
-                )}
-                {r.semanticSimilarity != null && (
-                  <Tooltip title="Likhet i CV-teksten, ikke en matchprosent. To urelaterte CV-er ligger rundt 0,80.">
-                    <Typography variant="caption" color="text.secondary">
-                      Likhet {r.semanticSimilarity.toFixed(2)}
-                    </Typography>
-                  </Tooltip>
-                )}
-                {hit.consultantUserId && (
-                  <Typography
-                    component={RouterLink}
-                    to={`/consultants/${hit.consultantUserId}`}
-                    variant="caption"
-                    sx={{ color: 'primary.main' }}
-                  >
-                    Se CV
-                  </Typography>
-                )}
-              </Stack>
-            </Paper>
-          );
-        })}
-      </Stack>
-    );
-  };
-
-  /**
-   * The sources that are not already shown as result cards.
-   *
-   * A consultant hit appeared twice, once as a card and once as a chip with the same "K1 Kari
-   * Nordmann" label. Chips are for the sources a card cannot express: a request, a stored
-   * evaluation, a consultant read straight out of the database rather than found by a search.
-   *
-   * [alreadyShown] does the same for a comparison, whose rows carry no retrieval details and so
-   * would otherwise appear both in the table and as chips underneath it.
-   */
-  const SourceChips: React.FC<{ sources: ChatSource[]; alreadyShown?: Set<string> }> = ({
-    sources, alreadyShown
-  }) => (
-    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
-      {sources.filter(s => !s.retrieval && !alreadyShown?.has(s.ref)).map(source => {
-        const Icon = SOURCE_ICONS[source.kind];
-        const detail = [
-          source.originalFilename && `Dokument: ${source.originalFilename} (dokumenttype ikke verifisert)`,
-          source.consultantCvId && `CV: ${source.consultantCvId}`,
-          source.projectRequestId != null && `Avrop ${source.projectRequestId}`,
-          source.matchResultId != null && `Kjøring ${source.matchResultId}`,
-          source.evaluatedAt && `Vurdert ${new Date(source.evaluatedAt).toLocaleDateString('no-NO')}`
-        ].filter(Boolean).join(' • ');
-
-        return (
-          <Tooltip key={source.ref} title={detail || source.label}>
-            <Chip
-              icon={<Icon sx={{ fontSize: 16 }} />}
-              label={`${source.ref} ${source.label}`}
-              size="small"
-              variant="outlined"
-              sx={{ maxWidth: 320, fontSize: '0.7rem' }}
-            />
-          </Tooltip>
-        );
-      })}
-    </Stack>
-  );
-
-  const MessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
-    const isQuestion = message.type === 'question';
-    const kind = message.answerKind ? ANSWER_KIND_LABELS[message.answerKind] : null;
-
-    return (
-      <Fade in timeout={300}>
-        <Box sx={{ display: 'flex', justifyContent: isQuestion ? 'flex-end' : 'flex-start', mb: 2, alignItems: 'flex-start' }}>
-          {!isQuestion && (
-            <Box sx={{ mr: 1, mt: 0.5 }}>
-              <AiIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-            </Box>
-          )}
-
-          <Box sx={{
-            maxWidth: isMobile ? '90%' : '78%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: isQuestion ? 'flex-end' : 'flex-start'
-          }}>
-            <Paper
-              elevation={1}
-              sx={{
-                p: 2,
-                backgroundColor: isQuestion ? 'primary.main' : 'grey.100',
-                color: isQuestion ? 'primary.contrastText' : 'text.primary',
-                borderRadius: 2,
-                borderTopRightRadius: isQuestion ? 0.5 : 2,
-                borderTopLeftRadius: isQuestion ? 2 : 0.5,
-                wordBreak: 'break-word'
-              }}
-            >
-              {message.loading ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CircularProgress size={16} />
-                  <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
-                    Henter grunnlag og svarer...
-                  </Typography>
-                </Box>
-              ) : isQuestion ? (
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', fontSize: isMobile ? '0.9rem' : '1rem' }}>
-                  {message.content}
-                </Typography>
-              ) : (
-                <Box sx={{
-                  '& p': { fontSize: isMobile ? '0.9rem' : '1rem', lineHeight: 1.5, margin: '0.5em 0' },
-                  '& p:first-of-type': { marginTop: 0 },
-                  '& p:last-child': { marginBottom: 0 },
-                  '& h1, & h2, & h3, & h4, & h5, & h6': { margin: '1em 0 0.5em 0', fontSize: '1rem' },
-                  '& ul, & ol': { paddingLeft: '1.5em', margin: '0.5em 0' },
-                  '& li': { margin: '0.25em 0' },
-                  '& code': { backgroundColor: 'rgba(0,0,0,0.06)', padding: '0.2em 0.4em', borderRadius: '3px', fontSize: '0.85em' },
-                  '& pre': { backgroundColor: 'rgba(0,0,0,0.06)', padding: '1em', borderRadius: '4px', overflowX: 'auto' },
-                  '& blockquote': { borderLeft: '3px solid', borderColor: 'divider', margin: '0.5em 0', paddingLeft: '0.75em' },
-                  '& a': { color: 'primary.main' },
-                  // A table is wider than a chat bubble more often than not, so it scrolls inside
-                  // its own box rather than pushing the conversation sideways.
-                  '& .md-table-wrap': { overflowX: 'auto', margin: '0.5em 0' },
-                  '& table': { borderCollapse: 'collapse', fontSize: '0.85rem' },
-                  '& th, & td': { border: '1px solid', borderColor: 'divider', padding: '0.3em 0.6em', textAlign: 'left' },
-                  '& th': { backgroundColor: 'rgba(0,0,0,0.04)', fontWeight: 600 }
-                }}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      table: ({ children }) => (
-                        <Box className="md-table-wrap"><table>{children}</table></Box>
-                      )
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                </Box>
-              )}
-            </Paper>
-
-            {!isQuestion && kind && (
-              <Tooltip title={kind.help}>
-                <Chip label={kind.label} size="small" color={kind.color} sx={{ mt: 0.5, height: 22, fontSize: '0.7rem' }} />
-              </Tooltip>
-            )}
-
-            {!isQuestion && message.readings && message.readings.length > 0 && (
-              <ReadingNotices
-                readings={message.readings}
-                question={message.question}
-                disabled={loading}
-                pickedId={message.pickedAlternativeId}
-                onPick={(reading, id) => {
-                  if (reading.kind !== 'PROJECT_REQUEST' || !message.question) return;
-                  setMessages(prev => prev.map(m =>
-                    m.id === message.id ? { ...m, pickedAlternativeId: id } : m));
-                  ask(message.question, 'DATABASE', message.topK ?? DEFAULT_TOP_K, Number(id));
-                }}
-              />
-            )}
-
-            {!isQuestion && message.comparison && message.comparison.length > 0 && (
-              <ComparisonTable rows={message.comparison} />
-            )}
-
-            {!isQuestion && message.sources && message.sources.length > 0 && (
-              <>
-                <ResultCards sources={message.sources} />
-                {/*
-                  A bigger retrieval, not a page of a cached one: asking for more is a new search
-                  with a wider limit, and the model narrates the wider set so it can cite it.
-                */}
-                {message.answerKind === 'SEARCH_RESULT' && message.question &&
-                  (message.topK ?? DEFAULT_TOP_K) < MAX_TOP_K &&
-                  message.sources.filter(s => s.retrieval).length >= (message.topK ?? DEFAULT_TOP_K) && (
-                  <Button
-                    size="small"
-                    startIcon={<MoreIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => ask(message.question!, 'DATABASE', Math.min((message.topK ?? DEFAULT_TOP_K) * 2, MAX_TOP_K))}
-                    disabled={loading}
-                    sx={{ mt: 0.5 }}
-                  >
-                    Vis flere
-                  </Button>
-                )}
-                <SourceChips
-                  sources={message.sources}
-                  alreadyShown={new Set(message.comparison?.map(c => c.ref) ?? [])}
-                />
-              </>
-            )}
-
-            {/*
-              Offered after the fact rather than as a mode the reader had to predict. Nothing in the
-              database covered the question, and this is the point where they find that out.
-            */}
-            {!isQuestion && message.answerKind === 'NO_GROUNDING' && message.question && (
-              <Button
-                size="small"
-                startIcon={<GeneralIcon sx={{ fontSize: 16 }} />}
-                onClick={() => ask(message.question!, 'GENERAL')}
-                disabled={loading}
-                sx={{ mt: 0.5 }}
-              >
-                Spør modellen generelt
-              </Button>
-            )}
-
-            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
-              <Chip
-                label={formatTimestamp(message.timestamp)}
-                size="small"
-                variant="outlined"
-                sx={{ height: 20, fontSize: '0.7rem', opacity: 0.7 }}
-              />
-              {/*
-                Whether a provider was called at all, and which model answered. The response has
-                carried this from the start; without showing it the only way to tell an answer read
-                straight out of the database from one a model wrote was to read the backend log.
-              */}
-              {!isQuestion && message.modelUsed && (
-                <Tooltip title={message.modelUsed === 'none'
-                  ? 'Svart uten å kalle en modell: grunnlaget var tomt.'
-                  : `Modell: ${message.modelUsed}`}>
-                  <Chip
-                    icon={message.modelUsed === 'none' ? undefined : <AiIcon sx={{ fontSize: 14 }} />}
-                    label={message.modelUsed === 'none'
-                      ? 'uten modellkall'
-                      : `${message.modelUsed}${message.latencyMs != null ? ` • ${(message.latencyMs / 1000).toFixed(1)} s` : ''}`}
-                    size="small"
-                    variant="outlined"
-                    sx={{ height: 20, fontSize: '0.7rem', opacity: 0.7 }}
-                  />
-                </Tooltip>
-              )}
-            </Stack>
-          </Box>
-
-          {isQuestion && (
-            <Box sx={{ ml: 1, mt: 0.5 }}>
-              <PersonIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-            </Box>
-          )}
-        </Box>
-      </Fade>
-    );
-  };
 
   return (
     <Container sx={{ py: isMobile ? 2 : 4, display: 'flex', flexDirection: 'column' }} maxWidth="md">
@@ -880,7 +904,19 @@ const ChatAnalyzePage: React.FC = () => {
           </Box>
         ) : (
           <Box sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-            {messages.map(message => <MessageBubble key={message.id} message={message} />)}
+            {messages.map(message => (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isMobile={isMobile}
+                loading={loading}
+                selected={selected}
+                onToggleSelect={toggleSelected}
+                onAsk={ask}
+                onPickAlternative={(messageId, alternativeId) => setMessages(prev => prev.map(m =>
+                  m.id === messageId ? { ...m, pickedAlternativeId: alternativeId } : m))}
+              />
+            ))}
             <div ref={bottomRef} />
           </Box>
         )}
