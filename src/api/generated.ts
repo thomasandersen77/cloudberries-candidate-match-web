@@ -1289,7 +1289,17 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Upload and analyze a customer project request PDF */
+        /**
+         * Upload and analyze a customer project request document
+         * @description Accepts PDF and Word (.docx). The format is decided by the file's own leading bytes, not by
+         *     its name or the content-type the browser guessed, so a mis-named file still reads correctly
+         *     and a file that is neither is refused with a message rather than a parser error.
+         *
+         *     Word is accepted because customers send it: converting a .docx to PDF first is not
+         *     equivalent. Measured on a real tender, that detour kept 17 217 of 61 570 characters and
+         *     destroyed every Norwegian vowel.
+         *
+         */
         post: {
             parameters: {
                 query?: {
@@ -1304,7 +1314,10 @@ export interface paths {
             requestBody: {
                 content: {
                     "multipart/form-data": {
-                        /** Format: binary */
+                        /**
+                         * Format: binary
+                         * @description The customer's document, .pdf or .docx, at most 10 MB.
+                         */
                         file: string;
                     };
                 };
@@ -1318,6 +1331,13 @@ export interface paths {
                     content: {
                         "application/json": components["schemas"]["ProjectRequestResponseDto"];
                     };
+                };
+                /** @description The file is neither a PDF nor a readable Word document */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 default: components["responses"]["ErrorResponse"];
             };
