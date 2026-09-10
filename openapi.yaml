@@ -870,6 +870,42 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /project-requests/{id}/reanalyze-document:
+    post:
+      tags: [ Project Requests ]
+      summary: Re-run the requirement extraction over the request's stored document text
+      description: |
+        Distinct from `/analyze`, which suggests consultants and touches no requirement. This one
+        reads the document text already stored for the request and replaces its requirement list,
+        so a request analysed before a change to the extraction can be brought forward without the
+        original PDF.
+
+        It cannot repair the stored text itself. A document uploaded before line breaks were
+        preserved is one unbroken run of words in the database, and re-reading it recovers no list
+        structure; those need uploading again.
+
+        Replaces the requirement list only. Customer name, title and summary are left as they are,
+        since a person may have corrected them.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/UseHighestQualityModelParam'
+      responses:
+        '200':
+          description: What the re-analysis changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReanalyzeResponseDto'
+        '404':
+          description: No request with that id
+        '409':
+          description: The request has no stored document text to read
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /project-requests/{id}/matches:
     get:
       tags: [ Matches ]
@@ -2525,6 +2561,30 @@ components:
       properties:
         name: { type: string }
         details: { type: string, nullable: true }
+        appliesTo:
+          type: string
+          enum: [ CONSULTANT, SUPPLIER ]
+          default: CONSULTANT
+          description: >
+            Who has to satisfy it. A tender states requirements for two parties and only the
+            consultant's are scored against a CV, so without this the lists say MUST and SHOULD and
+            a client cannot tell a competence demand from a submission deadline. Additive: a client
+            that ignores it keeps working, and rows extracted before the distinction existed read
+            as CONSULTANT, which is how they were treated.
+
+    ReanalyzeResponseDto:
+      type: object
+      required: [ request, requirementsBefore, requirementsAfter, forConsultant, forSupplier ]
+      description: >
+        What a re-analysis changed. The counts are the point: a request whose requirements were all
+        treated as the consultant's shows up as thirteen before and thirteen after, of which six are
+        the supplier's, a change no client could see from the request alone.
+      properties:
+        request: { $ref: '#/components/schemas/ProjectRequestResponseDto' }
+        requirementsBefore: { type: integer }
+        requirementsAfter: { type: integer }
+        forConsultant: { type: integer }
+        forSupplier: { type: integer }
 
     CvScoreDto:
       type: object

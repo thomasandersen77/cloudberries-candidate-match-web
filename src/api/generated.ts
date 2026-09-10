@@ -1452,6 +1452,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/project-requests/{id}/reanalyze-document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-run the requirement extraction over the request's stored document text
+         * @description Distinct from `/analyze`, which suggests consultants and touches no requirement. This one
+         *     reads the document text already stored for the request and replaces its requirement list,
+         *     so a request analysed before a change to the extraction can be brought forward without the
+         *     original PDF.
+         *
+         *     It cannot repair the stored text itself. A document uploaded before line breaks were
+         *     preserved is one unbroken run of words in the database, and re-reading it recovers no list
+         *     structure; those need uploading again.
+         *
+         *     Replaces the requirement list only. Customer name, title and summary are left as they are,
+         *     since a person may have corrected them.
+         *
+         */
+        post: {
+            parameters: {
+                query?: {
+                    /** @description When true, backend requests the configured QUALITY model tier for this operation. The concrete model is configured server-side via ANTHROPIC_QUALITY_MODEL. If no quality model is configured, backend falls back to the default model.
+                     *      */
+                    useHighestQualityModel?: components["parameters"]["UseHighestQualityModelParam"];
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What the re-analysis changed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReanalyzeResponseDto"];
+                    };
+                };
+                /** @description No request with that id */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description The request has no stored document text to read */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/project-requests/{id}/matches": {
         parameters: {
             query?: never;
@@ -3305,6 +3376,22 @@ export interface components {
         ProjectRequirementDto: {
             name: string;
             details?: string | null;
+            /**
+             * @description Who has to satisfy it. A tender states requirements for two parties and only the consultant's are scored against a CV, so without this the lists say MUST and SHOULD and a client cannot tell a competence demand from a submission deadline. Additive: a client that ignores it keeps working, and rows extracted before the distinction existed read as CONSULTANT, which is how they were treated.
+             *
+             * @default CONSULTANT
+             * @enum {string}
+             */
+            appliesTo: "CONSULTANT" | "SUPPLIER";
+        };
+        /** @description What a re-analysis changed. The counts are the point: a request whose requirements were all treated as the consultant's shows up as thirteen before and thirteen after, of which six are the supplier's, a change no client could see from the request alone.
+         *      */
+        ReanalyzeResponseDto: {
+            request: components["schemas"]["ProjectRequestResponseDto"];
+            requirementsBefore: number;
+            requirementsAfter: number;
+            forConsultant: number;
+            forSupplier: number;
         };
         CvScoreDto: {
             candidateId: string;
