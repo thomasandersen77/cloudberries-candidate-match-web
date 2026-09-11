@@ -48,7 +48,8 @@ export default defineConfig(({mode}) => {
         host: true, // Required for Docker container port mapping
         port: 5174,
         strictPort: true, // Fail if port is already in use instead of trying next port
-        allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0'],
+        // Leading dot allows the domain and all subdomains (cloudflared quick tunnels rotate hostnames)
+        allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', '.trycloudflare.com'],
         watch: {
             usePolling: true, // Helps with file change detection in Docker
         },

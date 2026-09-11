@@ -2815,6 +2815,9 @@ export interface components {
              *
              */
             pinnedRequestId?: number | null;
+            /** @description A consultant the reader picked from the alternatives on an earlier answer, as the user id from ChatReading.alternatives. The same rule as pinnedRequestId: a first name that matched two people matches them both again when it is re-sent.
+             *      */
+            pinnedConsultantUserId?: string | null;
         };
         /**
          * @description What kind of answer this is. STORED_MATCH reports a result an earlier matching run produced; AD_HOC_EVALUATION is an opinion produced just now and not saved anywhere. GENERAL is the model's own knowledge, with no database content behind it.

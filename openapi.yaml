@@ -1777,6 +1777,13 @@ components:
             A request the reader picked from the alternatives on an earlier answer. Send the id from
             ChatReading.alternatives rather than re-sending the wording that was ambiguous, which
             would only reach the same ambiguity again.
+        pinnedConsultantUserId:
+          type: string
+          nullable: true
+          description: >
+            A consultant the reader picked from the alternatives on an earlier answer, as the user
+            id from ChatReading.alternatives. The same rule as pinnedRequestId: a first name that
+            matched two people matches them both again when it is re-sent.
 
     ChatAnswerKind:
       type: string

@@ -32,6 +32,17 @@ import type {
   RetrievalMethod
 } from '../../types/api';
 
+/**
+ * What the reader picked out of an ambiguity, addressed the way the server pins it.
+ *
+ * The kind decides which field it goes in, because the two ids are different things: a request id
+ * is a number of ours, a consultant id is a Flowcase user id.
+ */
+interface PickedAlternative {
+  kind: 'PROJECT_REQUEST' | 'CONSULTANT';
+  id: string;
+}
+
 interface ChatMessage {
   id: string;
   type: 'question' | 'answer';
@@ -440,7 +451,7 @@ const MessageBubble: React.FC<{
   loading: boolean;
   selected: Record<string, string>;
   onToggleSelect: (userId: string, label: string) => void;
-  onAsk: (question: string, askScope?: ChatScope, askTopK?: number, pinnedRequestId?: number) => void;
+  onAsk: (question: string, askScope?: ChatScope, askTopK?: number, pinned?: PickedAlternative) => void;
   onPickAlternative: (messageId: string, alternativeId: string) => void;
 }> = ({ message, isMobile, loading, selected, onToggleSelect, onAsk, onPickAlternative }) => {
   const isQuestion = message.type === 'question';
@@ -543,9 +554,15 @@ const MessageBubble: React.FC<{
               disabled={loading}
               pickedId={message.pickedAlternativeId}
               onPick={(reading, id) => {
-                if (reading.kind !== 'PROJECT_REQUEST' || !message.question) return;
+                // Only the two kinds the server can be told to pin. A match result has no pin,
+                // and a button that sent one would come back to the same ambiguity.
+                if (reading.kind !== 'PROJECT_REQUEST' && reading.kind !== 'CONSULTANT') return;
+                if (!message.question) return;
                 onPickAlternative(message.id, id);
-                onAsk(message.question, 'DATABASE', message.topK ?? DEFAULT_TOP_K, Number(id));
+                onAsk(message.question, 'DATABASE', message.topK ?? DEFAULT_TOP_K, {
+                  kind: reading.kind,
+                  id
+                });
               }}
             />
           )}
@@ -717,12 +734,13 @@ const ChatAnalyzePage: React.FC = () => {
     askScope: ChatScope = scope,
     askTopK: number = topK,
     /**
-     * A request the reader picked from the alternatives on an earlier answer.
+     * Something the reader picked from the alternatives on an earlier answer.
      *
      * Sent as an id rather than as text. Re-sending the wording that was ambiguous would only
-     * reach the same ambiguity again, and the reader would be asked the same question twice.
+     * reach the same ambiguity again, and the reader would be asked the same question twice. The
+     * question itself is the one that was interrupted, so answering the choice answers it.
      */
-    pinnedRequestId?: number
+    pinned?: PickedAlternative
   ) => {
     if (!question.trim() || loading) return;
 
@@ -748,7 +766,8 @@ const ChatAnalyzePage: React.FC = () => {
         scope: askScope,
         topK: askTopK,
         turnId,
-        ...(pinnedRequestId !== undefined ? { pinnedRequestId } : {}),
+        ...(pinned?.kind === 'PROJECT_REQUEST' ? { pinnedRequestId: Number(pinned.id) } : {}),
+        ...(pinned?.kind === 'CONSULTANT' ? { pinnedConsultantUserId: pinned.id } : {}),
         ...(conversationId ? { conversationId } : {})
       });
       pendingTurnId.current = null;

@@ -321,6 +321,50 @@ describe('ChatAnalyzePage', () => {
     expect(screen.queryByText('0.0 / 10')).not.toBeInTheDocument();
   });
 
+  /**
+   * A tie between two people is a choice, and the choice has to reach the server as an id. The
+   * button used to be rendered for consultants and do nothing: the handler took requests only.
+   */
+  it('pins the consultant the reader picked out of an ambiguous name', async () => {
+    mockedAnalyze.mockResolvedValueOnce({
+      ...factualAnswer,
+      answer: 'Navnet «Thomas» passer flere i basen: Thomas Andersen, Thomas Ruud.',
+      answerKind: 'NO_GROUNDING',
+      sources: [],
+      comparison: [],
+      readings: [{
+        kind: 'CONSULTANT' as const,
+        written: 'Thomas',
+        readAs: null,
+        status: 'AMBIGUOUS' as const,
+        origin: 'DATABASE_EXACT' as const,
+        alternatives: [
+          { id: 'user-t1', label: 'Thomas Andersen' },
+          { id: 'user-t2', label: 'Thomas Ruud' }
+        ]
+      }]
+    } as never);
+    mockedAnalyze.mockResolvedValueOnce({ ...factualAnswer, readings: [] } as never);
+
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    ask('Hvilke avrop passer Thomas til?');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Thomas Ruud' }));
+
+    await waitFor(() => expect(mockedAnalyze).toHaveBeenCalledTimes(2));
+    expect(mockedAnalyze).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        // The question that was interrupted, not the word that was ambiguous.
+        content: 'Hvilke avrop passer Thomas til?',
+        pinnedConsultantUserId: 'user-t2'
+      })
+    );
+    // A consultant id is not a request id, and sending it as one would look up nothing.
+    expect(mockedAnalyze).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ pinnedRequestId: expect.anything() })
+    );
+  });
+
   it('renders no table on a turn that produced no comparison', async () => {
     mockedAnalyze.mockResolvedValue({ ...factualAnswer, comparison: [] } as never);
 
