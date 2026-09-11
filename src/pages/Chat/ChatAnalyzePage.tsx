@@ -25,8 +25,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { analyzeContent, clearAnalyzeConversation } from '../../services/chatService';
 import { listProjectRequests } from '../../services/projectRequestsService';
-import { listConsultantsWithCvPaged } from '../../services/consultantsService';
-import { listSkillSummary } from '../../services/skillsService';
+import { listSkillSummary, listTopRankedConsultantsBySkill } from '../../services/skillsService';
 import {
   databaseSuggestions, followUpSuggestions, placeableCustomer,
   GENERAL_SUGGESTIONS, type PromptSuggestion, type SuggestionSubjects
@@ -833,14 +832,7 @@ const ChatAnalyzePage: React.FC = () => {
   // a failure leaves the list shorter rather than putting a consultant who is not here in front of
   // the reader. Nothing here calls a model.
   useEffect(() => {
-    listConsultantsWithCvPaged({ page: 0, size: 3 })
-      .then(page => setSubjects(prev => ({
-        ...prev,
-        consultants: (page.content ?? []).map(c => c.name).filter((n): n is string => !!n)
-      })))
-      .catch(() => { /* the examples that need a name are left out */ });
-
-    // Not the most documented ones. GIT and SQL sit at the top with 70 and 65 of 105 consultants,
+    // Not the most documented technologies. GIT and SQL lead with 70 and 65 of 105 consultants,
     // and "Hvem kan GIT og SQL?" returns most of the company, which teaches nothing about what the
     // search is for. The first two at or below half the leader's count are still well documented
     // and actually separate people: here REACT and KUBERNETES, at 35 and 32.
@@ -849,12 +841,20 @@ const ChatAnalyzePage: React.FC = () => {
         const ranked = (page.content ?? []).filter(s => s.name);
         const ceiling = (ranked[0]?.consultantCount ?? 0) / 2;
         const discriminating = ranked.filter(s => (s.consultantCount ?? 0) <= ceiling);
-        setSubjects(prev => ({
+        const skills = (discriminating.length > 0 ? discriminating : ranked).slice(0, 2).map(s => s.name);
+        setSubjects(prev => ({ ...prev, skills }));
+        if (!skills[0]) return;
+
+        // The people to write the examples around are the ones ranked on that first technology,
+        // with an active CV. Taking any three consultants put the managing director in an example
+        // asking which requests he fits, and produced a comparison that could score one of the
+        // three it named, because the other two have no CV to score.
+        return listTopRankedConsultantsBySkill(skills[0], 3).then(ranked => setSubjects(prev => ({
           ...prev,
-          skills: (discriminating.length > 0 ? discriminating : ranked).slice(0, 2).map(s => s.name)
-        }));
+          consultants: ranked.map(c => c.name).filter((n): n is string => !!n)
+        })));
       })
-      .catch(() => { /* same */ });
+      .catch(() => { /* the examples that need a name are left out */ });
   }, []);
 
   // Newest last, so the conversation reads top to bottom like every other chat. Optional call

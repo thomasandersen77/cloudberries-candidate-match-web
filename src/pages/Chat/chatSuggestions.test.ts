@@ -94,37 +94,83 @@ describe('chatSuggestions', () => {
   });
 
   describe('followUpSuggestions', () => {
-    const consultantSource = {
+    const consultant = {
       ref: 'K1',
       kind: 'CONSULTANT' as const,
       label: 'Thomas Andersen',
       consultantUserId: 'user-thomas'
     };
+    // As the server writes it: customer first, title after an em dash.
+    const request = {
+      ref: 'A1',
+      kind: 'PROJECT_REQUEST' as const,
+      label: 'Norges Bank — Konsulentoppdrag: sikkerhetsarkitekt',
+      projectRequestId: 9010
+    };
 
-    it('follows a consultant answer with questions about that consultant', () => {
-      const texts = followUpSuggestions('FACTUAL', [consultantSource], 'Hva kan Thomas Andersen best?')
+    /**
+     * The failure this is written around. "Hva krever Norges Bank-avropet?" came back with the
+     * requirements and a chip underneath offering to fetch the requirements, with the customer
+     * truncated to "Norges" on the way, because the whole label was too long to keep.
+     */
+    it('does not offer the requirements under an answer that is the requirements', () => {
+      const texts = followUpSuggestions('FACTUAL', [request], 'Hva krever Norges Bank-avropet?')
         .map(s => s.text);
 
+      expect(texts).not.toContain('Hva krever Norges Bank-avropet?');
+      expect(texts.join(' ')).not.toContain('Norges-avropet');
+      // The question the requirements raise is who meets them.
+      expect(texts).toContain('Hvem kan jobbe for Norges Bank og har minst 10 års erfaring?');
+    });
+
+    it('takes the customer from the label rather than the whole label', () => {
+      const texts = followUpSuggestions('SEARCH_RESULT', [request], 'Hvem kan Kotlin?')
+        .map(s => s.text);
+
+      expect(texts).toContain('Hva krever Norges Bank-avropet?');
+    });
+
+    it('follows a consultant answer with what it did not say about that consultant', () => {
+      const texts = followUpSuggestions('FACTUAL', [consultant], 'Hva kan Thomas Andersen best?')
+        .map(s => s.text);
+
+      expect(texts).not.toContain('Hva kan Thomas Andersen best?');
       expect(texts).toContain('Hvilke avrop passer Thomas Andersen til?');
       expect(texts).toContain('Hvilke avrop har Thomas Andersen blitt vurdert mot?');
     });
 
     /** A search hands its hits forward as a set, which is what "alle kandidatene" resolves against. */
     it('follows a search with the set it just produced', () => {
-      const texts = followUpSuggestions('SEARCH_RESULT', [consultantSource], 'Hvem kan Kotlin?')
+      const texts = followUpSuggestions('SEARCH_RESULT', [consultant], 'Hvem kan Kotlin?')
         .map(s => s.text);
 
       expect(texts[0]).toBe('Sjekk erfaringen til alle kandidatene');
     });
 
-    it('never offers back the question that produced the answer', () => {
+    /** Scores made a moment ago. Offering to make them again is not a next step. */
+    it('does not offer a new assessment under a new assessment', () => {
       const texts = followUpSuggestions(
-        'FACTUAL',
-        [consultantSource],
-        'Hvilke avrop passer Thomas Andersen til?'
+        'AD_HOC_EVALUATION',
+        [consultant, request],
+        'Hvem passer best av Thomas Andersen og Joachim Lous til Norges Bank-avropet?'
       ).map(s => s.text);
 
       expect(texts).not.toContain('Hvilke avrop passer Thomas Andersen til?');
+      expect(texts).not.toContain('Passer Thomas Andersen til Norges Bank-avropet?');
+      // What the scores came from is a question they have not answered.
+      expect(texts).toContain('Hva krever Norges Bank-avropet?');
+    });
+
+    it('does not offer stored results under stored results', () => {
+      const texts = followUpSuggestions(
+        'STORED_MATCH',
+        [consultant, request],
+        'Hvilke avrop har Thomas Andersen blitt vurdert mot?'
+      ).map(s => s.text);
+
+      expect(texts).not.toContain('Hvilke avrop har Thomas Andersen blitt vurdert mot?');
+      expect(texts).not.toContain('Hvem er tidligere vurdert mot Norges Bank-avropet?');
+      expect(texts).toContain('Hvilke avrop passer Thomas Andersen til?');
     });
 
     it('offers nothing when the answer cited nothing', () => {
@@ -133,13 +179,8 @@ describe('chatSuggestions', () => {
 
     /** Three is a nudge; more is a menu, and the answer above it is what the reader came for. */
     it('stops at three', () => {
-      const many = followUpSuggestions(
-        'SEARCH_RESULT',
-        [consultantSource, { ref: 'A1', kind: 'PROJECT_REQUEST' as const, label: 'Skatteetaten — Rådgiver' }],
-        'Hvem kan Kotlin?'
-      );
-
-      expect(many).toHaveLength(3);
+      expect(followUpSuggestions('SEARCH_RESULT', [consultant, request], 'Hvem kan Kotlin?'))
+        .toHaveLength(3);
     });
   });
 });

@@ -125,47 +125,104 @@ export const GENERAL_SUGGESTIONS: PromptSuggestion[] = [
 ];
 
 /**
+ * The customer out of a source's label.
+ *
+ * A request source reads "Norges Bank — Konsulentoppdrag: sikkerhetsarkitekt", customer first and
+ * title after an em dash. Handing the whole thing to [placeableCustomer] made it too long to keep
+ * whole, so it fell back to the first word and the chip asked about "Norges-avropet".
+ */
+function customerFrom(label: string): string {
+  return label.split('—')[0].trim();
+}
+
+/**
+ * What the answer already told the reader, which is what a follow-up must not ask for again.
+ *
+ * Read off the answer's kind and the kinds of its sources, never off its prose. "Hva krever Norges
+ * Bank-avropet?" came back with the requirements and a chip underneath offering to fetch the
+ * requirements, which is the shape of a menu rather than of a next step.
+ */
+type AnswerTopic =
+  | 'search'            // who matches some criteria
+  | 'consultantFacts'   // what one person can do
+  | 'requestFacts'      // what one request demands
+  | 'storedMatches'     // what an earlier run decided
+  | 'newAssessment'     // scores made just now
+  | 'nothing';
+
+function topicOf(answerKind: ChatAnswerKind | undefined, sources: ChatSource[]): AnswerTopic {
+  if (answerKind === 'SEARCH_RESULT') return 'search';
+  if (answerKind === 'STORED_MATCH') return 'storedMatches';
+  if (answerKind === 'AD_HOC_EVALUATION') return 'newAssessment';
+  if (answerKind === 'NO_GROUNDING') return 'nothing';
+  // Both are FACTUAL, and only the sources say which. A turn citing a person answered about the
+  // person even when a request is cited alongside them.
+  if (sources.some(s => s.kind === 'CONSULTANT')) return 'consultantFacts';
+  if (sources.some(s => s.kind === 'PROJECT_REQUEST')) return 'requestFacts';
+  return 'nothing';
+}
+
+/**
  * Where a reader usually goes next, from what the answer actually was.
  *
- * Read off the answer's kind and its typed sources, never off its prose. The sources carry ids and
- * labels the server chose; the prose is written by a model and can name somebody it only mentioned
- * in passing. That is the same reason the comparison table is built from a typed field rather than
- * parsed out of the text.
+ * Built from the answer's kind and its typed sources rather than its prose. The sources carry ids
+ * and labels the server chose; the prose is written by a model and can name somebody it only
+ * mentioned in passing. That is the same reason the comparison table is built from a typed field
+ * rather than parsed out of the text.
  *
- * The question that produced the answer is excluded, so a turn never offers itself back.
+ * Each topic leaves out the question it has just answered. Asking what a request requires, right
+ * under the requirements, is the failure this is written around.
  */
 export function followUpSuggestions(
   answerKind: ChatAnswerKind | undefined,
   sources: ChatSource[] | undefined,
   askedQuestion: string | undefined
 ): PromptSuggestion[] {
-  const suggestions: PromptSuggestion[] = [];
   const rows = sources ?? [];
+  const topic = topicOf(answerKind, rows);
+  if (topic === 'nothing') return [];
 
   const consultant = rows.find(s => s.kind === 'CONSULTANT' && s.label)?.label;
   const customer = placeableCustomer(
-    rows.filter(s => s.kind === 'PROJECT_REQUEST').map(s => s.label)
+    rows.filter(s => s.kind === 'PROJECT_REQUEST').map(s => customerFrom(s.label))
   );
 
+  const suggestions: PromptSuggestion[] = [];
+
   // A search hands its hits to the next turn as a set, which is what "alle kandidatene" resolves
-  // against. Offered before anything about one person, because the set is what is on screen.
-  if (answerKind === 'SEARCH_RESULT') {
+  // against. First, because the set is what is on screen.
+  if (topic === 'search') {
     suggestions.push({ text: 'Sjekk erfaringen til alle kandidatene' });
   }
 
   if (consultant) {
-    suggestions.push({ text: `Hvilke avrop passer ${consultant} til?`, assessment: true });
-    suggestions.push({ text: `Hvilke avrop har ${consultant} blitt vurdert mot?` });
+    if (topic !== 'consultantFacts') {
+      suggestions.push({ text: `Hva kan ${consultant} best?` });
+    }
+    if (topic !== 'newAssessment') {
+      suggestions.push({ text: `Hvilke avrop passer ${consultant} til?`, assessment: true });
+    }
+    if (topic !== 'storedMatches') {
+      suggestions.push({ text: `Hvilke avrop har ${consultant} blitt vurdert mot?` });
+    }
   }
 
   if (customer) {
-    suggestions.push({ text: `Hva krever ${customer}-avropet?` });
-    suggestions.push({ text: `Hvem er tidligere vurdert mot ${customer}-avropet?` });
-    if (consultant) {
+    if (topic !== 'requestFacts') {
+      suggestions.push({ text: `Hva krever ${customer}-avropet?` });
+    } else {
+      // The requirements are already on screen; the question they raise is who meets them.
+      suggestions.push({ text: `Hvem kan jobbe for ${customer} og har minst 10 års erfaring?` });
+    }
+    if (topic !== 'storedMatches') {
+      suggestions.push({ text: `Hvem er tidligere vurdert mot ${customer}-avropet?` });
+    }
+    if (consultant && topic !== 'newAssessment') {
       suggestions.push({ text: `Passer ${consultant} til ${customer}-avropet?`, assessment: true });
     }
   }
 
+  // A backstop for the wording, on top of the rules above: a turn never offers itself back.
   const asked = askedQuestion?.trim().toLowerCase();
   return suggestions
     .filter(s => s.text.toLowerCase() !== asked)

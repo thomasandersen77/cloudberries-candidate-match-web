@@ -19,15 +19,17 @@ vi.mock('../../../services/projectRequestsService', () => ({
     { id: 8, customerName: 'Skatteetaten', title: 'Rådgiver skatteprosessen' }
   ])
 }));
-vi.mock('../../../services/consultantsService', () => ({
-  listConsultantsWithCvPaged: vi.fn().mockResolvedValue({
-    content: [{ name: 'Thomas Andersen' }, { name: 'Joachim Lous' }, { name: 'Einar Flobak' }]
-  })
-}));
 vi.mock('../../../services/skillsService', () => ({
   listSkillSummary: vi.fn().mockResolvedValue({
     content: [{ name: 'Kotlin', consultantCount: 40 }, { name: 'Kafka', consultantCount: 21 }]
-  })
+  }),
+  // Ranked on the first technology and with an active CV, so an example never names somebody
+  // there is nothing to score.
+  listTopRankedConsultantsBySkill: vi.fn().mockResolvedValue([
+    { id: 'user-thomas', name: 'Thomas Andersen' },
+    { id: 'user-joachim', name: 'Joachim Lous' },
+    { id: 'user-einar', name: 'Einar Flobak' }
+  ])
 }));
 vi.mock('../../../api/matchingApi', () => ({
   runProjectMatching: vi.fn().mockResolvedValue(undefined)
