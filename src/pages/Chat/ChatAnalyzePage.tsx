@@ -28,7 +28,8 @@ import { listProjectRequests } from '../../services/projectRequestsService';
 import { runProjectMatching } from '../../api/matchingApi';
 import { Link as RouterLink } from 'react-router-dom';
 import type {
-  CandidateComparison, ChatAnswerKind, ChatReading, ChatScope, ChatSource, RetrievalMethod
+  CandidateComparison, ChatAnswerKind, ChatReading, ChatScope, ChatSource, RequestFit,
+  RetrievalMethod
 } from '../../types/api';
 
 interface ChatMessage {
@@ -47,6 +48,8 @@ interface ChatMessage {
   topK?: number;
   /** Per-consultant scores when the turn ran a comparison. Empty on every other turn. */
   comparison?: CandidateComparison[];
+  /** Per-request scores when the turn searched for the requests one consultant fits. */
+  requestFit?: RequestFit[];
   /** Corrections, ties and misses in how the question was read. Empty on a clean turn. */
   readings?: ChatReading[];
   /**
@@ -234,6 +237,61 @@ const ComparisonTable: React.FC<{ rows: CandidateComparison[] }> = ({ rows }) =>
                   variant="caption"
                 >
                   Se CV
+                </MuiLink>
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </Box>
+);
+
+/**
+ * The mirror of [ComparisonTable]: one consultant, one row per request screened.
+ *
+ * Same reason for being typed. The scores come from the same screening prompt and tier, so the
+ * rows can be read against each other, and a request the run could not score shows no number
+ * rather than a zero. Sorted by the server, so the order here is the order it decided.
+ */
+const RequestFitTable: React.FC<{ rows: RequestFit[] }> = ({ rows }) => (
+  <Box sx={{ mt: 1, overflowX: 'auto' }}>
+    <Table size="small" sx={{ minWidth: 380 }}>
+      <TableHead>
+        <TableRow>
+          <TableCell sx={{ fontWeight: 600 }}>Avrop</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="right">Score</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {rows.map(row => (
+          <TableRow key={row.ref} hover>
+            <TableCell>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {row.ref} {row.customerName}
+              </Typography>
+              {row.role && (
+                <Typography variant="caption" color="text.secondary">{row.role}</Typography>
+              )}
+            </TableCell>
+            <TableCell align="right">
+              {typeof row.score === 'number' ? (
+                <Typography variant="body2">{row.score.toFixed(1)} / 10</Typography>
+              ) : (
+                <Tooltip title={row.notScoredReason ?? 'Ikke vurdert'}>
+                  <Typography variant="body2" color="text.secondary">ikke vurdert</Typography>
+                </Tooltip>
+              )}
+            </TableCell>
+            <TableCell align="right">
+              {row.projectRequestId > 0 && (
+                <MuiLink
+                  component={RouterLink}
+                  to={`/project-requests/${row.projectRequestId}`}
+                  variant="caption"
+                >
+                  Se avrop
                 </MuiLink>
               )}
             </TableCell>
@@ -496,6 +554,10 @@ const MessageBubble: React.FC<{
             <ComparisonTable rows={message.comparison} />
           )}
 
+          {!isQuestion && message.requestFit && message.requestFit.length > 0 && (
+            <RequestFitTable rows={message.requestFit} />
+          )}
+
           {!isQuestion && message.sources && message.sources.length > 0 && (
             <>
               <ResultCards
@@ -522,7 +584,10 @@ const MessageBubble: React.FC<{
               )}
               <SourceChips
                 sources={message.sources}
-                alreadyShown={new Set(message.comparison?.map(c => c.ref) ?? [])}
+                alreadyShown={new Set([
+                  ...(message.comparison?.map(c => c.ref) ?? []),
+                  ...(message.requestFit?.map(f => f.ref) ?? [])
+                ])}
               />
             </>
           )}
@@ -710,6 +775,7 @@ const ChatAnalyzePage: React.FC = () => {
         question: question.trim(),
         topK: askTopK,
         comparison: res.comparison,
+        requestFit: res.requestFit,
         readings: res.readings
       } : msg));
     } catch (err) {

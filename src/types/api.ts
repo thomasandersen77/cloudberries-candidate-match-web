@@ -22,6 +22,8 @@ export type RetrievalMethod = components['schemas']['RetrievalMethodDto'];
 export type DocumentedSkill = components['schemas']['DocumentedSkillDto'];
 // Til stede bare på en sammenligningstur, og tom ellers.
 export type CandidateComparison = components['schemas']['CandidateComparison'];
+// Speilbildet: én konsulent mot flere avrop. Til stede bare på en egnethetstur.
+export type RequestFit = components['schemas']['RequestFit'];
 export type ChatReading = components['schemas']['ChatReading'];
 export type ChatReadingAlternative = components['schemas']['ChatReadingAlternative'];
 

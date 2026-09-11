@@ -286,6 +286,41 @@ describe('ChatAnalyzePage', () => {
     expect(screen.getByText(/A1 Skatteetaten/)).toBeInTheDocument();
   });
 
+  /**
+   * The other direction: one consultant against several requests. Same typed field, same reason
+   * for having one, and the row carries the request's role so two rows from the same customer are
+   * telling apart.
+   */
+  it('renders a request fit search as a table from the typed field', async () => {
+    mockedAnalyze.mockResolvedValue({
+      ...factualAnswer,
+      answer: 'Ny vurdering av Thomas Andersen mot 2 av 2 avrop.',
+      answerKind: 'AD_HOC_EVALUATION',
+      sources: [],
+      comparison: [],
+      requestFit: [
+        {
+          ref: 'A1', projectRequestId: 8, customerName: 'Skatteetaten',
+          role: 'Rådgiver skatteprosessen', score: 8.6
+        },
+        {
+          ref: 'A2', projectRequestId: 10, customerName: 'Øren',
+          notScoredReason: 'Vurderingen feilet for dette avropet.'
+        }
+      ]
+    } as never);
+
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    ask('Hvilke avråd passer Thomas Andersen til?');
+
+    expect(await screen.findByText('A1 Skatteetaten')).toBeInTheDocument();
+    expect(screen.getByText('Rådgiver skatteprosessen')).toBeInTheDocument();
+    expect(screen.getByText('8.6 / 10')).toBeInTheDocument();
+    // A request the run could not score shows no number, exactly as an unscored candidate does.
+    expect(screen.getByText('ikke vurdert')).toBeInTheDocument();
+    expect(screen.queryByText('0.0 / 10')).not.toBeInTheDocument();
+  });
+
   it('renders no table on a turn that produced no comparison', async () => {
     mockedAnalyze.mockResolvedValue({ ...factualAnswer, comparison: [] } as never);
 

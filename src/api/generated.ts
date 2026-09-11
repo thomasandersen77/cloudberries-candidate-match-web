@@ -2879,6 +2879,12 @@ export interface components {
              */
             comparison: components["schemas"]["CandidateComparison"][];
             /**
+             * @description Per-request scores, present only when the turn searched for requests that fit one consultant and empty otherwise. The mirror of comparison: one consultant and several requests, one score each. Produced by the same screening prompt, schema and tier as every other score in the product, and not stored: a run that is kept is one somebody started on purpose against a single request.
+             *
+             * @default []
+             */
+            requestFit: components["schemas"]["RequestFit"][];
+            /**
              * @description How the question's entities were read, when a reader has to be able to check or reject it: a corrected spelling, a tie between rows, or a reference that matched nothing. Additive like comparison. Typed rather than folded into the answer text because the corrections are made by the server and not by the model, and prose the model writes is prose the model can reword, bury or omit.
              *
              * @default []
@@ -2887,6 +2893,24 @@ export interface components {
             modelUsed: string;
             /** Format: int64 */
             latencyMs: number;
+        };
+        /** @description One request a consultant was screened against. */
+        RequestFit: {
+            /** @description Reference used in the answer text, e.g. A1 */
+            ref: string;
+            /** Format: int64 */
+            projectRequestId: number;
+            customerName: string;
+            /** @description The position the request asks for, when it names one */
+            role?: string | null;
+            /**
+             * Format: double
+             * @description Screening score on the 0.0-10.0 scale, absent when this request was not scored
+             * @example 7.4
+             */
+            score?: number | null;
+            summary?: string | null;
+            notScoredReason?: string | null;
         };
         /** @description One entity in the question and what became of it. */
         ChatReading: {
