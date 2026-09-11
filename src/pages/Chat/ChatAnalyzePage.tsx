@@ -38,6 +38,56 @@ import type {
  * The kind decides which field it goes in, because the two ids are different things: a request id
  * is a number of ours, a consultant id is a Flowcase user id.
  */
+/**
+ * One thing the assistant can be asked, as something to click.
+ *
+ * Clicking fills the field and does not send. Some of these are a database lookup and some start
+ * a run of paid screenings, and the reader should get to see and edit the question before it costs
+ * anything. [assessment] marks the ones that do: a fitness search screens five requests, which is
+ * five model calls and over a minute, and a button that hides that is a button that surprises.
+ *
+ * The wording is not decorative. Each of these was sent to the running backend and its intent read
+ * back out of the log, so a chip lands on the route it looks like it should:
+ *
+ *   CONSULTANT_SEARCH, CONSULTANT_SEARCH, REQUEST_INDEX, REQUEST_FACTS, CONSULTANT_FACTS,
+ *   REQUEST_FILTERED_SEARCH, STORED_MATCHES, REQUEST_CANDIDATES, FIT_ASSESSMENT,
+ *   CONSULTANT_FIT_SEARCH, COMPARE_CANDIDATES
+ *
+ * The names in them are rows that exist in this database today. That is the weakness of the list:
+ * somewhere without a Thomas Andersen or a Skatteetaten request, half of these answer "not found".
+ * Building them from a real consultant and a real open request needs no model and would fix it.
+ */
+interface PromptSuggestion {
+  text: string;
+  assessment?: boolean;
+}
+
+const DATABASE_SUGGESTIONS: PromptSuggestion[] = [
+  { text: 'Hvem kan Kotlin og Kafka?' },
+  { text: 'Hvem har erfaring med modernisering av eldre Java-systemer?' },
+  { text: 'Hvilke avrop har vi?' },
+  { text: 'Hva krever Skatteetaten-avropet?' },
+  { text: 'Passer Thomas Andersen til Skatteetaten-avropet?', assessment: true },
+  { text: 'Hvilke avrop passer Thomas Andersen til?', assessment: true },
+  { text: 'Hva kan Thomas Andersen best?' },
+  { text: 'Hvem kan jobbe for Skatteetaten og har minst 10 års erfaring?' },
+  { text: 'Hvilke avrop har Thomas Andersen blitt vurdert mot?' },
+  { text: 'Hvem er tidligere vurdert mot Skatteetaten-avropet?' },
+  {
+    text: 'Hvem passer best av Thomas Andersen, Joachim Lous og Einar Flobak til Skatteetaten-avropet?',
+    assessment: true
+  }
+];
+
+const GENERAL_SUGGESTIONS: PromptSuggestion[] = [
+  { text: 'Hva er Kafka?' },
+  { text: 'Forklar forskjellen på MÅ- og BØR-krav' },
+  { text: 'Hvordan bør et tilbud struktureres?' }
+];
+
+/** Shown before the reader has to ask for more. Six is a choice; eleven is a search page. */
+const SUGGESTIONS_SHOWN = 6;
+
 interface PickedAlternative {
   kind: 'PROJECT_REQUEST' | 'CONSULTANT';
   id: string;
@@ -152,6 +202,50 @@ const formatTimestamp = (date: Date) =>
  * would only reach the same ambiguity again. A miss carries no buttons: the whole index is not a
  * list of near misses for a word that matched none of it.
  */
+/**
+ * The examples, as buttons that fill the field rather than a sentence listing them.
+ *
+ * Defined at module scope, like every other component on this page: one declared inside the page
+ * component is a new type on every keystroke, and React remounts the whole subtree when the type
+ * changes.
+ */
+const PromptSuggestions: React.FC<{
+  suggestions: PromptSuggestion[];
+  onPick: (text: string) => void;
+}> = ({ suggestions, onPick }) => {
+  const [showAll, setShowAll] = useState(false);
+  const shown = showAll ? suggestions : suggestions.slice(0, SUGGESTIONS_SHOWN);
+
+  return (
+    <Stack spacing={1} alignItems="center" sx={{ width: '100%', maxWidth: 620 }}>
+      <Stack direction="row" spacing={0.75} sx={{ flexWrap: 'wrap', gap: 0.75, justifyContent: 'center' }}>
+        {shown.map(suggestion => (
+          <Chip
+            key={suggestion.text}
+            label={suggestion.text}
+            onClick={() => onPick(suggestion.text)}
+            size="small"
+            variant="outlined"
+            color={suggestion.assessment ? 'warning' : 'default'}
+            icon={suggestion.assessment ? <AiIcon sx={{ fontSize: 14 }} /> : undefined}
+            sx={{ height: 'auto', py: 0.5, '& .MuiChip-label': { whiteSpace: 'normal' } }}
+          />
+        ))}
+      </Stack>
+      {suggestions.length > SUGGESTIONS_SHOWN && (
+        <Button size="small" onClick={() => setShowAll(v => !v)} sx={{ textTransform: 'none' }}>
+          {showAll ? 'Vis færre' : 'Vis flere eksempler'}
+        </Button>
+      )}
+      {suggestions.some(s => s.assessment) && (
+        <Typography variant="caption" color="text.secondary" textAlign="center">
+          Merket med ikon: ny AI-vurdering. Den kjører ett modellkall per avrop og tar lengre tid.
+        </Typography>
+      )}
+    </Stack>
+  );
+};
+
 const ReadingNotices: React.FC<{
   readings: ChatReading[];
   question?: string;
@@ -684,6 +778,8 @@ const ChatAnalyzePage: React.FC = () => {
   const [matchingBusy, setMatchingBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  /** So a picked example lands in a focused field, ready to edit or send. */
+  const questionFieldRef = useRef<HTMLTextAreaElement | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -994,11 +1090,17 @@ const ChatAnalyzePage: React.FC = () => {
                 ? 'Svarene bygger på databasen, og kildene vises under hvert svar.'
                 : 'Modellen svarer fra egen kunnskap. Ingen interne data hentes.'}
             </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ maxWidth: 460 }}>
-              {scope === 'DATABASE'
-                ? 'Prøv «Hva kan Thomas Andersen best?», «Hvem kan Kotlin og Kafka?», «Hva krever Skatteetaten-avropet?» eller «Hvilke avrop har Thomas vært vurdert mot?».'
-                : 'Prøv «Hva er Kafka?», «Forklar forskjellen på MÅ- og BØR-krav» eller «Hvordan bør et tilbud struktureres?».'}
-            </Typography>
+            <PromptSuggestions
+              suggestions={scope === 'DATABASE' ? DATABASE_SUGGESTIONS : GENERAL_SUGGESTIONS}
+              onPick={text => {
+                // Filled, not sent. Some of these start a run of paid screenings, and the reader
+                // should see the question before it costs anything.
+                setContent(text);
+                // After the commit, not during it. Focusing while React is still rendering loses
+                // the caret to whatever the browser focuses when the click finishes.
+                requestAnimationFrame(() => questionFieldRef.current?.focus());
+              }}
+            />
           </Box>
         ) : (
           <Box sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
@@ -1041,6 +1143,7 @@ const ChatAnalyzePage: React.FC = () => {
       <Paper elevation={2} sx={{ p: 2 }}>
         <TextField
           label="Spørsmål"
+          inputRef={questionFieldRef}
           multiline
           minRows={isMobile ? 2 : 3}
           maxRows={isMobile ? 5 : 7}
@@ -1048,7 +1151,9 @@ const ChatAnalyzePage: React.FC = () => {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={scope === 'DATABASE' ? 'F.eks: Hvem kan Kotlin og Kafka?' : 'F.eks: Hva er Kafka?'}
+          placeholder={scope === 'DATABASE'
+            ? 'Søk etter kompetanse, spør om en konsulent eller vurder et avrop …'
+            : 'F.eks: Hva er Kafka?'}
           disabled={loading}
         />
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }} justifyContent="space-between">

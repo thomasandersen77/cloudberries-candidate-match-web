@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Container, Paper, Stack, Typography, Table, TableHead, TableRow, TableCell, TableBody, LinearProgress, Button, Box, Chip } from '@mui/material';
+import { Container, Paper, Stack, Typography, Table, TableHead, TableRow, TableCell, TableBody, LinearProgress, Button, Box, Chip, alpha } from '@mui/material';
 import type { ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
 import { getProjectRequestById, analyzeProjectRequest, getProjectRequestSuggestions, closeProjectRequest } from '../../services/projectRequestsService';
 import HighQualityToggle from '../../components/HighQualityToggle';
@@ -99,8 +99,8 @@ const ProjectRequestDetailPage: React.FC = () => {
             alignItems="flex-start"
             sx={{ mb: 2 }}
           >
-            <RequirementList title="Må-krav" rows={dto.mustRequirements ?? []} />
-            <RequirementList title="Bør-krav" rows={dto.shouldRequirements ?? []} />
+            <RequirementList title="Må-krav" tone="warning" rows={dto.mustRequirements ?? []} />
+            <RequirementList title="Bør-krav" tone="info" rows={dto.shouldRequirements ?? []} />
           </Stack>
 
           <Typography variant="h6" sx={{ mb: 1 }}>AI-forslag</Typography>
@@ -154,16 +154,46 @@ const ProjectRequestDetailPage: React.FC = () => {
  * agreements, and a reader counting competence demands should not have to read all of them to find
  * out which is which. Marking only one side keeps the common case quiet.
  */
-function RequirementList({ title, rows }: { title: string; rows: ProjectRequirementDto[] }) {
+function RequirementList({ title, tone, rows }: {
+  title: string;
+  /**
+   * Which palette entry colours the list. warning for må, info for bør: two hues that stay apart
+   * in both brands and both colour modes, where primary and info do not — the blue brand's primary
+   * is a blue, and the orange brand's is an orange.
+   */
+  tone: 'warning' | 'info';
+  rows: ProjectRequirementDto[];
+}) {
   return (
     <Paper sx={{ p: 1.5, flex: 1, minWidth: 0, alignSelf: 'stretch' }}>
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography
+        variant="subtitle1"
+        gutterBottom
+        sx={{ color: `${tone}.main`, fontWeight: 600 }}
+      >
         {title}{rows.length > 0 && ` (${rows.length})`}
       </Typography>
       {rows.length > 0 ? (
-        <Stack component="ul" spacing={1.25} sx={{ listStyle: 'none', pl: 0, m: 0 }}>
+        <Stack component="ul" spacing={1} sx={{ listStyle: 'none', pl: 0, m: 0 }}>
           {rows.map((r, i) => (
-            <Box component="li" key={i}>
+            <Box
+              component="li"
+              key={i}
+              sx={{
+                px: 1.25,
+                py: 0.875,
+                borderRadius: 1,
+                // A tint rather than a fill: these are paragraphs, and text on a saturated ground
+                // is harder to read the longer it gets. The bar on the left is what actually
+                // separates one requirement from the next.
+                borderLeft: 3,
+                borderColor: `${tone}.main`,
+                bgcolor: theme => alpha(
+                  theme.palette[tone].main,
+                  theme.palette.mode === 'dark' ? 0.16 : 0.08
+                )
+              }}
+            >
               <Typography
                 variant="body2"
                 // anywhere rather than break-word: a reference like "20250001)" is one long token

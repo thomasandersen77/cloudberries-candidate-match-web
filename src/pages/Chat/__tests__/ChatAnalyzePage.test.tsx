@@ -365,6 +365,30 @@ describe('ChatAnalyzePage', () => {
     );
   });
 
+  /**
+   * An example fills the field and stops there. Some of them start a run of paid screenings, so
+   * the reader gets to see the question, and change it, before it costs anything.
+   */
+  it('puts a picked example in the field without sending it', async () => {
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    fireEvent.click(screen.getByText('Hvilke avrop har vi?'));
+
+    expect(screen.getByLabelText('Spørsmål')).toHaveValue('Hvilke avrop har vi?');
+    expect(mockedAnalyze).not.toHaveBeenCalled();
+  });
+
+  /** Six to start with. Eleven at once is a search page, not a choice. */
+  it('holds the rest of the examples back behind a button', async () => {
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    expect(screen.queryByText(/Hvem er tidligere vurdert mot Skatteetaten-avropet\?/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Vis flere eksempler' }));
+
+    expect(screen.getByText(/Hvem er tidligere vurdert mot Skatteetaten-avropet\?/)).toBeInTheDocument();
+  });
+
   it('renders no table on a turn that produced no comparison', async () => {
     mockedAnalyze.mockResolvedValue({ ...factualAnswer, comparison: [] } as never);
 
