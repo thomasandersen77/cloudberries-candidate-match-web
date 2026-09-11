@@ -398,7 +398,7 @@ const MessageBubble: React.FC<{
         )}
 
         <Box sx={{
-          maxWidth: isMobile ? '90%' : '78%',
+          maxWidth: isMobile ? '90%' : '85%',
           display: 'flex',
           flexDirection: 'column',
           alignItems: isQuestion ? 'flex-end' : 'flex-start'
@@ -441,9 +441,22 @@ const MessageBubble: React.FC<{
                 // A table is wider than a chat bubble more often than not, so it scrolls inside
                 // its own box rather than pushing the conversation sideways.
                 '& .md-table-wrap': { overflowX: 'auto', margin: '0.5em 0' },
-                '& table': { borderCollapse: 'collapse', fontSize: '0.85rem' },
-                '& th, & td': { border: '1px solid', borderColor: 'divider', padding: '0.3em 0.6em', textAlign: 'left' },
-                '& th': { backgroundColor: 'rgba(0,0,0,0.04)', fontWeight: 600 }
+                // max-content so the table keeps its natural width and the wrapper scrolls.
+                // Without it the columns are squeezed to fit the bubble instead, and the bubble's
+                // own break-word then splits the words inside them: a Status column rendered as
+                // "OPE N" and a Krav column as "Kra v".
+                '& table': { borderCollapse: 'collapse', fontSize: '0.85rem', width: 'max-content', maxWidth: 'none' },
+                '& th, & td': {
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  padding: '0.3em 0.6em',
+                  textAlign: 'left',
+                  // The bubble breaks inside words so a long URL cannot push the layout sideways.
+                  // A table cell has somewhere to overflow to, so it never needs to.
+                  wordBreak: 'normal',
+                  overflowWrap: 'normal'
+                },
+                '& th': { backgroundColor: 'rgba(0,0,0,0.04)', fontWeight: 600, whiteSpace: 'nowrap' }
               }}>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -787,7 +800,7 @@ const ChatAnalyzePage: React.FC = () => {
 
 
   return (
-    <Container sx={{ py: isMobile ? 2 : 4, display: 'flex', flexDirection: 'column' }} maxWidth="md">
+    <Container sx={{ py: isMobile ? 2 : 4, display: 'flex', flexDirection: 'column' }} maxWidth="lg">
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
         <Typography variant={isMobile ? 'h6' : 'h5'}>Spør om konsulenter og avrop</Typography>
         <Button
