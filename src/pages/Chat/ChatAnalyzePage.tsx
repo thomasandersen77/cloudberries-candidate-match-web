@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Container, Typography, TextField, Button, Paper, CircularProgress, Stack,
   Box, Fade, Chip, Tooltip, ToggleButton, ToggleButtonGroup, Alert,
-  Checkbox, MenuItem, Select, FormControl, InputLabel, Snackbar,
+  Checkbox, MenuItem, Select, FormControl, InputLabel, Snackbar, Collapse,
   Table, TableHead, TableBody, TableRow, TableCell, Link as MuiLink,
   useTheme, useMediaQuery
 } from '@mui/material';
@@ -25,6 +25,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { analyzeContent, clearAnalyzeConversation } from '../../services/chatService';
 import { listProjectRequests } from '../../services/projectRequestsService';
+import { listConsultantsWithCvPaged } from '../../services/consultantsService';
+import { listSkillSummary } from '../../services/skillsService';
+import {
+  databaseSuggestions, followUpSuggestions, placeableCustomer,
+  GENERAL_SUGGESTIONS, type PromptSuggestion, type SuggestionSubjects
+} from './chatSuggestions';
 import { runProjectMatching } from '../../api/matchingApi';
 import { Link as RouterLink } from 'react-router-dom';
 import type {
@@ -38,53 +44,6 @@ import type {
  * The kind decides which field it goes in, because the two ids are different things: a request id
  * is a number of ours, a consultant id is a Flowcase user id.
  */
-/**
- * One thing the assistant can be asked, as something to click.
- *
- * Clicking fills the field and does not send. Some of these are a database lookup and some start
- * a run of paid screenings, and the reader should get to see and edit the question before it costs
- * anything. [assessment] marks the ones that do: a fitness search screens five requests, which is
- * five model calls and over a minute, and a button that hides that is a button that surprises.
- *
- * The wording is not decorative. Each of these was sent to the running backend and its intent read
- * back out of the log, so a chip lands on the route it looks like it should:
- *
- *   CONSULTANT_SEARCH, CONSULTANT_SEARCH, REQUEST_INDEX, REQUEST_FACTS, CONSULTANT_FACTS,
- *   REQUEST_FILTERED_SEARCH, STORED_MATCHES, REQUEST_CANDIDATES, FIT_ASSESSMENT,
- *   CONSULTANT_FIT_SEARCH, COMPARE_CANDIDATES
- *
- * The names in them are rows that exist in this database today. That is the weakness of the list:
- * somewhere without a Thomas Andersen or a Skatteetaten request, half of these answer "not found".
- * Building them from a real consultant and a real open request needs no model and would fix it.
- */
-interface PromptSuggestion {
-  text: string;
-  assessment?: boolean;
-}
-
-const DATABASE_SUGGESTIONS: PromptSuggestion[] = [
-  { text: 'Hvem kan Kotlin og Kafka?' },
-  { text: 'Hvem har erfaring med modernisering av eldre Java-systemer?' },
-  { text: 'Hvilke avrop har vi?' },
-  { text: 'Hva krever Skatteetaten-avropet?' },
-  { text: 'Passer Thomas Andersen til Skatteetaten-avropet?', assessment: true },
-  { text: 'Hvilke avrop passer Thomas Andersen til?', assessment: true },
-  { text: 'Hva kan Thomas Andersen best?' },
-  { text: 'Hvem kan jobbe for Skatteetaten og har minst 10 års erfaring?' },
-  { text: 'Hvilke avrop har Thomas Andersen blitt vurdert mot?' },
-  { text: 'Hvem er tidligere vurdert mot Skatteetaten-avropet?' },
-  {
-    text: 'Hvem passer best av Thomas Andersen, Joachim Lous og Einar Flobak til Skatteetaten-avropet?',
-    assessment: true
-  }
-];
-
-const GENERAL_SUGGESTIONS: PromptSuggestion[] = [
-  { text: 'Hva er Kafka?' },
-  { text: 'Forklar forskjellen på MÅ- og BØR-krav' },
-  { text: 'Hvordan bør et tilbud struktureres?' }
-];
-
 /** Shown before the reader has to ask for more. Six is a choice; eleven is a search page. */
 const SUGGESTIONS_SHOWN = 6;
 
@@ -546,8 +505,10 @@ const MessageBubble: React.FC<{
   selected: Record<string, string>;
   onToggleSelect: (userId: string, label: string) => void;
   onAsk: (question: string, askScope?: ChatScope, askTopK?: number, pinned?: PickedAlternative) => void;
+  /** Puts a suggested question in the field. Never sends it; see PromptSuggestion. */
+  onSuggest: (text: string) => void;
   onPickAlternative: (messageId: string, alternativeId: string) => void;
-}> = ({ message, isMobile, loading, selected, onToggleSelect, onAsk, onPickAlternative }) => {
+}> = ({ message, isMobile, loading, selected, onToggleSelect, onAsk, onSuggest, onPickAlternative }) => {
   const isQuestion = message.type === 'question';
   const kind = message.answerKind ? ANSWER_KIND_LABELS[message.answerKind] : null;
 
@@ -719,6 +680,32 @@ const MessageBubble: React.FC<{
             </Button>
           )}
 
+          {/*
+            Where a reader usually goes next, read off the answer's kind and its typed sources
+            rather than its prose. Like the examples, these fill the field instead of sending: the
+            tempting ones are the assessments, and those are the ones that cost.
+          */}
+          {!isQuestion && !message.loading && (() => {
+            const followUps = followUpSuggestions(message.answerKind, message.sources, message.question);
+            return followUps.length > 0 && (
+              <Stack direction="row" spacing={0.5} sx={{ mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
+                {followUps.map(suggestion => (
+                  <Chip
+                    key={suggestion.text}
+                    label={suggestion.text}
+                    onClick={() => onSuggest(suggestion.text)}
+                    size="small"
+                    variant="outlined"
+                    color={suggestion.assessment ? 'warning' : 'default'}
+                    icon={suggestion.assessment ? <AiIcon sx={{ fontSize: 14 }} /> : undefined}
+                    disabled={loading}
+                    sx={{ height: 'auto', py: 0.4, '& .MuiChip-label': { whiteSpace: 'normal' } }}
+                  />
+                ))}
+              </Stack>
+            );
+          })()}
+
           <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
             <Chip
               label={formatTimestamp(message.timestamp)}
@@ -774,12 +761,29 @@ const ChatAnalyzePage: React.FC = () => {
   const [topK, setTopK] = useState(DEFAULT_TOP_K);
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [requests, setRequests] = useState<Array<{ id: number; label: string }>>([]);
+  /** Rows the examples are built from. Empty until they load, and empty is a shorter list. */
+  const [subjects, setSubjects] = useState<SuggestionSubjects>({});
+  /** The examples, reopened after the conversation has started. */
+  const [examplesOpen, setExamplesOpen] = useState(false);
   const [targetRequestId, setTargetRequestId] = useState<number | ''>('');
   const [matchingBusy, setMatchingBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   /** So a picked example lands in a focused field, ready to edit or send. */
   const questionFieldRef = useRef<HTMLTextAreaElement | null>(null);
+
+  /**
+   * A suggestion goes in the field and stops there, whether it came from the examples or from
+   * under an answer. One rule rather than two: several of these start a run of paid screenings,
+   * and which ones should not be something the reader has to remember.
+   */
+  const suggest = useCallback((text: string) => {
+    setContent(text);
+    setExamplesOpen(false);
+    // After the commit, not during it. Focusing while React is still rendering loses the caret to
+    // whatever the browser focuses when the click finishes.
+    requestAnimationFrame(() => questionFieldRef.current?.focus());
+  }, []);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -811,11 +815,46 @@ const ChatAnalyzePage: React.FC = () => {
   // that size.
   useEffect(() => {
     listProjectRequests()
-      .then(list => setRequests(list.map(r => ({
-        id: Number(r.id),
-        label: [r.customerName, r.title].filter(Boolean).join(' — ').slice(0, 70)
-      })).filter(r => Number.isFinite(r.id))))
+      .then(list => {
+        setRequests(list.map(r => ({
+          id: Number(r.id),
+          label: [r.customerName, r.title].filter(Boolean).join(' — ').slice(0, 70)
+        })).filter(r => Number.isFinite(r.id)));
+        // The same rows the picker uses, so the examples cost no extra request.
+        setSubjects(prev => ({
+          ...prev,
+          customer: placeableCustomer(list.map(r => r.customerName ?? '').filter(Boolean))
+        }));
+      })
       .catch(() => setRequests([]));
+  }, []);
+
+  // The names and technologies the examples are written around. Two small reads, both optional:
+  // a failure leaves the list shorter rather than putting a consultant who is not here in front of
+  // the reader. Nothing here calls a model.
+  useEffect(() => {
+    listConsultantsWithCvPaged({ page: 0, size: 3 })
+      .then(page => setSubjects(prev => ({
+        ...prev,
+        consultants: (page.content ?? []).map(c => c.name).filter((n): n is string => !!n)
+      })))
+      .catch(() => { /* the examples that need a name are left out */ });
+
+    // Not the most documented ones. GIT and SQL sit at the top with 70 and 65 of 105 consultants,
+    // and "Hvem kan GIT og SQL?" returns most of the company, which teaches nothing about what the
+    // search is for. The first two at or below half the leader's count are still well documented
+    // and actually separate people: here REACT and KUBERNETES, at 35 and 32.
+    listSkillSummary({ page: 0, size: 40, sort: 'consultantCount,desc' })
+      .then(page => {
+        const ranked = (page.content ?? []).filter(s => s.name);
+        const ceiling = (ranked[0]?.consultantCount ?? 0) / 2;
+        const discriminating = ranked.filter(s => (s.consultantCount ?? 0) <= ceiling);
+        setSubjects(prev => ({
+          ...prev,
+          skills: (discriminating.length > 0 ? discriminating : ranked).slice(0, 2).map(s => s.name)
+        }));
+      })
+      .catch(() => { /* same */ });
   }, []);
 
   // Newest last, so the conversation reads top to bottom like every other chat. Optional call
@@ -1091,15 +1130,8 @@ const ChatAnalyzePage: React.FC = () => {
                 : 'Modellen svarer fra egen kunnskap. Ingen interne data hentes.'}
             </Typography>
             <PromptSuggestions
-              suggestions={scope === 'DATABASE' ? DATABASE_SUGGESTIONS : GENERAL_SUGGESTIONS}
-              onPick={text => {
-                // Filled, not sent. Some of these start a run of paid screenings, and the reader
-                // should see the question before it costs anything.
-                setContent(text);
-                // After the commit, not during it. Focusing while React is still rendering loses
-                // the caret to whatever the browser focuses when the click finishes.
-                requestAnimationFrame(() => questionFieldRef.current?.focus());
-              }}
+              suggestions={scope === 'DATABASE' ? databaseSuggestions(subjects) : GENERAL_SUGGESTIONS}
+              onPick={suggest}
             />
           </Box>
         ) : (
@@ -1113,6 +1145,7 @@ const ChatAnalyzePage: React.FC = () => {
                 selected={selected}
                 onToggleSelect={toggleSelected}
                 onAsk={ask}
+                onSuggest={suggest}
                 onPickAlternative={(messageId, alternativeId) => setMessages(prev => prev.map(m =>
                   m.id === messageId ? { ...m, pickedAlternativeId: alternativeId } : m))}
               />
@@ -1141,6 +1174,37 @@ const ChatAnalyzePage: React.FC = () => {
       )}
 
       <Paper elevation={2} sx={{ p: 2 }}>
+        {/*
+          The examples used to live in the empty state and nowhere else, so after the first answer
+          there was nothing left on screen saying what else the assistant could be asked. They stay
+          reachable here instead, folded away rather than gone.
+        */}
+        {messages.length > 0 && (
+          <Box sx={{ mb: examplesOpen ? 1.5 : 1 }}>
+            <Button
+              size="small"
+              startIcon={<AiIcon sx={{ fontSize: 16 }} />}
+              onClick={() => setExamplesOpen(open => !open)}
+              sx={{ textTransform: 'none' }}
+            >
+              {examplesOpen ? 'Skjul eksempler' : 'Eksempler'}
+            </Button>
+            {/*
+              unmountOnExit, so the folded examples are not in the page while they are invisible.
+              A Collapse keeps its children mounted by default, which left every example reachable
+              to a screen reader, and to anything else reading the page, as a second copy of text
+              that also appears under the answers.
+            */}
+            <Collapse in={examplesOpen} unmountOnExit>
+              <Box sx={{ mt: 1 }}>
+                <PromptSuggestions
+                  suggestions={scope === 'DATABASE' ? databaseSuggestions(subjects) : GENERAL_SUGGESTIONS}
+                  onPick={suggest}
+                />
+              </Box>
+            </Collapse>
+          </Box>
+        )}
         <TextField
           label="Spørsmål"
           inputRef={questionFieldRef}

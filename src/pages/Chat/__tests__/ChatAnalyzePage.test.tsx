@@ -11,8 +11,23 @@ vi.mock('../../../services/chatService', () => ({
   analyzeContent: vi.fn(),
   clearAnalyzeConversation: vi.fn().mockResolvedValue(undefined)
 }));
+// The examples are written around rows read from the database, so the page reads three small
+// lists at load. Every one of them is optional: a failure leaves the list shorter rather than
+// naming a consultant who is not there.
 vi.mock('../../../services/projectRequestsService', () => ({
-  listProjectRequests: vi.fn().mockResolvedValue([])
+  listProjectRequests: vi.fn().mockResolvedValue([
+    { id: 8, customerName: 'Skatteetaten', title: 'Rådgiver skatteprosessen' }
+  ])
+}));
+vi.mock('../../../services/consultantsService', () => ({
+  listConsultantsWithCvPaged: vi.fn().mockResolvedValue({
+    content: [{ name: 'Thomas Andersen' }, { name: 'Joachim Lous' }, { name: 'Einar Flobak' }]
+  })
+}));
+vi.mock('../../../services/skillsService', () => ({
+  listSkillSummary: vi.fn().mockResolvedValue({
+    content: [{ name: 'Kotlin', consultantCount: 40 }, { name: 'Kafka', consultantCount: 21 }]
+  })
 }));
 vi.mock('../../../api/matchingApi', () => ({
   runProjectMatching: vi.fn().mockResolvedValue(undefined)
@@ -378,15 +393,66 @@ describe('ChatAnalyzePage', () => {
     expect(mockedAnalyze).not.toHaveBeenCalled();
   });
 
-  /** Six to start with. Eleven at once is a search page, not a choice. */
-  it('holds the rest of the examples back behind a button', async () => {
+  /** The names in the examples are rows from this database, not names written into the source. */
+  it('writes the examples around consultants and customers that exist', async () => {
+    mockedListRequests.mockResolvedValue([
+      { id: 8, customerName: 'Skatteetaten', title: 'Rådgiver skatteprosessen' }
+    ] as never);
+
     render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
 
-    expect(screen.queryByText(/Hvem er tidligere vurdert mot Skatteetaten-avropet\?/)).not.toBeInTheDocument();
+    expect(await screen.findByText('Hvem kan Kotlin og Kafka?')).toBeInTheDocument();
+    expect(await screen.findByText('Hva krever Skatteetaten-avropet?')).toBeInTheDocument();
+    expect(await screen.findByText('Hva kan Thomas Andersen best?')).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Vis flere eksempler' }));
+  /** Six to start with. Eleven at once is a search page, not a choice. */
+  it('holds the rest of the examples back behind a button', async () => {
+    mockedListRequests.mockResolvedValue([
+      { id: 8, customerName: 'Skatteetaten', title: 'Rådgiver skatteprosessen' }
+    ] as never);
 
-    expect(screen.getByText(/Hvem er tidligere vurdert mot Skatteetaten-avropet\?/)).toBeInTheDocument();
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    // The button only exists once more examples have been built than are shown.
+    const showMore = await screen.findByRole('button', { name: 'Vis flere eksempler' });
+
+    expect(screen.queryByText(/Hvem er tidligere vurdert mot/)).not.toBeInTheDocument();
+
+    fireEvent.click(showMore);
+
+    expect(screen.getByText(/Hvem er tidligere vurdert mot/)).toBeInTheDocument();
+  });
+
+  /**
+   * The examples used to be in the empty state and nowhere else, so after the first answer nothing
+   * on screen said what else could be asked.
+   */
+  it('keeps the examples reachable once the conversation has started', async () => {
+    mockedAnalyze.mockResolvedValue(factualAnswer as never);
+
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    ask('Hva kan Thomas Andersen best?');
+    await screen.findByText(/sterkest på Kotlin/);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eksempler' }));
+
+    expect(await screen.findByText('Hvilke avrop har vi?')).toBeInTheDocument();
+  });
+
+  /** Where a reader usually goes next, read off the answer's typed sources rather than its prose. */
+  it('offers follow-ups built from the answer’s own sources', async () => {
+    mockedAnalyze.mockResolvedValue(factualAnswer as never);
+
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    ask('Hva kan Thomas Andersen best?');
+    await screen.findByText(/sterkest på Kotlin/);
+
+    // The answer cited Thomas Andersen, so the next questions are about him.
+    fireEvent.click(await screen.findByText('Hvilke avrop passer Thomas Andersen til?'));
+
+    expect(screen.getByLabelText('Spørsmål')).toHaveValue('Hvilke avrop passer Thomas Andersen til?');
+    // Filled, not sent: the first call was the question, and there is no second.
+    expect(mockedAnalyze).toHaveBeenCalledTimes(1);
   });
 
   it('renders no table on a turn that produced no comparison', async () => {
