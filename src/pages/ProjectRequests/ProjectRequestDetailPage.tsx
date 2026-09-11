@@ -89,9 +89,18 @@ const ProjectRequestDetailPage: React.FC = () => {
             </>
           )}
 
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
-            <BoxedChips title="Må-krav" rows={dto.mustRequirements ?? []} />
-            <BoxedChips title="Bør-krav" rows={dto.shouldRequirements ?? []} />
+          {/*
+            alignItems flex-start so a short list does not stretch to the height of a long one,
+            and see RequirementList for why each column can shrink at all.
+          */}
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            alignItems="flex-start"
+            sx={{ mb: 2 }}
+          >
+            <RequirementList title="Må-krav" rows={dto.mustRequirements ?? []} />
+            <RequirementList title="Bør-krav" rows={dto.shouldRequirements ?? []} />
           </Stack>
 
           <Typography variant="h6" sx={{ mb: 1 }}>AI-forslag</Typography>
@@ -127,24 +136,61 @@ const ProjectRequestDetailPage: React.FC = () => {
   );
 };
 
-function BoxedChips({ title, rows }: { title: string; rows: ProjectRequirementDto[] }) {
+/**
+ * The requirements, in full.
+ *
+ * They used to be chips. A chip is a short token and does not wrap, so a requirement reading "Det
+ * stilles krav til bakgrunnssjekk av kandidaten: verifisering av høyeste utdannelse, siste 10 års
+ * erfaring og ID-kontroll" made its column as wide as the sentence. With flex: 1 and no minWidth,
+ * a flex item may not shrink below its content, so the Må-krav column grew past its half of the
+ * row and pushed Bør-krav off the right edge of the window: on request 8 it started 88 pixels
+ * outside it, and six requirements looked like none.
+ *
+ * The details also sat in a separate list underneath, so a requirement and its own elaboration were
+ * two items with nothing tying them together. They are one row here.
+ *
+ * appliesTo is shown for the supplier's requirements only. The consultant's are what a CV can
+ * answer and what a score is about; the supplier's are submission deadlines and framework
+ * agreements, and a reader counting competence demands should not have to read all of them to find
+ * out which is which. Marking only one side keeps the common case quiet.
+ */
+function RequirementList({ title, rows }: { title: string; rows: ProjectRequirementDto[] }) {
   return (
-    <Paper sx={{ p: 1, flex: 1 }}>
-      <Typography variant="subtitle1" gutterBottom>{title}</Typography>
-      {rows && rows.length > 0 ? (
-        <Stack spacing={1}>
-          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-            {rows.map((r, i) => (
-              <Chip key={i} label={r.name} size="small" />
-            ))}
-          </Stack>
-          <Box component="ul" sx={{ pl: 3, m: 0 }}>
-            {rows.filter(r => r.details).map((r, i) => (
-              <li key={i}>
-                <Typography variant="body2" color="text.secondary">{r.details}</Typography>
-              </li>
-            ))}
-          </Box>
+    <Paper sx={{ p: 1.5, flex: 1, minWidth: 0, alignSelf: 'stretch' }}>
+      <Typography variant="subtitle1" gutterBottom>
+        {title}{rows.length > 0 && ` (${rows.length})`}
+      </Typography>
+      {rows.length > 0 ? (
+        <Stack component="ul" spacing={1.25} sx={{ listStyle: 'none', pl: 0, m: 0 }}>
+          {rows.map((r, i) => (
+            <Box component="li" key={i}>
+              <Typography
+                variant="body2"
+                // anywhere rather than break-word: a reference like "20250001)" is one long token
+                // and would otherwise widen the column on its own.
+                sx={{ overflowWrap: 'anywhere' }}
+              >
+                {r.name}
+                {r.appliesTo === 'SUPPLIER' && (
+                  <Chip
+                    label="Leverandør"
+                    size="small"
+                    variant="outlined"
+                    sx={{ ml: 0.75, height: 18, fontSize: '0.65rem' }}
+                  />
+                )}
+              </Typography>
+              {r.details && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 0.25, overflowWrap: 'anywhere' }}
+                >
+                  {r.details}
+                </Typography>
+              )}
+            </Box>
+          ))}
         </Stack>
       ) : (
         <Typography variant="body2" color="text.secondary">Ingen krav</Typography>

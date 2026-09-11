@@ -4,6 +4,7 @@ import type {
   PagedProjectRequestResponseDto,
   CreateProjectRequestDto,
   ProjectRequestDto,
+  ProjectRequirementDto,
   AISuggestionDto,
 } from '../types/api';
 
@@ -14,18 +15,24 @@ type LegacyProjectRequestDto = ProjectRequestDto & {
   originalFilename?: string;
   uploadedAt?: string;
   deadlineDate?: string;
-  mustRequirements?: Array<{ name?: string; details?: string }>;
-  shouldRequirements?: Array<{ name?: string; details?: string }>;
+  // Partial of the generated row rather than a shape of its own. Spelling the fields out here
+  // once cost the appliesTo flag: the normaliser below rebuilt each row from the fields this type
+  // knew about, the flag was not one of them, and it was dropped between the API and the screen
+  // without tsc having anything to object to.
+  mustRequirements?: Array<Partial<ProjectRequirementDto>>;
+  shouldRequirements?: Array<Partial<ProjectRequirementDto>>;
 };
 
 function splitRequirements(requiredSkills: string[] = []) {
-  const mustRequirements: Array<{ name: string; details?: string }> = [];
-  const shouldRequirements: Array<{ name: string; details?: string }> = [];
+  const mustRequirements: ProjectRequirementDto[] = [];
+  const shouldRequirements: ProjectRequirementDto[] = [];
 
   requiredSkills.forEach((entry) => {
     const text = (entry ?? '').trim();
     if (!text) return;
-    const req = { name: text, details: '' };
+    // The legacy shape is a list of strings and says nothing about who has to satisfy them, which
+    // is the same position rows extracted before the distinction existed are in.
+    const req: ProjectRequirementDto = { name: text, details: '', appliesTo: 'CONSULTANT' as const };
     if (/\bbør\b/i.test(text) && !/\bmå\b/i.test(text)) {
       shouldRequirements.push(req);
     } else {
@@ -51,12 +58,17 @@ function deriveTitle(dto: LegacyProjectRequestDto): string {
 }
 
 function normalizeProjectRequestResponse(dto: LegacyProjectRequestDto): ProjectRequestResponseDto {
-  const mustFromApi = (dto.mustRequirements ?? [])
-    .filter((r): r is { name: string; details?: string } => typeof r?.name === 'string' && r.name.trim().length > 0)
-    .map((r) => ({ name: r.name.trim(), details: r.details }));
-  const shouldFromApi = (dto.shouldRequirements ?? [])
-    .filter((r): r is { name: string; details?: string } => typeof r?.name === 'string' && r.name.trim().length > 0)
-    .map((r) => ({ name: r.name.trim(), details: r.details }));
+  const named = (rows: Array<Partial<ProjectRequirementDto>>): ProjectRequirementDto[] => rows
+    .filter((r) => typeof r?.name === 'string' && r.name.trim().length > 0)
+    .map((r) => ({
+      ...r,
+      name: r.name!.trim(),
+      // A row from a backend that predates the distinction is the consultant's, which is how it
+      // was treated before there was anything else to call it.
+      appliesTo: r.appliesTo ?? 'CONSULTANT'
+    }));
+  const mustFromApi = named(dto.mustRequirements ?? []);
+  const shouldFromApi = named(dto.shouldRequirements ?? []);
   const fromRequiredSkills = splitRequirements(dto.requiredSkills ?? []);
 
   return {
