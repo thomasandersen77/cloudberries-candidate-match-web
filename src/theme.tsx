@@ -22,6 +22,8 @@ type BrandPalette = {
     tableHead: string;
     border: string;
     surfaceMuted: string;
+    /** The brand colour as foreground. On white that is the brand colour itself. */
+    primaryText: string;
   };
   dark: {
     text: string;
@@ -32,6 +34,15 @@ type BrandPalette = {
     tableHead: string;
     border: string;
     surfaceMuted: string;
+    /**
+     * The brand colour as foreground on the dark ground.
+     *
+     * A brand colour is chosen against white, and on a near-black ground a dark one stops being
+     * legible: Cloudberries' #0056B3 came out at 2.9 against the background, under the 4.5 that
+     * small text needs, which is why the Superbruker link was hard to find. Filled buttons keep
+     * the brand colour — this is only for text and links.
+     */
+    primaryText: string;
   };
 };
 
@@ -52,16 +63,23 @@ export const palettes: Record<BrandTheme, BrandPalette> = {
       tableHead: 'rgba(250, 250, 248, 0.98)',
       border: '#ECE7E1',
       surfaceMuted: '#F5F3EF',
+      primaryText: '#F26A21',
     },
     dark: {
       text: '#E6E6E6',
       textSecondary: '#B0B3B8',
-      bg: '#0B0B0C',
-      paper: '#111214',
-      divider: '#2A2B2E',
-      tableHead: '#16181B',
-      border: '#1F2023',
-      surfaceMuted: '#16181B',
+      // A card has to look raised. It was #111214 on #0B0B0C, a contrast of 1.05 — the same ratio
+      // the light mode has between its card and its ground, and that is the trap: near black the
+      // eye reads almost nothing from a ratio that is plainly visible near white. The ground went
+      // down and the surface came up, to 1.26.
+      bg: '#050506',
+      paper: '#1E2126',
+      divider: '#34373E',
+      tableHead: '#262A30',
+      border: '#34373E',
+      surfaceMuted: '#262A30',
+      // The orange reads on its own dark ground at 6.7, so it stays itself.
+      primaryText: '#F26A21',
     },
   },
   soprasteria: {
@@ -80,16 +98,22 @@ export const palettes: Record<BrandTheme, BrandPalette> = {
       tableHead: 'rgba(248, 249, 250, 0.98)',
       border: '#DDE2E7',
       surfaceMuted: '#EEF1F4',
+      primaryText: '#0056B3',
     },
     dark: {
       text: '#E9EDF2',
       textSecondary: '#AAB4C0',
-      bg: '#0F1318',
-      paper: '#171D24',
-      divider: '#2A323B',
-      tableHead: '#1C242D',
-      border: '#2A323B',
-      surfaceMuted: '#1C242D',
+      // Same move as the other brand: 1.10 became 1.33.
+      bg: '#090D11',
+      paper: '#212933',
+      divider: '#39434F',
+      tableHead: '#2A333E',
+      border: '#39434F',
+      surfaceMuted: '#2A333E',
+      // #0056B3 is a dark blue picked against white, and on this ground it measures 2.8 — under
+      // the 4.5 small text needs, and 2.1 on a card. Lightened to 7.4 and 5.6. Filled buttons keep
+      // the brand blue, where it is the background and the white on it is fine.
+      primaryText: '#5BA3F0',
     },
   },
 };
@@ -255,6 +279,14 @@ export function createAppTheme(mode: ColorMode, brandTheme: BrandTheme): Theme {
               backgroundColor: alpha(brand.primary, isDark ? 0.1 : 0.08),
             },
           },
+          /*
+            A text button is the brand colour on the ground rather than behind white, so on a dark
+            ground a dark brand colour stops being legible. Cloudberries' blue measured 2.9 against
+            the background, below the 4.5 small text needs, which is what made the Superbruker link
+            hard to find. Filled buttons are untouched: there the brand colour is the background and
+            the white on it is fine.
+          */
+          textPrimary: isDark ? { color: t.primaryText } : undefined,
         },
       },
       MuiTextField: {
