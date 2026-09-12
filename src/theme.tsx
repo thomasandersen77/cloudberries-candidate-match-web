@@ -388,14 +388,30 @@ export function useColorMode() {
 const MODE_STORAGE_KEY = 'color-mode';
 const BRAND_STORAGE_KEY = 'brand-theme';
 
+/**
+ * The remembered choice, or null when there is nowhere to remember it.
+ *
+ * The write was already guarded; the read was not, and it is the one that runs during render. A
+ * browser with site data blocked, and a test environment without a Storage implementation, both
+ * make window.localStorage.getItem throw, and a throw here takes the whole application down before
+ * anything is painted. A forgotten preference is the right way to fail.
+ */
+function remembered(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 export const ColorModeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
   const [mode, setMode] = React.useState<ColorMode>(() => {
-    const saved = (typeof window !== 'undefined' && window.localStorage.getItem(MODE_STORAGE_KEY)) as ColorMode | null;
+    const saved = remembered(MODE_STORAGE_KEY) as ColorMode | null;
     return saved ?? (prefersDark ? 'dark' : 'light');
   });
   const [brandTheme, setBrandTheme] = React.useState<BrandTheme>(() => {
-    const saved = (typeof window !== 'undefined' && window.localStorage.getItem(BRAND_STORAGE_KEY)) as BrandTheme | null;
+    const saved = remembered(BRAND_STORAGE_KEY) as BrandTheme | null;
     return saved ?? 'soprasteria';
   });
 

@@ -1,6 +1,7 @@
 import { Box } from '@mui/material';
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
+import SuperuserPage from './pages/SuperuserPage';
 import ConsultantsListPage from './pages/Consultants/ConsultantsListPage';
 import ConsultantDetailPage from './pages/Consultants/ConsultantDetailPage';
 import CvViewPage from './pages/CV/CvViewPage';
@@ -27,6 +28,7 @@ function App() {
       <Box sx={{ px: 2, py: 2 }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/superbruker" element={<SuperuserPage />} />
           <Route path="/consultants" element={<ConsultantsListPage />} />
           <Route path="/consultants/:userId" element={<ConsultantDetailPage />} />
           <Route path="/cv/:userId" element={<CvViewPage />} />

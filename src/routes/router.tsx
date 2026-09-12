@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
 import AppLayout from './AppLayout';
 import HomePage from '../pages/HomePage';
+import SuperuserPage from '../pages/SuperuserPage';
 import ConsultantsListPage from '../pages/Consultants/ConsultantsListPage';
 import ConsultantDetailPage from '../pages/Consultants/ConsultantDetailPage';
 import CvViewPage from '../pages/CV/CvViewPage';
@@ -25,6 +26,7 @@ const routes: RouteObject[] = [
     children: [
       { path: '/health', element: <HealthPage /> },
       { path: '/', element: <HomePage /> },
+      { path: '/superbruker', element: <SuperuserPage /> },
       { path: '/consultants', element: <ConsultantsListPage /> },
       { path: '/consultants/:userId', element: <ConsultantDetailPage /> },
       { path: '/cv/:userId', element: <CvViewPage /> },

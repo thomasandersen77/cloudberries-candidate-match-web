@@ -1,32 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
 import { Box, Grid, Card, CardContent, Typography, Button, Stack, Chip } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
-import PsychologyOutlinedIcon from '@mui/icons-material/PsychologyOutlined';
-import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import HubOutlinedIcon from '@mui/icons-material/HubOutlined';
-import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
-import HealthAndSafetyOutlinedIcon from '@mui/icons-material/HealthAndSafetyOutlined';
-import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import { useColorMode } from '../theme';
 import { BRANDING } from '../config/branding';
-
-const iconFor = (path: string) => {
-  if (path.includes('consultants')) return <PeopleOutlineIcon sx={{ fontSize: 22 }} />;
-  if (path.includes('skills')) return <PsychologyOutlinedIcon sx={{ fontSize: 22 }} />;
-  if (path.includes('cv-score')) return <AssessmentOutlinedIcon sx={{ fontSize: 22 }} />;
-  if (path.includes('matches')) return <HubOutlinedIcon sx={{ fontSize: 22 }} />;
-  if (path.includes('embeddings')) return <HubOutlinedIcon sx={{ fontSize: 22 }} />;
-  if (path.includes('project-requests')) return <UploadFileOutlinedIcon sx={{ fontSize: 22 }} />;
-  if (path.includes('chat')) return <ChatOutlinedIcon sx={{ fontSize: 26 }} />;
-  if (path.includes('health')) return <HealthAndSafetyOutlinedIcon sx={{ fontSize: 22 }} />;
-  if (path.includes('stats')) return <BarChartOutlinedIcon sx={{ fontSize: 22 }} />;
-  if (path.includes('semantic')) return <SearchOutlinedIcon sx={{ fontSize: 22 }} />;
-  return <SearchOutlinedIcon sx={{ fontSize: 22 }} />;
-};
+import { listConsultantsWithCvPaged } from '../services/consultantsService';
+import { EVERYDAY_MODULES, SUPERUSER_MODULES } from './modules';
+import ModuleCard from './ModuleCard';
 
 const HomePage: React.FC = () => {
   const theme = useTheme();
@@ -35,31 +16,32 @@ const HomePage: React.FC = () => {
   const brand = BRANDING[brandTheme] ?? BRANDING.cloudberries;
   const heroBrandLabel = `${brand.displayName} Candidate Match`;
 
-  // The assistant is the way in for most questions, so it leads and takes the full width. It used
-  // to be the seventh card, titled "Chat Analyze" and described as "Analyser tekst med AI", which
-  // says nothing about it answering from the consultant and request data.
-  const links = [
-    {
-      to: '/chat',
-      title: 'Assistent',
-      desc: 'Spør om konsulenter, avrop og tidligere vurderinger. Svarene bygger på databasen og viser kildene sine. Kan også svare generelt, uten interne data.',
-      featured: true,
-    },
-    { to: '/consultants', title: 'Konsulenter', desc: 'Se liste over konsulenter og CV-kvalitet' },
-    { to: '/skills', title: 'Ferdigheter', desc: 'Oversikt over ferdigheter og tilknyttede konsulenter' },
-    { to: '/cv-score', title: 'CV-Score', desc: 'Analyser og sammenlign kandidat-CV-er' },
-    { to: '/matches', title: 'Matcher', desc: 'Finn kandidatmatcher mot prosjekter' },
-    { to: '/embeddings', title: 'Embeddings', desc: 'Kjør embedding-oppgaver' },
-    { to: '/project-requests/upload', title: 'Last opp kundeforspørsel', desc: 'PDF, AI-analyse og lagring i databasen' },
-    { to: '/health', title: 'Helse', desc: 'Systemstatus og tilgjengelighet' },
-    { to: '/stats', title: 'Statistikk', desc: 'Programmeringsspråk og roller' },
-    { to: '/search', title: 'Søk', desc: 'Søk i konsulenter og kompetanse' },
-  ];
+  const links = EVERYDAY_MODULES;
+
+  /**
+   * The size of the database, read from it.
+   *
+   * It said "111+" for as long as it took somebody to notice, while the base held 118. A number
+   * written into a page is a number that is wrong the first time anybody syncs, and this one is the
+   * first thing a reader sees. Null until it loads, and null if the call fails: a dash is honest
+   * where a stale figure is not.
+   */
+  const [consultantCount, setConsultantCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    listConsultantsWithCvPaged({ page: 0, size: 1, onlyActiveCv: true })
+      .then(page => setConsultantCount(page.totalElements ?? null))
+      .catch(() => setConsultantCount(null));
+  }, []);
 
   const kpis = [
-    { label: 'Konsulenter', value: '111+', helper: 'Live kandidatbase' },
-    { label: 'Scoring', value: 'AI-first', helper: 'CV, match og kvalitet' },
-    { label: 'Arbeidsflyt', value: 'End-to-end', helper: 'Søk til prosjektforslag' },
+    {
+      label: 'Konsulenter',
+      value: consultantCount === null ? '–' : String(consultantCount),
+      helper: 'Med aktiv CV i basen'
+    },
+    { label: 'Assistent', value: 'Svar med kilder', helper: 'Siterer CV-en eller avropet' },
+    { label: 'Arbeidsflyt', value: 'End-to-end', helper: 'Fra søk til prosjektforslag' },
   ];
 
   return (
@@ -91,11 +73,14 @@ const HomePage: React.FC = () => {
               sx={{ width: 'fit-content', fontWeight: 600, bgcolor: alpha(theme.palette.primary.main, 0.12) }}
             />
             <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.03em', maxWidth: 920 }}>
-              Premium arbeidsflate for kompetansesøk, kvalitetsvurdering og AI-drevet matching
+              Intelligent arbeidsflate for kompetansesøk, kvalitetsvurdering og AI-drevet matching
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.03rem', lineHeight: 1.68, maxWidth: 800 }}>
-              Bygget for moderne konsulenthus: rask innsikt i kompetanse, bedre match mot kundeforspørsler og tryggere beslutninger
-              basert på data, kontekst og kvalitetssikret AI.
+              Spør assistenten på vanlig norsk: hvem kan Java og Kotlin, hva krever avropet fra
+              Skatteetaten, hvem passer best til det. Søket rangerer på dokumentert erfaring i
+              CV-ene, kravene leses ut av kundeforespørselen, og hver påstand viser hvilken CV eller
+              hvilket avrop den kommer fra. Står det ikke i basen, sier assistenten det i stedet for
+              å gjette.
             </Typography>
           </Stack>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -137,77 +122,27 @@ const HomePage: React.FC = () => {
 
       <Grid container spacing={{ xs: 2, md: 2.5 }}>
         {links.map((l) => (
-          <Grid item xs={12} sm={l.featured ? 12 : 6} md={l.featured ? 12 : 4} key={l.to}>
-            <Card
-              elevation={0}
-              sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-                border: `1px solid ${l.featured ? alpha(theme.palette.primary.main, 0.45) : theme.palette.divider}`,
-                background: l.featured
-                  ? `linear-gradient(115deg, ${alpha(theme.palette.primary.main, 0.14)} 0%, transparent 65%)`
-                  : isDark
-                    ? `linear-gradient(180deg, ${alpha('#fff', 0.015)} 0%, transparent 100%)`
-                    : `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.035)} 0%, transparent 100%)`,
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: isDark
-                    ? '0 12px 40px rgba(0,0,0,0.35)'
-                    : '0 12px 40px rgba(17,17,17,0.08)',
-                  borderColor: alpha(theme.palette.primary.main, 0.35),
-                },
-              }}
-            >
-              <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ pr: 1 }}>
-                    <Typography
-                      variant={l.featured ? 'h5' : 'h6'}
-                      sx={{ fontWeight: l.featured ? 700 : 600, letterSpacing: '-0.02em' }}
-                    >
-                      {l.title}
-                    </Typography>
-                    {l.featured && <Chip label="Start her" size="small" color="primary" />}
-                  </Stack>
-                  <Box
-                    sx={{
-                      color: 'text.secondary',
-                      opacity: 0.85,
-                      flexShrink: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      bgcolor: isDark ? alpha('#fff', 0.06) : alpha('#111111', 0.04),
-                    }}
-                    aria-hidden
-                  >
-                    {iconFor(l.to)}
-                  </Box>
-                </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flex: 1, lineHeight: 1.6 }}>
-                  {l.desc}
-                </Typography>
-                <Button
-                  component={RouterLink}
-                  to={l.to}
-                  variant="contained"
-                  color="primary"
-                  fullWidth={!l.featured}
-                  size={l.featured ? 'large' : 'medium'}
-                  sx={{ mt: 'auto', alignSelf: l.featured ? 'flex-start' : undefined, px: l.featured ? 4 : undefined }}
-                >
-                  {l.featured ? 'Åpne assistenten' : `Gå til ${l.title}`}
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
+          <ModuleCard key={l.to} link={l} />
         ))}
       </Grid>
+
+      {/*
+        Nothing is hidden, only moved. The modules here are batch jobs and narrower ways into data
+        the cards above already show, and listing them as equals said they were equally often the
+        right thing to click.
+      */}
+      <Stack direction="row" justifyContent="center" sx={{ mt: 4 }}>
+        <Button
+          component={RouterLink}
+          to="/superbruker"
+          variant="text"
+          size="small"
+          startIcon={<TuneOutlinedIcon sx={{ fontSize: 18 }} />}
+          sx={{ textTransform: 'none' }}
+        >
+          Superbruker: {SUPERUSER_MODULES.map(m => m.title).join(', ')}
+        </Button>
+      </Stack>
     </Box>
   );
 };
