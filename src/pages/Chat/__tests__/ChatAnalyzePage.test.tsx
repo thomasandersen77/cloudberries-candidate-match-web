@@ -19,6 +19,14 @@ vi.mock('../../../services/projectRequestsService', () => ({
     { id: 8, customerName: 'Skatteetaten', title: 'Rådgiver skatteprosessen' }
   ])
 }));
+// The name in an example is looked up, not assumed, so the page asks whether this database has
+// it. Here it does, and the ranking below deliberately does not return it: the examples must name
+// him because he was preferred, not because the ranking happened to put him first.
+vi.mock('../../../services/consultantsService', () => ({
+  searchConsultantsRelational: vi.fn().mockResolvedValue({
+    content: [{ userId: 'user-thomas', name: 'Thomas Andersen' }]
+  })
+}));
 vi.mock('../../../services/skillsService', () => ({
   listSkillSummary: vi.fn().mockResolvedValue({
     content: [{ name: 'Kotlin', consultantCount: 40 }, { name: 'Kafka', consultantCount: 21 }]
@@ -26,7 +34,6 @@ vi.mock('../../../services/skillsService', () => ({
   // Ranked on the first technology and with an active CV, so an example never names somebody
   // there is nothing to score.
   listTopRankedConsultantsBySkill: vi.fn().mockResolvedValue([
-    { id: 'user-thomas', name: 'Thomas Andersen' },
     { id: 'user-joachim', name: 'Joachim Lous' },
     { id: 'user-einar', name: 'Einar Flobak' }
   ])

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { databaseSuggestions, followUpSuggestions, placeableCustomer } from './chatSuggestions';
+import {
+  databaseSuggestions, exampleConsultants, followUpSuggestions, placeableCustomer
+} from './chatSuggestions';
 
 /**
  * The examples and the follow-ups, as data.
@@ -46,6 +48,28 @@ describe('chatSuggestions', () => {
     it('takes the first word when the whole name is a department path', () => {
       expect(placeableCustomer(['Skatteetaten, Divisjon for utvikling og IT som er langt']))
         .toBe('Skatteetaten');
+    });
+  });
+
+  describe('exampleConsultants', () => {
+    /**
+     * A name in an example is personal data shown to people outside the company, so the one the
+     * examples name is chosen rather than ranked into place.
+     */
+    it('puts the preferred person first', () => {
+      expect(exampleConsultants('Thomas Andersen', ['Einar Flobak', 'Joachim Lous']))
+        .toEqual(['Thomas Andersen', 'Einar Flobak', 'Joachim Lous']);
+    });
+
+    it('does not name the same person twice when the ranking already found them', () => {
+      expect(exampleConsultants('Thomas Andersen', ['Einar Flobak', 'Thomas Andersen']))
+        .toEqual(['Thomas Andersen', 'Einar Flobak']);
+    });
+
+    /** Another Flowcase tenant has its own people, and none of them is this one. */
+    it('falls back to the ranking when the preferred person is not in this database', () => {
+      expect(exampleConsultants(undefined, ['Einar Flobak', 'Joachim Lous']))
+        .toEqual(['Einar Flobak', 'Joachim Lous']);
     });
   });
 

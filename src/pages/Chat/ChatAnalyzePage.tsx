@@ -26,9 +26,11 @@ import remarkGfm from 'remark-gfm';
 import { analyzeContent, clearAnalyzeConversation } from '../../services/chatService';
 import { listProjectRequests } from '../../services/projectRequestsService';
 import { listSkillSummary, listTopRankedConsultantsBySkill } from '../../services/skillsService';
+import { searchConsultantsRelational } from '../../services/consultantsService';
 import {
-  databaseSuggestions, followUpSuggestions, placeableCustomer,
-  GENERAL_SUGGESTIONS, type PromptSuggestion, type SuggestionSubjects
+  databaseSuggestions, exampleConsultants, followUpSuggestions, placeableCustomer,
+  GENERAL_SUGGESTIONS, PREFERRED_EXAMPLE_CONSULTANT,
+  type PromptSuggestion, type SuggestionSubjects
 } from './chatSuggestions';
 import { runProjectMatching } from '../../api/matchingApi';
 import { Link as RouterLink } from 'react-router-dom';
@@ -845,13 +847,26 @@ const ChatAnalyzePage: React.FC = () => {
         setSubjects(prev => ({ ...prev, skills }));
         if (!skills[0]) return;
 
-        // The people to write the examples around are the ones ranked on that first technology,
-        // with an active CV. Taking any three consultants put the managing director in an example
-        // asking which requests he fits, and produced a comparison that could score one of the
-        // three it named, because the other two have no CV to score.
-        return listTopRankedConsultantsBySkill(skills[0], 3).then(ranked => setSubjects(prev => ({
+        // The rest of the names are the ones ranked on that first technology, with an active CV.
+        // Taking any three consultants put the managing director in an example asking which
+        // requests he fits, and produced a comparison that could score one of the three it named,
+        // because the other two have no CV to score.
+        return Promise.all([
+          listTopRankedConsultantsBySkill(skills[0], 3)
+            .then(ranked => ranked.map(c => c.name).filter((n): n is string => !!n))
+            .catch(() => []),
+          // Looked up rather than assumed: the name only goes in an example if this database has
+          // it. See PREFERRED_EXAMPLE_CONSULTANT for why there is a preferred one at all.
+          searchConsultantsRelational({
+            request: { name: PREFERRED_EXAMPLE_CONSULTANT, onlyActiveCv: true },
+            page: 0,
+            size: 1
+          })
+            .then(page => page.content?.[0]?.name)
+            .catch(() => undefined)
+        ]).then(([ranked, preferred]) => setSubjects(prev => ({
           ...prev,
-          consultants: ranked.map(c => c.name).filter((n): n is string => !!n)
+          consultants: exampleConsultants(preferred, ranked)
         })));
       })
       .catch(() => { /* the examples that need a name are left out */ });

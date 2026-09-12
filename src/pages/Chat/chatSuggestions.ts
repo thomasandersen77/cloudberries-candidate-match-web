@@ -118,6 +118,37 @@ export function databaseSuggestions({ consultants, customer, skills }: Suggestio
   return suggestions;
 }
 
+/**
+ * The person the examples are written around, when the database has them.
+ *
+ * Two reasons, and only one of them is about privacy. An example is the first thing an outside
+ * tester sees, and a name in it is personal data, so the one that leads is a name somebody chose to
+ * put there rather than one a ranking happened to surface. And an answer is only checkable by
+ * somebody who knows what the right answer is: the developer can read "Hva kan X best?" against a
+ * CV he wrote himself and tell whether the assistant got it right.
+ *
+ * The rest of the names still come from the ranking, and the other consultants are not hidden. This
+ * decides who leads, not who may appear.
+ *
+ * Set per deployment, because this runs against whichever Flowcase tenant its API key and subdomain
+ * point at, and their consultants are not ours. Verified against the database before it is used, so
+ * a tenant that leaves it alone falls back to the ranking rather than naming somebody who is not
+ * there.
+ */
+export const PREFERRED_EXAMPLE_CONSULTANT: string =
+  import.meta.env.VITE_EXAMPLE_CONSULTANT || 'Thomas Andersen';
+
+/**
+ * The preferred person first, then the ranked ones, without repeating anybody.
+ *
+ * Order is what the examples read off: the first name is the one asked about alone, and the first
+ * three are the comparison.
+ */
+export function exampleConsultants(preferred: string | undefined, ranked: string[]): string[] {
+  const rest = ranked.filter(name => name !== preferred);
+  return preferred ? [preferred, ...rest] : rest;
+}
+
 export const GENERAL_SUGGESTIONS: PromptSuggestion[] = [
   { text: 'Hva er Kafka?' },
   { text: 'Forklar forskjellen på MÅ- og BØR-krav' },
