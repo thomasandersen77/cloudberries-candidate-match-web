@@ -1175,11 +1175,26 @@ const ChatAnalyzePage: React.FC = () => {
             </Tooltip>
           </Stack>
           <Collapse in={groundingNoteOpen}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, pl: 3.5 }}>
-              {scope === 'DATABASE'
-                ? 'Et svar siterer det det bygger på, som K1 for en konsulent og A1 for et avrop. Står noe ikke i grunnlaget, sier assistenten det i stedet for å gjette.'
-                : 'Ingenting fra konsulentbasen eller avropene sendes med, og svaret kan ikke siteres tilbake til en kilde her.'}
-            </Typography>
+            <Stack spacing={0.75} sx={{ mt: 0.5, pl: 3.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                {scope === 'DATABASE'
+                  ? 'Et svar siterer det det bygger på, som K1 for en konsulent og A1 for et avrop. Står noe ikke i grunnlaget, sier assistenten det i stedet for å gjette.'
+                  : 'Ingenting fra konsulentbasen eller avropene sendes med, og svaret kan ikke siteres tilbake til en kilde her.'}
+              </Typography>
+              {/*
+                Said here because it is not visible anywhere else. A search answers with a table of
+                years, and a reader who is not told that CV quality is in the ranking will read the
+                order as a ranking on years alone, and be puzzled the first time it is not.
+              */}
+              {scope === 'DATABASE' && (
+                <Typography variant="caption" color="text.secondary">
+                  Et ferdighetssøk, som «Hvem kan Java og Kotlin?», rangerer på dokumentert varighet
+                  i CV-en. CV-kvalitet teller en femtedel: den måler hvor mye av konsulenten som
+                  faktisk står på siden, rolle, effekt og hva prosjektet gikk ut på. En tynn CV
+                  havner lenger ned enn kompetansen skulle tilsi, fordi CV-en er det kunden leser.
+                </Typography>
+              )}
+            </Stack>
           </Collapse>
         </Box>
 
