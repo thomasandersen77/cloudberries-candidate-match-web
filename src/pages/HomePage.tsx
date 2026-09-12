@@ -123,18 +123,14 @@ const HomePage: React.FC = () => {
 
       <Grid container spacing={{ xs: 2, md: 2.5 }}>
         {links.filter(l => l.featured).map((l) => (
-          <ModuleCard key={l.to} link={l} />
+          // Inside the card, because it is the card's own claim it explains.
+          <ModuleCard key={l.to} link={l}>
+            <HowTheAssistantAnswers />
+          </ModuleCard>
         ))}
       </Grid>
 
-      {/*
-        Directly under the assistant, because it is the assistant's own claim it explains: the card
-        says the answers are built on the database, and this is the part that says why that is more
-        than a promise.
-      */}
-      <HowTheAssistantAnswers />
-
-      <Grid container spacing={{ xs: 2, md: 2.5 }} sx={{ mt: 0.5 }}>
+      <Grid container spacing={{ xs: 2, md: 2.5 }} sx={{ mt: { xs: 2, md: 3 } }}>
         {links.filter(l => !l.featured).map((l) => (
           <ModuleCard key={l.to} link={l} />
         ))}

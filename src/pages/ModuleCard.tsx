@@ -33,7 +33,7 @@ const iconFor = (path: string) => {
  * Lifted out of the dashboard when the second page appeared. Copying forty lines of card markup is
  * how two lists of the same thing start looking like two different products.
  */
-const ModuleCard: React.FC<{ link: ModuleLink }> = ({ link: l }) => {
+const ModuleCard: React.FC<React.PropsWithChildren<{ link: ModuleLink }>> = ({ link: l, children }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
@@ -90,9 +90,19 @@ const ModuleCard: React.FC<{ link: ModuleLink }> = ({ link: l }) => {
                   {iconFor(l.to)}
                 </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flex: 1, lineHeight: 1.6 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: children ? 2.5 : 3, flex: children ? 'none' : 1, lineHeight: 1.6 }}
+              >
                 {l.desc}
               </Typography>
+              {/*
+                Anything a card wants to say about itself before the way in. Only the assistant uses
+                it, and it sat in a Paper of its own underneath: two boxes, no gap between them, and
+                nothing saying the second belonged to the first.
+              */}
+              {children}
               <Button
                 component={RouterLink}
                 to={l.to}

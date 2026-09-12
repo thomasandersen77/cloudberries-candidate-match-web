@@ -69,6 +69,10 @@ describe('HomePage', () => {
     expect(screen.getByText(/AI-en får bare det vi fant/)).toBeInTheDocument();
     // The acronym explains nothing to somebody deciding whether to trust an answer.
     expect(screen.queryByText(/RAG|retrieval/i)).not.toBeInTheDocument();
+
+    // Inside the assistant's own card, not a box beside it: it explains that card's claim.
+    const assistantCard = screen.getByRole('heading', { name: 'Assistent' }).closest('.MuiCard-root');
+    expect(assistantCard).toHaveTextContent('Hvordan assistenten kommer fram til svaret');
   });
 
   /** Moved, not removed: the way to the rest is on the page that no longer lists them. */

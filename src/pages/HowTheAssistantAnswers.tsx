@@ -1,6 +1,6 @@
 import React from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
-import { Box, Paper, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
@@ -13,8 +13,10 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
  * the database is consulted first, only what it returned is sent on, and the model writes the
  * sentence rather than supplying the facts in it.
  *
- * It sits under the assistant card because that is the claim the card makes — "svarene bygger på
- * databasen" — and this is the part that says why that is more than a promise.
+ * It sits inside the assistant card because that is the claim the card makes — "svarene bygger på
+ * databasen" — and this is the part that says why that is more than a promise. It was a box of its
+ * own underneath for one afternoon, which read as a separate module rather than as the assistant
+ * explaining itself.
  */
 const STEPS = [
   {
@@ -39,16 +41,14 @@ const HowTheAssistantAnswers: React.FC = () => {
   const isDark = theme.palette.mode === 'dark';
 
   return (
-    <Paper
-      elevation={0}
+    <Box
       sx={{
-        mt: 2,
-        p: { xs: 2, md: 2.5 },
-        border: `1px solid ${theme.palette.divider}`,
-        bgcolor: isDark ? alpha('#fff', 0.02) : alpha(theme.palette.primary.main, 0.03),
+        mb: 3,
+        pt: 2.5,
+        borderTop: `1px solid ${alpha(theme.palette.divider, isDark ? 1 : 0.8)}`,
       }}
     >
-      <Typography variant="subtitle1" sx={{ fontWeight: 650, mb: 0.5 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 650, mb: 0.5 }}>
         Hvordan assistenten kommer fram til svaret
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: 760 }}>
@@ -86,7 +86,7 @@ const HowTheAssistantAnswers: React.FC = () => {
           </Stack>
         ))}
       </Stack>
-    </Paper>
+    </Box>
   );
 };
 
