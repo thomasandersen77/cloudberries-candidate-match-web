@@ -16,15 +16,14 @@ import {
   Typography,
 } from '@mui/material';
 import { getEmbeddingInfo } from '../../services/consultantsService';
-import { runJason, runForUserCv, runMissing } from '../../services/embeddingsService';
+import { runForUserCv, runMissing } from '../../services/embeddingsService';
 import type {
-  EmbeddingJasonRunResponse,
   EmbeddingProviderInfo,
   EmbeddingRunMissingResponse,
   EmbeddingUserCvRunResponse,
 } from '../../types/api';
 
-type EmbeddingResult = EmbeddingJasonRunResponse | EmbeddingUserCvRunResponse | EmbeddingRunMissingResponse;
+type EmbeddingResult = EmbeddingUserCvRunResponse | EmbeddingRunMissingResponse;
 
 const EmbeddingsPage: React.FC = () => {
   const [userId, setUserId] = useState('');
@@ -63,6 +62,35 @@ const EmbeddingsPage: React.FC = () => {
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Embeddings</Typography>
 
+      {/*
+        What the page is for, said on the page. Everything here operates on a table nobody sees, so
+        without this the buttons are three ways to do something unnamed to something invisible.
+      */}
+      <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'action.hover' }}>
+        <Stack spacing={1.25}>
+          <Typography variant="body2">
+            En embedding er en CV oversatt til tall, slik at to tekster kan sammenlignes på mening
+            og ikke på ord. Det er dette som gjør at «Hvem har jobbet med modernisering av gamle
+            Java-systemer?» finner en konsulent som har skrevet «migrerte monolitt til
+            mikrotjenester», uten at et eneste ord er felles. Uten embeddings virker fortsatt søk på
+            navngitte ferdigheter, som «Hvem kan Java og Kotlin?», fordi det leser den normaliserte
+            ferdighetstabellen. Det er den semantiske halvdelen som faller bort.
+          </Typography>
+          <Typography variant="body2">
+            De lages av Googles <strong>gemini-embedding-001</strong>, som ligger på Geminis
+            gratisnivå. Det betyr ingen regning, men en kvote: <strong>1000 kall per døgn per
+            modell</strong>, og en egen grense per minutt. Derfor går en ombygging i puljer med
+            halvannet sekunds pause mellom hvert kall, og derfor er det verdt å kjøre «Rebuild
+            embeddings», som bare tar de som mangler, framfor «Force rebuild», som tar alle om
+            igjen. Treffer kjøringen døgnkvoten, stopper den til kvoten ruller over neste dag.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            En CV som er endret i Flowcase har fortsatt sin gamle embedding til den bygges om. Det
+            er den vanligste grunnen til å kjøre noe herfra.
+          </Typography>
+        </Stack>
+      </Paper>
+
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="h6" gutterBottom>Embedding-status</Typography>
         {statusError && <Alert severity="warning" sx={{ mb: 1 }}>{statusError}</Alert>}
@@ -92,10 +120,11 @@ const EmbeddingsPage: React.FC = () => {
         )}
       </Paper>
 
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6">Kjør Jason-demo</Typography>
-        <Button variant="contained" sx={{ mt: 1 }} disabled={running} onClick={async () => setResult(await runJason())}>Kjør</Button>
-      </Paper>
+      {/*
+        The Jason demo embedded one hard-coded CV and answered {"processedJason": false}, which says
+        nothing to anybody who was not there when it was written. The endpoint is still there and
+        runJason still calls it; it is the button that is gone.
+      */}
 
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="h6">Kjør for User/CV</Typography>
@@ -109,7 +138,11 @@ const EmbeddingsPage: React.FC = () => {
       </Paper>
 
       <Paper sx={{ p: 2 }}>
-        <Typography variant="h6">Generer embeddings for manglende</Typography>
+        <Typography variant="h6">Generer embeddings for konsulenter som mangler</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Tar bare de uten embedding for gjeldende modell. «Force rebuild» tar alle om igjen, som
+          er én kvotebruk per konsulent.
+        </Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1 }}>
           <TextField label="Batch size" type="number" value={batchSize} onChange={(e) => setBatchSize(Number(e.target.value))} size="small" />
           <Button variant="contained" disabled={running} onClick={() => void runMissingBatch()}>Rebuild embeddings</Button>
