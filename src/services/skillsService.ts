@@ -52,16 +52,21 @@ export async function listConsultantsBySkill(skill: string, opts?: { page?: numb
     });
   };
 
-  // If skill contains reserved path characters, skip direct endpoint
-  const hasReserved = /[/%#?;]/.test(skill);
-  if (hasReserved) {
-    try { return await relationalFallback(); } catch { /* fall through */ }
-  }
-
+  // The skill in a query parameter, not in the path.
+  //
+  // It used to be the path, and a skill name with a slash in it does not survive one: "JAVA/KOTLIN"
+  // became skills/JAVA/KOTLIN/consultants, which is a different route and answered 404. The guard
+  // below sent those to a relational search instead, and that could not resolve them either — a
+  // group name is not a skill anybody has, so the server logged "resolved 0 of 1 required skills"
+  // and returned an empty page. The screen showed nothing at all.
+  //
+  // It affected every catalogue name with one of these characters, not only that row: CI/CD with
+  // eighteen consultants, PL/SQL with nine, HTML/CSS, REST / JSON. The endpoint taking the skill as
+  // a parameter was already in the same controller and handles both.
   try {
-    const params: Record<string, unknown> = { page, size };
+    const params: Record<string, unknown> = { skill, page, size };
     if (sort) (params as Record<string, unknown>).sort = sort;
-    const { data } = await apiClient.get<PageConsultantSummaryDto>(`skills/${encodeURIComponent(skill)}/consultants`, { params });
+    const { data } = await apiClient.get<PageConsultantSummaryDto>('skills/consultants', { params });
     return data;
   } catch {
     // 404/405/5xx -> fallback to relational search which is supported server-side
@@ -77,13 +82,14 @@ export async function listSkillNames(prefix?: string, limit: number = 100): Prom
   const { data } = await apiClient.get<string[]>('skills/names', { params });
   return data;
 }
+/** The skill as a parameter here too, and for the same reason as in listConsultantsBySkill. */
 export async function listTopRankedConsultantsBySkill(
   skill: string,
   limit: number = 3
 ): Promise<SkillConsultantRankingDto[]> {
   const { data } = await apiClient.get<SkillConsultantRankingDto[]>(
-    `skills/${encodeURIComponent(skill)}/top-ranked-consultants`,
-    { params: { limit, onlyActiveCv: true } }
+    'skills/top-ranked-consultants',
+    { params: { skill, limit, onlyActiveCv: true } }
   );
   return data;
 }
@@ -107,12 +113,9 @@ export async function listTopConsultantsBySkill(skill: string, limit: number = 3
     );
   };
 
-  // Skip direct endpoint if reserved characters
-  const hasReserved = /[/%#?;]/.test(skill);
-  if (hasReserved) {
-    try { return await fallback(); } catch { /* fall through */ }
-  }
-
+  // No reserved-character guard any more: the ranked lookup below takes the skill as a parameter
+  // and handles a slash. Jumping straight to the relational search sent a group name somewhere that
+  // cannot resolve one, and returned nothing for a skill the ranked endpoint answers fine.
   try {
     const ranked = await listTopRankedConsultantsBySkill(skill, limit);
     if (Array.isArray(ranked) && ranked.length > 0) {

@@ -13,8 +13,20 @@ const SkillsOverviewPage: React.FC = () => {
   const [q, setQ] = useState('');
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
 
-  // per-skill consultants cache
-  const [consultantsBySkill, setConsultantsBySkill] = useState<Record<string, { items: ConsultantSummaryDto[]; page: number; last: boolean }>>({});
+  /**
+   * The consultants behind each skill, once somebody has asked for them.
+   *
+   * `opened` is the whole point of the flag. Collapsed and "opened and empty" were both an empty
+   * array, so a skill that answered with no consultants left the button reading "Vis konsulenter"
+   * and drew nothing: no list, no message, and the next click ran the same empty query again. It
+   * looked like a button that did not work, and that is how it was reported.
+   */
+  const [consultantsBySkill, setConsultantsBySkill] = useState<Record<string, {
+    items: ConsultantSummaryDto[];
+    page: number;
+    last: boolean;
+    opened: boolean;
+  }>>({});
 
   const navigate = useNavigate();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -71,15 +83,24 @@ const SkillsOverviewPage: React.FC = () => {
   }, [page, hasMore, loading, loadPage]);
 
   const toggleLoadConsultants = async (skill: string) => {
-    const current = consultantsBySkill[skill];
-    if (current && current.items.length > 0) {
-      // collapse
-      setConsultantsBySkill(prev => ({ ...prev, [skill]: { items: [], page: 0, last: false } }));
+    if (consultantsBySkill[skill]?.opened) {
+      setConsultantsBySkill(prev => {
+        const next = { ...prev };
+        delete next[skill];
+        return next;
+      });
       return;
     }
-    // load first page
     const res = await listConsultantsBySkill(skill, { page: 0, size: 10, sort: 'name,asc' });
-    setConsultantsBySkill(prev => ({ ...prev, [skill]: { items: res.content ?? [], page: res.number ?? 0, last: res.last ?? true } }));
+    setConsultantsBySkill(prev => ({
+      ...prev,
+      [skill]: {
+        items: res.content ?? [],
+        page: res.number ?? 0,
+        last: res.last ?? true,
+        opened: true,
+      }
+    }));
   };
 
   const loadMoreConsultants = async (skill: string) => {
@@ -93,6 +114,7 @@ const SkillsOverviewPage: React.FC = () => {
         items: [...(current.items ?? []), ...(res.content ?? [])],
         page: res.number ?? nextPage,
         last: res.last ?? true,
+        opened: true,
       }
     }));
   };
@@ -123,7 +145,7 @@ const SkillsOverviewPage: React.FC = () => {
           const skillKey = s.name;
           const cons = consultantsBySkill[skillKey]?.items ?? [];
           const last = consultantsBySkill[skillKey]?.last ?? true;
-          const expanded = cons.length > 0;
+          const expanded = consultantsBySkill[skillKey]?.opened ?? false;
           return (
             <Paper key={skillKey} sx={{ p: 2 }} variant="outlined">
               <Stack direction="row" spacing={2} sx={{ alignItems: 'baseline', flexWrap: 'wrap', justifyContent: 'space-between' }}>
@@ -154,7 +176,10 @@ const SkillsOverviewPage: React.FC = () => {
                       />
                     ))}
                     {cons.length === 0 && (
-                      <Typography variant="body2" color="text.secondary">Ingen</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Ingen treff. Ferdigheten er talt opp i oversikten, men oppslaget fant ingen
+                        konsulenter for den.
+                      </Typography>
                     )}
                   </Stack>
                   {!last && (
