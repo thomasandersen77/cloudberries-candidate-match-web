@@ -3457,6 +3457,12 @@ export interface components {
         CandidateDTO: {
             id: string;
             name: string;
+            /** @description The CV score as a percentage, or null for a candidate nobody has scored yet. Returned here so the list can be drawn without asking per candidate.
+             *      */
+            score?: number | null;
+            /** @description The scoring's own summary of the CV. Lives in the same row as the score, and is returned with it for the same reason: the list page used to fetch it one candidate at a time.
+             *      */
+            summary?: string | null;
             birthYear: number;
         };
         CvScoringRunResponse: {

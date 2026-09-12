@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Container,
   Typography,
@@ -32,6 +32,9 @@ import {
   type CvScoreListRow,
 } from '../../services/cvScoreService';
 import { sortCvScoreRows } from '../../utils/cvScoreSort';
+
+/** Below this the table is not worth scrolling, so the page scrolls instead. */
+const MIN_TABLE_HEIGHT = 320;
 import CvScoreBadge from '../../components/CvScoreBadge';
 import HighQualityToggle from '../../components/HighQualityToggle';
 
@@ -49,6 +52,28 @@ const CvScoreListPage: React.FC = () => {
     severity: 'success',
   });
   const navigate = useNavigate();
+
+  /**
+   * How much of the window is left below the table's top edge.
+   *
+   * Measured, because everything above it is variable: the app header, the title, the buttons, the
+   * statistics, and the progress bar that appears while a scoring run is going. A number written in
+   * here is right until somebody adds a line above the table.
+   */
+  const tableBoxRef = useRef<HTMLDivElement | null>(null);
+  const [tableMaxHeight, setTableMaxHeight] = useState<number | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const top = tableBoxRef.current?.getBoundingClientRect().top;
+      if (top === undefined) return;
+      // The bottom margin keeps the last row clear of the window edge.
+      setTableMaxHeight(Math.max(MIN_TABLE_HEIGHT, window.innerHeight - top - 32));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [running, rows.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,8 +140,11 @@ const CvScoreListPage: React.FC = () => {
     return { total: rows.length, scored: n, avg: Math.round(sum / n) };
   }, [rows]);
 
+  // The page is a table of 118 rows and a column of prose, so it takes the width it is given.
+  // Default Container is lg, and the summaries wrapped to four lines in it while the window had
+  // room to spare.
   return (
-    <Container sx={{ py: { xs: 2, md: 4 } }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 } }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'flex-end' }, justifyContent: 'space-between', mb: 3 }}>
         <Box>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 0.5 }}>
@@ -173,8 +201,13 @@ const CvScoreListPage: React.FC = () => {
       </Paper>
 
       {running && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
-      <Paper elevation={0} sx={{ overflow: 'hidden', position: 'relative' }}>
-        <TableContainer sx={{ maxHeight: { md: 'min(70vh, 720px)' } }}>
+      <Paper ref={tableBoxRef} elevation={0} sx={{ overflow: 'hidden', position: 'relative' }}>
+        {/*
+          Measured rather than guessed. The cap was min(70vh, 720px), so a tall window kept a third
+          of itself empty under a list that scrolls, and any fixed number here goes stale the moment
+          a row is added above the table.
+        */}
+        <TableContainer sx={{ maxHeight: tableMaxHeight }}>
           <Table size="medium" stickyHeader>
             <TableHead>
               <TableRow>
