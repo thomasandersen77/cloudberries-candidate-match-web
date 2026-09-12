@@ -291,6 +291,25 @@ export function createAppTheme(mode: ColorMode, brandTheme: BrandTheme): Theme {
           },
         },
       },
+      /**
+       * A tooltip paints its own dark ground in both colour modes, and its text has to come from
+       * that ground rather than from the page.
+       *
+       * Typography sets `color: text.primary` on itself, so any tooltip built out of Typography
+       * elements ignored the white the tooltip had already set on them. In dark mode text.primary
+       * is light and it looked fine by accident; in light mode it is #4B5563, dark slate grey on
+       * the tooltip's dark grey, and the health popover in the header was close to unreadable.
+       *
+       * Inherit, so the tooltip decides. An icon inside one keeps its own colour — that is an SVG
+       * fill, not this rule — which is what the UP and DOWN dots rely on.
+       */
+      MuiTooltip: {
+        styleOverrides: {
+          tooltip: {
+            '& .MuiTypography-root': { color: 'inherit' },
+          },
+        },
+      },
       MuiChip: {
         styleOverrides: {
           root: {
