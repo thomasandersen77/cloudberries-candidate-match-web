@@ -27,9 +27,28 @@ export interface SuggestionSubjects {
   consultants?: string[];
   /** A customer the request resolver can actually place. See [placeableCustomer]. */
   customer?: string;
-  /** Documented skills, most common first. */
+  /** Every customer this database has a request for, for checking a phrase before offering it. */
+  customers?: string[];
+  /** Documented skills that separate people, most common first. The fallback for a search example. */
   skills?: string[];
+  /** Skill names known to be documented here, for checking a named example before offering it. */
+  catalogue?: string[];
 }
+
+/**
+ * Searches worth showing by name rather than by ranking.
+ *
+ * A ranked pair is honest but arbitrary: "Hvem kan REACT og KUBERNETES?" is whatever came out of
+ * the counting. These are the searches somebody actually runs, and pairing Java with Kotlin asks a
+ * question about one person rather than about two populations.
+ *
+ * Each is offered only if the catalogue has every technology in it, so a tenant whose consultants
+ * write C# and no Kotlin is not shown a search that answers "fant ingenting".
+ */
+const NAMED_SEARCHES: Array<{ text: string; needs: string[] }> = [
+  { text: 'Hvem kan Java og Kotlin?', needs: ['Java', 'Kotlin'] },
+  { text: 'Hvem kan C#?', needs: ['C#'] }
+];
 
 /**
  * How a reader would name a customer's request, or nothing if no name here works.
@@ -84,13 +103,25 @@ const LONGEST_WHOLE_NAME = 24;
  * facts, consultant facts, a filtered search, stored matches, a request's candidates, one fitness
  * assessment, a fitness search and a comparison.
  */
-export function databaseSuggestions({ consultants, customer, skills }: SuggestionSubjects): PromptSuggestion[] {
+export function databaseSuggestions(
+  { consultants, customer, skills, catalogue }: SuggestionSubjects
+): PromptSuggestion[] {
   const [consultant, second, third] = consultants ?? [];
   const [skillA, skillB] = skills ?? [];
   const suggestions: PromptSuggestion[] = [];
 
-  if (skillA && skillB) suggestions.push({ text: `Hvem kan ${skillA} og ${skillB}?` });
-  else if (skillA) suggestions.push({ text: `Hvem kan ${skillA}?` });
+  const documented = (name: string) =>
+    (catalogue ?? []).some(known => known.toLowerCase() === name.toLowerCase());
+  const named = NAMED_SEARCHES.filter(search => search.needs.every(documented));
+
+  named.forEach(search => suggestions.push({ text: search.text }));
+
+  // The ranked pair is the fallback, and only when none of the named ones survived. Offering both
+  // spends two of the six first examples on the same kind of question.
+  if (named.length === 0) {
+    if (skillA && skillB) suggestions.push({ text: `Hvem kan ${skillA} og ${skillB}?` });
+    else if (skillA) suggestions.push({ text: `Hvem kan ${skillA}?` });
+  }
 
   // Needs nothing from the database, and is the one question that always has an answer.
   suggestions.push({ text: 'Hvilke avrop har vi?' });
@@ -167,6 +198,36 @@ function customerFrom(label: string): string {
 }
 
 /**
+ * How to name the request an answer cited, so the words find that request and no other.
+ *
+ * A chip is text. It goes back through the resolver like anything a reader types, so naming the
+ * cited row is not enough: "Statens-avropet" would be a different question in a database that also
+ * held Statens Pensjonskasse, and the reader would get an answer about a request they never saw.
+ * The whole corpus decides whether the phrase is safe, not the one row that happened to be cited.
+ *
+ * Nothing is offered when no phrase is unambiguous, and nothing when the customer is not among the
+ * rows this database holds. A follow-up about the wrong request, or about one that is not here, is
+ * worse than one follow-up fewer.
+ */
+function nameForCitedRequest(label: string, knownCustomers: string[]): string | undefined {
+  const cited = customerFrom(label);
+  const phrase = placeableCustomer([cited]);
+  if (!phrase) return undefined;
+
+  const words = distinctiveWords(phrase);
+  const matches = knownCustomers.filter(customer =>
+    words.some(word => customer.toLowerCase().includes(word))
+  );
+
+  // One row, and it has to be the row the answer cited. Matching exactly one row is not the same
+  // as matching the right one: "Findus Norge" reaches "Norges Bank" on the word Norge, and a chip
+  // built from that would ask about a request the reader was never shown.
+  return matches.length === 1 && matches[0].toLowerCase() === cited.toLowerCase()
+    ? phrase
+    : undefined;
+}
+
+/**
  * What the answer already told the reader, which is what a follow-up must not ask for again.
  *
  * Read off the answer's kind and the kinds of its sources, never off its prose. "Hva krever Norges
@@ -207,16 +268,19 @@ function topicOf(answerKind: ChatAnswerKind | undefined, sources: ChatSource[]):
 export function followUpSuggestions(
   answerKind: ChatAnswerKind | undefined,
   sources: ChatSource[] | undefined,
-  askedQuestion: string | undefined
+  askedQuestion: string | undefined,
+  /** Every customer this database has a request for, so a chip cannot name one it does not. */
+  knownCustomers: string[] = []
 ): PromptSuggestion[] {
   const rows = sources ?? [];
   const topic = topicOf(answerKind, rows);
   if (topic === 'nothing') return [];
 
   const consultant = rows.find(s => s.kind === 'CONSULTANT' && s.label)?.label;
-  const customer = placeableCustomer(
-    rows.filter(s => s.kind === 'PROJECT_REQUEST').map(s => customerFrom(s.label))
-  );
+  const customer = rows
+    .filter(s => s.kind === 'PROJECT_REQUEST')
+    .map(s => nameForCitedRequest(s.label, knownCustomers))
+    .find((phrase): phrase is string => !!phrase);
 
   const suggestions: PromptSuggestion[] = [];
 

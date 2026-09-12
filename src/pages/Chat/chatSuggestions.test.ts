@@ -138,8 +138,8 @@ describe('chatSuggestions', () => {
      * truncated to "Norges" on the way, because the whole label was too long to keep.
      */
     it('does not offer the requirements under an answer that is the requirements', () => {
-      const texts = followUpSuggestions('FACTUAL', [request], 'Hva krever Norges Bank-avropet?')
-        .map(s => s.text);
+      const texts = followUpSuggestions('FACTUAL', [request], 'Hva krever Norges Bank-avropet?',
+        ['Norges Bank']).map(s => s.text);
 
       expect(texts).not.toContain('Hva krever Norges Bank-avropet?');
       expect(texts.join(' ')).not.toContain('Norges-avropet');
@@ -148,8 +148,8 @@ describe('chatSuggestions', () => {
     });
 
     it('takes the customer from the label rather than the whole label', () => {
-      const texts = followUpSuggestions('SEARCH_RESULT', [request], 'Hvem kan Kotlin?')
-        .map(s => s.text);
+      const texts = followUpSuggestions('SEARCH_RESULT', [request], 'Hvem kan Kotlin?',
+        ['Norges Bank']).map(s => s.text);
 
       expect(texts).toContain('Hva krever Norges Bank-avropet?');
     });
@@ -176,7 +176,8 @@ describe('chatSuggestions', () => {
       const texts = followUpSuggestions(
         'AD_HOC_EVALUATION',
         [consultant, request],
-        'Hvem passer best av Thomas Andersen og Joachim Lous til Norges Bank-avropet?'
+        'Hvem passer best av Thomas Andersen og Joachim Lous til Norges Bank-avropet?',
+        ['Norges Bank']
       ).map(s => s.text);
 
       expect(texts).not.toContain('Hvilke avrop passer Thomas Andersen til?');
@@ -189,12 +190,49 @@ describe('chatSuggestions', () => {
       const texts = followUpSuggestions(
         'STORED_MATCH',
         [consultant, request],
-        'Hvilke avrop har Thomas Andersen blitt vurdert mot?'
+        'Hvilke avrop har Thomas Andersen blitt vurdert mot?',
+        ['Norges Bank']
       ).map(s => s.text);
 
       expect(texts).not.toContain('Hvilke avrop har Thomas Andersen blitt vurdert mot?');
       expect(texts).not.toContain('Hvem er tidligere vurdert mot Norges Bank-avropet?');
       expect(texts).toContain('Hvilke avrop passer Thomas Andersen til?');
+    });
+
+    /**
+     * A chip is text and goes back through the resolver, so naming the cited row is not enough: the
+     * words have to find that row and no other. "Statens" would reach two of these.
+     */
+    it('does not name a request whose words reach another one too', () => {
+      const statens = {
+        ref: 'A1',
+        kind: 'PROJECT_REQUEST' as const,
+        label: 'Statens vegvesen — Modernisering av fagsystem',
+        projectRequestId: 9005
+      };
+
+      const alene = followUpSuggestions('SEARCH_RESULT', [statens], 'Hvem kan Kotlin?',
+        ['Statens vegvesen', 'Norges Bank']).map(s => s.text);
+      const medTvilling = followUpSuggestions('SEARCH_RESULT', [statens], 'Hvem kan Kotlin?',
+        ['Statens vegvesen', 'Statens Pensjonskasse']).map(s => s.text);
+
+      expect(alene).toContain('Hva krever Statens vegvesen-avropet?');
+      // The whole name is kept, and "Statens" in it reaches both rows.
+      expect(medTvilling.join(' ')).not.toContain('avropet');
+    });
+
+    it('offers nothing about a request when the database has no matching row', () => {
+      const ukjent = {
+        ref: 'A1',
+        kind: 'PROJECT_REQUEST' as const,
+        label: 'Findus Norge — Noe helt annet',
+        projectRequestId: 4242
+      };
+
+      const texts = followUpSuggestions('SEARCH_RESULT', [ukjent], 'Hvem kan Kotlin?',
+        ['Norges Bank', 'Husbanken']).map(s => s.text);
+
+      expect(texts.join(' ')).not.toContain('Findus');
     });
 
     it('offers nothing when the answer cited nothing', () => {
@@ -203,8 +241,8 @@ describe('chatSuggestions', () => {
 
     /** Three is a nudge; more is a menu, and the answer above it is what the reader came for. */
     it('stops at three', () => {
-      expect(followUpSuggestions('SEARCH_RESULT', [consultant, request], 'Hvem kan Kotlin?'))
-        .toHaveLength(3);
+      expect(followUpSuggestions('SEARCH_RESULT', [consultant, request], 'Hvem kan Kotlin?',
+        ['Norges Bank'])).toHaveLength(3);
     });
   });
 });

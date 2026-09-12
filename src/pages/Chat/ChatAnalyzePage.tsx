@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Container, Typography, TextField, Button, Paper, CircularProgress, Stack,
   Box, Fade, Chip, Tooltip, ToggleButton, ToggleButtonGroup, Alert,
-  Checkbox, MenuItem, Select, FormControl, InputLabel, Snackbar, Collapse,
+  Checkbox, MenuItem, Select, FormControl, InputLabel, Snackbar, Collapse, IconButton,
   Table, TableHead, TableBody, TableRow, TableCell, Link as MuiLink,
   useTheme, useMediaQuery
 } from '@mui/material';
@@ -34,6 +34,8 @@ import {
 } from './chatSuggestions';
 import { runProjectMatching } from '../../api/matchingApi';
 import { Link as RouterLink } from 'react-router-dom';
+import ExpandIcon from '@mui/icons-material/UnfoldMore';
+import CollapseIcon from '@mui/icons-material/UnfoldLess';
 import type {
   CandidateComparison, ChatAnswerKind, ChatReading, ChatScope, ChatSource, RequestFit,
   RetrievalMethod
@@ -508,8 +510,13 @@ const MessageBubble: React.FC<{
   onAsk: (question: string, askScope?: ChatScope, askTopK?: number, pinned?: PickedAlternative) => void;
   /** Puts a suggested question in the field. Never sends it; see PromptSuggestion. */
   onSuggest: (text: string) => void;
+  /** Every customer this database has a request for, so a follow-up cannot name one it does not. */
+  knownCustomers: string[];
   onPickAlternative: (messageId: string, alternativeId: string) => void;
-}> = ({ message, isMobile, loading, selected, onToggleSelect, onAsk, onSuggest, onPickAlternative }) => {
+}> = ({
+  message, isMobile, loading, selected, onToggleSelect, onAsk, onSuggest, onPickAlternative,
+  knownCustomers
+}) => {
   const isQuestion = message.type === 'question';
   const kind = message.answerKind ? ANSWER_KIND_LABELS[message.answerKind] : null;
 
@@ -687,7 +694,9 @@ const MessageBubble: React.FC<{
             tempting ones are the assessments, and those are the ones that cost.
           */}
           {!isQuestion && !message.loading && (() => {
-            const followUps = followUpSuggestions(message.answerKind, message.sources, message.question);
+            const followUps = followUpSuggestions(
+              message.answerKind, message.sources, message.question, knownCustomers
+            );
             return followUps.length > 0 && (
               <Stack direction="row" spacing={0.5} sx={{ mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
                 {followUps.map(suggestion => (
@@ -766,6 +775,9 @@ const ChatAnalyzePage: React.FC = () => {
   const [subjects, setSubjects] = useState<SuggestionSubjects>({});
   /** The examples, reopened after the conversation has started. */
   const [examplesOpen, setExamplesOpen] = useState(false);
+  /** The detail under the grounding note. Open to begin with, because the first turn is the one
+   * where somebody is working out what this thing answers from. */
+  const [groundingNoteOpen, setGroundingNoteOpen] = useState(true);
   const [targetRequestId, setTargetRequestId] = useState<number | ''>('');
   const [matchingBusy, setMatchingBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -822,10 +834,8 @@ const ChatAnalyzePage: React.FC = () => {
           label: [r.customerName, r.title].filter(Boolean).join(' — ').slice(0, 70)
         })).filter(r => Number.isFinite(r.id)));
         // The same rows the picker uses, so the examples cost no extra request.
-        setSubjects(prev => ({
-          ...prev,
-          customer: placeableCustomer(list.map(r => r.customerName ?? '').filter(Boolean))
-        }));
+        const customers = list.map(r => r.customerName ?? '').filter(Boolean);
+        setSubjects(prev => ({ ...prev, customers, customer: placeableCustomer(customers) }));
       })
       .catch(() => setRequests([]));
   }, []);
@@ -844,7 +854,9 @@ const ChatAnalyzePage: React.FC = () => {
         const ceiling = (ranked[0]?.consultantCount ?? 0) / 2;
         const discriminating = ranked.filter(s => (s.consultantCount ?? 0) <= ceiling);
         const skills = (discriminating.length > 0 ? discriminating : ranked).slice(0, 2).map(s => s.name);
-        setSubjects(prev => ({ ...prev, skills }));
+        // The whole page of names, so a named example can be checked against what this database
+        // documents before it is offered. Free: it is the page already fetched.
+        setSubjects(prev => ({ ...prev, skills, catalogue: ranked.map(s => s.name) }));
         if (!skills[0]) return;
 
         // The rest of the names are the ones ranked on that first technology, with an active CV.
@@ -1136,21 +1148,50 @@ const ChatAnalyzePage: React.FC = () => {
       )}
 
       <Paper elevation={1} sx={{ bgcolor: 'grey.50', minHeight: 280, mb: 2 }}>
-        {messages.length === 0 ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 1.5, p: 4 }}>
-            <AiIcon sx={{ fontSize: 44, color: 'primary.main', opacity: 0.5 }} />
-            <Typography variant="body1" color="text.secondary" textAlign="center">
+        {/*
+          Where the answers come from, said once and then kept. It used to live in the empty state,
+          so the sentence explaining that the answers are grounded in the database disappeared the
+          moment somebody asked something, which is the moment it starts mattering. It folds to its
+          own header instead, from the button in the corner.
+        */}
+        <Box sx={{ px: 2, pt: 1.5, pb: groundingNoteOpen ? 1.5 : 1 }}>
+          <Stack direction="row" alignItems="flex-start" spacing={1}>
+            <AiIcon sx={{ fontSize: 20, color: 'primary.main', opacity: 0.6, mt: 0.25 }} />
+            <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
               {scope === 'DATABASE'
                 ? 'Svarene bygger på databasen, og kildene vises under hvert svar.'
                 : 'Modellen svarer fra egen kunnskap. Ingen interne data hentes.'}
             </Typography>
+            <Tooltip title={groundingNoteOpen ? 'Minimer' : 'Vis mer'}>
+              <IconButton
+                size="small"
+                onClick={() => setGroundingNoteOpen(open => !open)}
+                aria-label={groundingNoteOpen ? 'Minimer forklaringen' : 'Vis forklaringen'}
+                aria-expanded={groundingNoteOpen}
+                sx={{ mt: -0.5 }}
+              >
+                {groundingNoteOpen ? <CollapseIcon fontSize="small" /> : <ExpandIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+          </Stack>
+          <Collapse in={groundingNoteOpen}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, pl: 3.5 }}>
+              {scope === 'DATABASE'
+                ? 'Et svar siterer det det bygger på, som K1 for en konsulent og A1 for et avrop. Står noe ikke i grunnlaget, sier assistenten det i stedet for å gjette.'
+                : 'Ingenting fra konsulentbasen eller avropene sendes med, og svaret kan ikke siteres tilbake til en kilde her.'}
+            </Typography>
+          </Collapse>
+        </Box>
+
+        {messages.length === 0 ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 1.5, px: 4, pb: 4, pt: 1 }}>
             <PromptSuggestions
               suggestions={scope === 'DATABASE' ? databaseSuggestions(subjects) : GENERAL_SUGGESTIONS}
               onPick={suggest}
             />
           </Box>
         ) : (
-          <Box sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ px: 2, pb: 2, display: 'flex', flexDirection: 'column' }}>
             {messages.map(message => (
               <MessageBubble
                 key={message.id}
@@ -1161,6 +1202,7 @@ const ChatAnalyzePage: React.FC = () => {
                 onToggleSelect={toggleSelected}
                 onAsk={ask}
                 onSuggest={suggest}
+                knownCustomers={subjects.customers ?? []}
                 onPickAlternative={(messageId, alternativeId) => setMessages(prev => prev.map(m =>
                   m.id === messageId ? { ...m, pickedAlternativeId: alternativeId } : m))}
               />
