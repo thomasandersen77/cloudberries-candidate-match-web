@@ -56,6 +56,21 @@ describe('HomePage', () => {
     }
   });
 
+  /**
+   * The assistant card claims the answers are built on the database. This is the part that says
+   * why that is more than a promise, in the order the steps actually happen.
+   */
+  it('explains that the lookup happens before the model does', async () => {
+    renderPage();
+
+    expect(screen.getByText(/Hvordan assistenten kommer fram til svaret/)).toBeInTheDocument();
+    expect(screen.getByText(/Vi slår opp først/)).toBeInTheDocument();
+    expect(screen.getByText(/Ingen AI er involvert ennå/)).toBeInTheDocument();
+    expect(screen.getByText(/AI-en får bare det vi fant/)).toBeInTheDocument();
+    // The acronym explains nothing to somebody deciding whether to trust an answer.
+    expect(screen.queryByText(/RAG|retrieval/i)).not.toBeInTheDocument();
+  });
+
   /** Moved, not removed: the way to the rest is on the page that no longer lists them. */
   it('links to the superuser page and names what is there', async () => {
     renderPage();

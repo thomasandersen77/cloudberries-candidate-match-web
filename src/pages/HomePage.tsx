@@ -8,6 +8,7 @@ import { BRANDING } from '../config/branding';
 import { listConsultantsWithCvPaged } from '../services/consultantsService';
 import { EVERYDAY_MODULES, SUPERUSER_MODULES } from './modules';
 import ModuleCard from './ModuleCard';
+import HowTheAssistantAnswers from './HowTheAssistantAnswers';
 
 const HomePage: React.FC = () => {
   const theme = useTheme();
@@ -121,7 +122,20 @@ const HomePage: React.FC = () => {
       </Stack>
 
       <Grid container spacing={{ xs: 2, md: 2.5 }}>
-        {links.map((l) => (
+        {links.filter(l => l.featured).map((l) => (
+          <ModuleCard key={l.to} link={l} />
+        ))}
+      </Grid>
+
+      {/*
+        Directly under the assistant, because it is the assistant's own claim it explains: the card
+        says the answers are built on the database, and this is the part that says why that is more
+        than a promise.
+      */}
+      <HowTheAssistantAnswers />
+
+      <Grid container spacing={{ xs: 2, md: 2.5 }} sx={{ mt: 0.5 }}>
+        {links.filter(l => !l.featured).map((l) => (
           <ModuleCard key={l.to} link={l} />
         ))}
       </Grid>
