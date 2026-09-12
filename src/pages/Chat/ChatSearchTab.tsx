@@ -708,15 +708,24 @@ const ChatSearchTab = () => {
                     </Grid>
                     <Grid item xs={12} md={2}>
                         <Stack direction="row" spacing={1} alignItems="center">
-                            <TextField
-                                label="Top K"
-                                type="number"
-                                size="small"
-                                value={topK}
-                                onChange={(e) => setTopK(Number(e.target.value))}
-                                inputProps={{ min: 1, max: 100 }}
-                                sx={{ width: 100 }}
-                            />
+                            {/*
+                              "Top K" borrowed the name of a sampling parameter to mean how many
+                              people to return. top_k is a setting on the model, and controls which
+                              tokens it may pick from while writing; this is a limit on a database
+                              query and touches nothing the model does. The assistant tab has always
+                              called it "Treff".
+                            */}
+                            <Tooltip title="Hvor mange konsulenter søket returnerer. Ikke en modellinnstilling.">
+                                <TextField
+                                    label="Antall treff"
+                                    type="number"
+                                    size="small"
+                                    value={topK}
+                                    onChange={(e) => setTopK(Number(e.target.value))}
+                                    inputProps={{ min: 1, max: 100 }}
+                                    sx={{ width: 120 }}
+                                />
+                            </Tooltip>
                             <Button
                                 variant="contained"
                                 onClick={onSubmit}
