@@ -91,7 +91,12 @@ const HomePage: React.FC = () => {
                   sx={{
                     borderRadius: 3,
                     px: 2,
-                    py: 1.5,
+                    py: 1.75,
+                    // Centred, because the three sit side by side under a paragraph that is not:
+                    // left-aligned inside their own boxes they read as three ragged columns rather
+                    // than as one row of figures.
+                    textAlign: 'center',
+                    height: '100%',
                     bgcolor: isDark ? alpha('#fff', 0.04) : alpha('#fff', 0.8),
                     border: `1px solid ${alpha(theme.palette.divider, 0.75)}`,
                   }}
