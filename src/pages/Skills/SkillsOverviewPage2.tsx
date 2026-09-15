@@ -22,6 +22,7 @@ import {
 } from '../../services/skillsService';
 import type {ConsultantSummaryDto, PageSkillSummaryDto, SkillSummaryDto} from '../../types/api';
 import {useNavigate} from 'react-router-dom';
+import PageIntro from '../../components/PageIntro';
 
 const SUMMARY_PAGE_SIZE = 25;
 
@@ -163,6 +164,7 @@ const SkillsOverviewPage2: React.FC = () => {
     return (
         <Container sx={{py: 4}}>
             <Typography variant="h4" gutterBottom>Ferdigheter i firma</Typography>
+            <PageIntro page="skills" />
 
             <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} sx={{mb: 2, alignItems: 'center'}}>
                 <TextField

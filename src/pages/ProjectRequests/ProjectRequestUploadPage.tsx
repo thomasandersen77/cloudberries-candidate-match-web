@@ -7,6 +7,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import type { ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
 import { uploadProjectRequest, listProjectRequestsPaged, getProjectRequestById, deleteProjectRequest } from '../../services/projectRequestsService';
 import HighQualityToggle from '../../components/HighQualityToggle';
+import PageIntro from '../../components/PageIntro';
 import { Link as RouterLink } from 'react-router-dom';
 
 const ProjectRequestUploadPage: React.FC = () => {
@@ -172,10 +173,8 @@ const ProjectRequestUploadPage: React.FC = () => {
       <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 1 }}>
         Last opp kundeforspørsel (PDF)
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 760, lineHeight: 1.7, fontSize: { xs: '1.02rem', md: '1.06rem' } }}>
-        Her kan du laste opp en kundeforspørsel i PDF-format. Dokumentet analyseres og lagres.
-        Matching kjøres ikke automatisk — gå til Matcher når du vil finne kandidater.
-      </Typography>
+      {/* Replaces a paragraph that said the same thing, so the page keeps one explanation, not two. */}
+      <PageIntro page="projectRequests" />
 
       <Paper elevation={0} sx={{ p: { xs: 2, md: 3 }, mb: 3, overflow: 'hidden' }}>
         <Stack spacing={2} sx={{ mb: 2 }}>

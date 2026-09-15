@@ -27,6 +27,7 @@ import { getSkillsDisplay } from '../../utils/skillUtils';
 const DELAYED_SPINNER_MS = 500;
 
 import { compareByQualityThenName, getActiveQualityScore } from '../../utils/scoreUtils';
+import PageIntro from '../../components/PageIntro';
 
 const ResultsTable: React.FC<{
   items: ConsultantWithCvDto[];
@@ -148,6 +149,7 @@ const SemanticSearchPage: React.FC = () => {
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Semantisk søk</Typography>
+      <PageIntro page="semanticSearch" />
 
       {embeddingInfo && embeddingInfo.semanticSearchReady === false && (
         <Alert severity="warning" sx={{ mb: 2 }}>

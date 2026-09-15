@@ -123,6 +123,7 @@ function parseRelationalFromSemantic(text: string, knownSkills: string[]): {
 
 import { compareByQualityThenName, getActiveQualityScore } from '../../utils/scoreUtils';
 import CvScoreBadge from '../../components/CvScoreBadge';
+import PageIntro from '../../components/PageIntro';
 
 const ResultsTable: React.FC<{
   items: ConsultantWithCvDto[];
@@ -334,6 +335,7 @@ const ConsultantSearchPage: React.FC = () => {
       <Typography variant="h4" gutterBottom>
         Konsulentsøk
       </Typography>
+      <PageIntro page="search" />
 
       <Paper sx={{ mb: 2, borderRadius: 3 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} aria-label="search-tabs" variant="scrollable" scrollButtons="auto">

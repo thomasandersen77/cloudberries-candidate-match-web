@@ -22,6 +22,7 @@ import type {
   EmbeddingRunMissingResponse,
   EmbeddingUserCvRunResponse,
 } from '../../types/api';
+import PageIntro from '../../components/PageIntro';
 
 type EmbeddingResult = EmbeddingUserCvRunResponse | EmbeddingRunMissingResponse;
 
@@ -63,33 +64,12 @@ const EmbeddingsPage: React.FC = () => {
       <Typography variant="h4" gutterBottom>Embeddings</Typography>
 
       {/*
-        What the page is for, said on the page. Everything here operates on a table nobody sees, so
-        without this the buttons are three ways to do something unnamed to something invisible.
+        Replaces a block that said the same thing in three paragraphs. Same words, shorter, and now
+        with the show/hide switch every other page has: this page operates on a table nobody sees,
+        so without an explanation the buttons are three ways to do something unnamed to something
+        invisible, but somebody who already knows that should be able to put it away.
       */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'action.hover' }}>
-        <Stack spacing={1.25}>
-          <Typography variant="body2">
-            En embedding er en CV oversatt til tall, slik at to tekster kan sammenlignes på mening
-            og ikke på ord. Det er dette som gjør at «Hvem har jobbet med modernisering av gamle
-            Java-systemer?» finner en konsulent som har skrevet «migrerte monolitt til
-            mikrotjenester», uten at et eneste ord er felles. Uten embeddings virker fortsatt søk på
-            navngitte ferdigheter, som «Hvem kan Java og Kotlin?», fordi det leser den normaliserte
-            ferdighetstabellen. Det er den semantiske halvdelen som faller bort.
-          </Typography>
-          <Typography variant="body2">
-            De lages av Googles <strong>gemini-embedding-001</strong>, som ligger på Geminis
-            gratisnivå. Det betyr ingen regning, men en kvote: <strong>1000 kall per døgn per
-            modell</strong>, og en egen grense per minutt. Derfor går en ombygging i puljer med
-            halvannet sekunds pause mellom hvert kall, og derfor er det verdt å kjøre «Rebuild
-            embeddings», som bare tar de som mangler, framfor «Force rebuild», som tar alle om
-            igjen. Treffer kjøringen døgnkvoten, stopper den til kvoten ruller over neste dag.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            En CV som er endret i Flowcase har fortsatt sin gamle embedding til den bygges om. Det
-            er den vanligste grunnen til å kjøre noe herfra.
-          </Typography>
-        </Stack>
-      </Paper>
+      <PageIntro page="embeddings" />
 
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="h6" gutterBottom>Embedding-status</Typography>

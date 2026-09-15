@@ -4,6 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBackIosNew';
 import { SUPERUSER_MODULES } from './modules';
 import ModuleCard from './ModuleCard';
+import PageIntro from '../components/PageIntro';
 
 /**
  * The modules a working day does not usually touch.
@@ -25,16 +26,17 @@ const SuperuserPage: React.FC = () => (
       Tilbake til dashbordet
     </Button>
 
-    <Stack spacing={1} sx={{ mb: 3, maxWidth: 720 }}>
+    <Stack spacing={1} sx={{ mb: 1, maxWidth: 720 }}>
       <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.03em' }}>
         Superbruker
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.68 }}>
-        Verktøy for drift og for den som vil inn i datagrunnlaget direkte. Embeddings bygger om det
-        semantiske søket leser fra, og de to andre er smalere innganger til det assistenten og
-        konsulentlisten allerede svarer på.
-      </Typography>
     </Stack>
+
+    {/*
+      Replaces a paragraph that said the same thing, so this page keeps one explanation and gets the
+      same show/hide switch as everywhere else.
+    */}
+    <PageIntro page="superuser" />
 
     <Grid container spacing={{ xs: 2, md: 2.5 }}>
       {SUPERUSER_MODULES.map(link => (

@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { listConsultantsWithCv, runConsultantSync } from '../../services/consultantsService';
 import type { ConsultantWithCvDto } from '../../types/api';
 import SyncButton from '../../components/Sync/SyncButton';
+import PageIntro from '../../components/PageIntro';
 import SyncNotificationPanel from '../../components/Sync/SyncNotificationPanel';
 import type { SyncNotification } from '../../components/Sync/SyncNotificationPanel';
 import ScoringOverlay from '../../components/ScoringOverlay';
@@ -315,9 +316,11 @@ const fetchData = async () => {
         />
       </Box>
 
-      <SyncNotificationPanel 
-        notification={notification} 
-        onDismiss={handleDismissNotification} 
+      <PageIntro page="consultants" />
+
+      <SyncNotificationPanel
+        notification={notification}
+        onDismiss={handleDismissNotification}
       />
 
       <Paper

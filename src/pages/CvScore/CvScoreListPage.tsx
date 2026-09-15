@@ -37,6 +37,7 @@ import { sortCvScoreRows } from '../../utils/cvScoreSort';
 const MIN_TABLE_HEIGHT = 320;
 import CvScoreBadge from '../../components/CvScoreBadge';
 import HighQualityToggle from '../../components/HighQualityToggle';
+import PageIntro from '../../components/PageIntro';
 
 const CvScoreListPage: React.FC = () => {
   const theme = useTheme();
@@ -150,9 +151,6 @@ const CvScoreListPage: React.FC = () => {
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 0.5 }}>
             CV-Score
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Oversikt over AI-vurdering av alle kandidat-CV-er
-          </Typography>
         </Box>
         <Stack spacing={1} alignItems={{ xs: 'flex-start', sm: 'flex-end' }}>
           <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={running} />
@@ -167,6 +165,9 @@ const CvScoreListPage: React.FC = () => {
           </Button>
         </Stack>
       </Stack>
+
+      {/* Under the row, not inside it: the heading shares its line with the scoring button. */}
+      <PageIntro page="cvScore" />
 
       <Paper
         elevation={0}

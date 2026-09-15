@@ -48,6 +48,7 @@ import EmptyState from '../../components/feedback/EmptyState';
 import ErrorState from '../../components/feedback/ErrorState';
 import TableSkeleton from '../../components/feedback/TableSkeleton';
 import RoleVisualizations from '../../components/analytics/RoleVisualizations';
+import PageIntro from '../../components/PageIntro';
 
 const StatsPage: React.FC = () => {
   const theme = useTheme();
@@ -196,6 +197,8 @@ const StatsPage: React.FC = () => {
           </Button>
         }
       />
+
+      <PageIntro page="stats" />
 
       <Stack spacing={4}>
         {/* Programming Languages Section */}

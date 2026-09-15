@@ -15,6 +15,7 @@ import {
 import { getHealthStatus } from '../../services/healthService';
 import { getAiModels } from '../../services/adminService';
 import type { AiModelsResponse, HealthResponse } from '../../types/api';
+import PageIntro from '../../components/PageIntro';
 
 // A new component to render status with specific text and colors as requested.
 const StatusIndicator: React.FC<{ status: unknown; serviceName: string }> = ({ status, serviceName }) => {
@@ -54,6 +55,7 @@ const HealthPage: React.FC = () => {
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Systemstatus</Typography>
+      <PageIntro page="health" />
       {healthError && (
         <Alert severity="error" sx={{ mb: 2 }}>{healthError}</Alert>
       )}
