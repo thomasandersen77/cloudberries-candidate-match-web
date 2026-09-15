@@ -11,6 +11,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import HealthCheckIndicator from './HealthCheckIndicator';
 import { palettes, useColorMode } from '../theme';
 import { BRANDING } from '../config/branding';
+import { setPageIntrosHidden, usePageIntrosHidden } from './pageIntroPreference';
 
 // The assistant sits second, right after the dashboard: it was not in the top navigation at all,
 // so the only way in was a card halfway down the front page.
@@ -29,6 +30,7 @@ const Header: React.FC = () => {
   const { mode, toggle, brandTheme, setBrandTheme } = useColorMode();
   const brand = BRANDING[brandTheme] ?? BRANDING.cloudberries;
   const isSopraSteria = brandTheme === 'soprasteria';
+  const introsHidden = usePageIntrosHidden();
 
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setMenuAnchor(e.currentTarget);
   const handleMenuClose = () => setMenuAnchor(null);
@@ -98,22 +100,63 @@ const Header: React.FC = () => {
               {brand.displayName.charAt(0)}
             </Box>
           )}
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+          {/*
+            The brand text gives way before the controls do. On a phone "Sopra Steria Candidate
+            Match" wrapped onto four lines and pushed the header to a third of the screen, with the
+            icons squeezed into a corner of it. Name on one line with an ellipsis, and no tagline
+            below sm: it is decoration, and the logo beside it already says whose app this is.
+          */}
+          {/*
+            The wordmark yields to the navigation. Between sm and lg the six links need the room
+            more than a second copy of the company name does, and the logo to the left of it is
+            still there saying whose app this is. Below sm neither is in the way: the links are
+            hidden and the name comes back.
+          */}
+          <Box sx={{ minWidth: 0, display: { sm: 'none', lg: 'block' } }}>
+            <Typography
+              variant="h6"
+              component="div"
+              noWrap
+              sx={{ fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15 }}
+            >
               {brand.displayName}
             </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 400, color: 'text.secondary', mt: 0.25, lineHeight: 1.3 }}>
+            <Typography
+              variant="body2"
+              noWrap
+              sx={{
+                display: { xs: 'none', sm: 'block' },
+                fontWeight: 400,
+                color: 'text.secondary',
+                mt: 0.25,
+                lineHeight: 1.3,
+              }}
+            >
               {brand.tagline}
             </Typography>
           </Box>
         </Box>
 
+        {/*
+          Shown from sm up, not from lg.
+
+          It used to need 1200px, so halving an ordinary desktop window took the whole row away and
+          left the hamburger as the only way anywhere. Between sm and lg the six labels do not
+          always fit, and the row scrolls sideways instead of vanishing: a link you have to nudge
+          into view beats one that is not there. Below sm there is no room for it at all, and the
+          menu covers that.
+        */}
         <Stack
           direction="row"
           spacing={0.5}
           sx={{
-            display: { xs: 'none', lg: 'flex' },
+            display: { xs: 'none', sm: 'flex' },
             alignItems: 'center',
+            minWidth: 0,
+            overflowX: 'auto',
+            // The row is a navigation aid, not a scroll region to look at.
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
             px: 0.5,
             py: 0.5,
             borderRadius: 2.5,
@@ -129,7 +172,9 @@ const Header: React.FC = () => {
               color="inherit"
               size="small"
               sx={{
-                px: 1.5,
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
+                px: { xs: 1, lg: 1.5 },
                 py: 0.75,
                 borderRadius: 2,
                 color: 'text.secondary',
@@ -148,6 +193,9 @@ const Header: React.FC = () => {
           sx={(theme) => ({
             display: 'flex',
             alignItems: 'center',
+            // Never squeezed. Flexbox will shrink this cluster to make room for a long brand name
+            // otherwise, and the first casualty is whichever control sits at its left edge.
+            flexShrink: 0,
             gap: 0.5,
             pl: 1,
             pr: 0.5,
@@ -158,6 +206,29 @@ const Header: React.FC = () => {
               theme.palette.mode === 'light' ? alpha('#111111', 0.02) : alpha('#fff', 0.04),
           })}
         >
+          {/*
+            First in the cluster, left of the health dot, and shown at every width.
+
+            It used to disappear above lg, on the reasoning that the top navigation replaces it, but
+            the two hold different things. The bar has the six everyday destinations; the menu is the
+            only way to Embeddings, Statistikk, Systemstatus, Søk, Semantisk søk, the brand switch
+            and the page-help setting. On a wide screen those were reachable from the dashboard's own
+            cards and from nowhere else, so landing on a subpage meant going back to the front page
+            first.
+          */}
+          <Tooltip title="Meny">
+            <IconButton
+              color="inherit"
+              aria-label="meny"
+              aria-controls={open ? 'main-menu' : undefined}
+              aria-haspopup="true"
+              aria-expanded={open ? 'true' : undefined}
+              onClick={handleMenuOpen}
+              size="small"
+            >
+              <MenuIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <HealthCheckIndicator />
           <Tooltip title={mode === 'dark' ? 'Bytt til lys modus' : 'Bytt til mørk modus'}>
             <IconButton color="inherit" aria-label="toggle color mode" onClick={toggle} size="small">
@@ -171,18 +242,6 @@ const Header: React.FC = () => {
           </Tooltip>
           <IconButton color="inherit" aria-label="profil" size="small">
             <PersonOutlineIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            color="inherit"
-            aria-label="meny"
-            aria-controls={open ? 'main-menu' : undefined}
-            aria-haspopup="true"
-            aria-expanded={open ? 'true' : undefined}
-            onClick={handleMenuOpen}
-            size="small"
-            sx={{ display: { xs: 'inline-flex', lg: 'none' } }}
-          >
-            <MenuIcon fontSize="small" />
           </IconButton>
         </Box>
 
@@ -217,7 +276,7 @@ const Header: React.FC = () => {
             Chat Analyze
           </MenuItem>
           <MenuItem component={RouterLink} to="/health" onClick={handleMenuClose}>
-            Helse
+            Systemstatus
           </MenuItem>
           <MenuItem component={RouterLink} to="/stats" onClick={handleMenuClose}>
             Statistikk
@@ -248,6 +307,22 @@ const Header: React.FC = () => {
           >
             Sopra Steria look
             {brandTheme === 'soprasteria' ? <CheckIcon fontSize="small" /> : null}
+          </MenuItem>
+          <Divider sx={{ my: 0.5 }} />
+          {/*
+            Sits with the looks rather than with the pages, because it changes how the app reads
+            and not where you go. It is also the only way back once somebody has pressed "Skjul
+            forklaringene" on a page.
+          */}
+          <MenuItem
+            onClick={() => {
+              setPageIntrosHidden(!introsHidden);
+              handleMenuClose();
+            }}
+            sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}
+          >
+            Vis sideforklaringer
+            {introsHidden ? null : <CheckIcon fontSize="small" />}
           </MenuItem>
           <Divider sx={{ my: 0.5 }} />
           <MenuItem component={RouterLink} to="/project-requests/upload" onClick={handleMenuClose}>
