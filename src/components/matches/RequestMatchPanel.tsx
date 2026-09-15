@@ -18,6 +18,7 @@ import {
   Stack,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -409,8 +410,24 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
     <Stack spacing={1.5}>
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap alignItems="center">
         <Chip size="small" label={phaseLabel(state.phase)} color={state.phase === 'COMPLETED' ? 'success' : state.phase === 'FAILED' ? 'error' : 'default'} />
+        {/*
+          Two numbers that were being read as one. "Dekning: 49 treff" sat next to the AI results
+          and looked like 49 assessed candidates; it is how many consultants know at least one of
+          the technologies. The AI-assessed count is the one that means somebody was measured
+          against this request, so it is named as such and only shown once there is one.
+        */}
         {typeof hitCount === 'number' && (
-          <Chip size="small" variant="outlined" label={`Dekning: ${hitCount} treff`} />
+          <Tooltip title="Konsulenter med minst én av teknologiene i forespørselen. Ikke en vurdering mot kravene.">
+            <Chip size="small" variant="outlined" label={`${hitCount} søketreff`} />
+          </Tooltip>
+        )}
+        {hasAiResults && (
+          <Chip
+            size="small"
+            color="success"
+            variant="outlined"
+            label={`${aiMatches.length} AI-vurdert`}
+          />
         )}
         {state.semanticReady === true && (
           <Chip size="small" color="info" variant="outlined" label="Semantisk søk er klart" />
@@ -477,6 +494,17 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
           Oppdater status
         </Button>
       </Stack>
+
+      {/*
+        Sits by the buttons, not in the page help above, because the page help can be switched off
+        and this cannot: it says what the button on the right costs. Forhåndsvisning is free
+        (GET /matches/preview does no LLM call), the run is one call per selected candidate, and
+        neither starts on its own when the page loads.
+      */}
+      <Typography variant="caption" color="text.secondary">
+        Forhåndsvisning er gratis. AI-matching bruker ett modellkall per kandidat du har valgt, og
+        starter først når du trykker. Ingenting kjøres automatisk når siden åpnes.
+      </Typography>
 
       {state.phase === 'RUNNING' && loadingRun && (
         <Stack direction="row" spacing={1} alignItems="center">

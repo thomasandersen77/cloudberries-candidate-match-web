@@ -3239,18 +3239,28 @@ export interface components {
         MatchesListItemDto: {
             /** Format: int64 */
             id: number;
+            /** @description The document's own heading. */
             title?: string | null;
+            /** @description The position asked for, which is not the same as the document heading. */
+            role?: string | null;
             customerName?: string | null;
             /** Format: date-time */
             date?: string | null;
             /** Format: date-time */
             deadlineDate?: string | null;
-            /** Format: int64 */
-            hitCount: number;
+            /**
+             * Format: int64
+             * @description Consultants matching at least one of the request's technologies. A recall number, not a verdict on whether anybody satisfies the request. Null when the requirements named no technology, so a missing basis is never reported as a count of zero.
+             */
+            hitCount?: number | null;
             coverageStatus: components["schemas"]["CoverageStatus"];
+            /** @description Norwegian label matching coverageStatus. */
             coverageLabel: string;
         };
-        /** @enum {string} */
+        /**
+         * @description Traffic light over hitCount. GREEN from 5 hits, YELLOW from 2, RED below that including zero. NEUTRAL means the count could not be established, which is not the same as zero.
+         * @enum {string}
+         */
         CoverageStatus: "GREEN" | "YELLOW" | "RED" | "NEUTRAL";
         MatchCandidateDto: {
             userId: string;
@@ -3294,8 +3304,11 @@ export interface components {
             userId?: string;
             cvId?: string;
             name?: string;
-            /** Format: double */
-            skillScore?: number;
+            /**
+             * Format: double
+             * @description Share of the request's technologies the consultant covers. Null when the request named none the corpus recognises, so nothing was measured; that is not the same as 0, which means a comparison happened and found no overlap.
+             */
+            skillScore?: number | null;
             /** Format: double */
             semanticScore?: number;
             /** Format: double */

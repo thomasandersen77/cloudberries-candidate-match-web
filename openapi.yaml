@@ -2384,19 +2384,33 @@ components:
 
     MatchesListItemDto:
       type: object
-      required: [ id, hitCount, coverageStatus, coverageLabel ]
+      required: [ id, coverageStatus, coverageLabel ]
       properties:
         id: { type: integer, format: int64 }
-        title: { type: string, nullable: true }
+        title: { type: string, nullable: true, description: The document's own heading. }
+        role:
+          type: string
+          nullable: true
+          description: The position asked for, which is not the same as the document heading.
         customerName: { type: string, nullable: true }
         date: { type: string, format: date-time, nullable: true }
         deadlineDate: { type: string, format: date-time, nullable: true }
-        hitCount: { type: integer, format: int64 }
+        hitCount:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            Consultants matching at least one of the request's technologies. A recall number, not a
+            verdict on whether anybody satisfies the request. Null when the requirements named no
+            technology, so a missing basis is never reported as a count of zero.
         coverageStatus: { $ref: '#/components/schemas/CoverageStatus' }
-        coverageLabel: { type: string }
+        coverageLabel: { type: string, description: Norwegian label matching coverageStatus. }
 
     CoverageStatus:
       type: string
+      description: >-
+        Traffic light over hitCount. GREEN from 5 hits, YELLOW from 2, RED below that including
+        zero. NEUTRAL means the count could not be established, which is not the same as zero.
       enum: [ GREEN, YELLOW, RED, NEUTRAL ]
 
     MatchCandidateDto:
@@ -2451,7 +2465,14 @@ components:
         userId: { type: string }
         cvId: { type: string }
         name: { type: string }
-        skillScore: { type: number, format: double }
+        skillScore:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Share of the request's technologies the consultant covers. Null when the request named
+            none the corpus recognises, so nothing was measured; that is not the same as 0, which
+            means a comparison happened and found no overlap.
         semanticScore: { type: number, format: double }
         cvQualityScore: { type: number, format: double }
         combinedScore: { type: number, format: double }
