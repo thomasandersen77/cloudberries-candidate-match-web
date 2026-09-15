@@ -2777,9 +2777,6 @@ components:
         status: { $ref: '#/components/schemas/RequestStatus' }
         requestDescription: { type: string, nullable: true }
         responsibleSalespersonEmail: { type: string, format: email, nullable: true }
-        aiSuggestions:
-          type: array
-          items: { $ref: '#/components/schemas/AISuggestionDto' }
 
     RequestStatus:
       type: string

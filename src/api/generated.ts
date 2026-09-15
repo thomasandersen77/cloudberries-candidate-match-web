@@ -3709,7 +3709,6 @@ export interface components {
             requestDescription?: string | null;
             /** Format: email */
             responsibleSalespersonEmail?: string | null;
-            aiSuggestions?: components["schemas"]["AISuggestionDto"][];
         };
         /** @enum {string} */
         RequestStatus: "OPEN" | "IN_PROGRESS" | "CLOSED";

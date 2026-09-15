@@ -169,7 +169,6 @@ export type ProjectRequestDto = {
   status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
   requestDescription: string;
   responsibleSalespersonEmail: string;
-  aiSuggestions?: AISuggestionDto[];
 };
 
 export type AISuggestionDto = {
