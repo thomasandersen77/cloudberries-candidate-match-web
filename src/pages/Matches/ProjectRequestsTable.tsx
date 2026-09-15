@@ -23,15 +23,8 @@ import {
 import MatchResultsTable from '../../components/matches/MatchResultsTable';
 import type { MatchCandidate } from '../../types/matches';
 
-/**
- * DTO for project request summary (matches OpenAPI spec).
- */
-export interface ProjectRequestSummary {
-  id: number;
-  title?: string | null;
-  customerName: string;
-  createdAt: string;
-}
+import type { ProjectRequestSummary } from '../../types/matches';
+export type { ProjectRequestSummary };
 
 interface ProjectRequestsTableProps {
   projectRequests: ProjectRequestSummary[];
@@ -202,11 +195,13 @@ const ProjectRequestRow: React.FC<ProjectRequestRowProps> = ({
         
         <TableCell align="right">
           <Typography variant="caption" color="text.secondary">
-            {new Date(project.createdAt).toLocaleDateString('no-NO', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric'
-            })}
+            {project.uploadedAt
+              ? new Date(project.uploadedAt).toLocaleDateString('no-NO', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })
+              : '–'}
           </Typography>
         </TableCell>
       </TableRow>

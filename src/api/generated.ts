@@ -3501,13 +3501,27 @@ export interface components {
             /** Format: int64 */
             totalConsultantCount?: number;
         };
+        /** @description One request in the matching overview, with how many candidates its run scored. */
         ProjectRequestSummaryDto: {
             /** Format: int64 */
             id: number;
             title?: string | null;
             customerName: string;
-            /** Format: date-time */
-            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When the document was uploaded; null for a request created without one
+             */
+            uploadedAt?: string | null;
+            /** @description OPEN */
+            status: string;
+            coverage?: components["schemas"]["CoverageDto"];
+        };
+        /** @description How many candidates the request's matching run scored. COVERED when at least one, PENDING otherwise. */
+        CoverageDto: {
+            /** @enum {string} */
+            status: "COVERED" | "PENDING";
+            label: string;
+            count: number;
         };
         PagedMatchesListDto: {
             content?: components["schemas"]["MatchesListItemDto"][];

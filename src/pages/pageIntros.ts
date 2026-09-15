@@ -32,7 +32,9 @@ export type PageIntroKey =
   | 'skills'
   | 'embeddings'
   | 'search'
-  | 'semanticSearch';
+  | 'semanticSearch'
+  // The page «Start her» points at. It was the only one of the eleven without help.
+  | 'chat';
 
 export interface PageIntroContent {
   /** One or two lines under the title. Always visible unless the reader turned the help off. */
@@ -42,6 +44,17 @@ export interface PageIntroContent {
 }
 
 export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
+  chat: {
+    intro:
+      'Spør på vanlig norsk om konsulenter og avrop. Svaret bygger på det som står i basen og viser ' +
+      'kildene sine, så du kan kontrollere det mot CV-en eller avropet.',
+    steps: [
+      'Interne data svarer fra CV-ene og avropene. Finner oppslaget ingenting, sier assistenten det i stedet for å gjette.',
+      'Generell AI svarer uten interne data, til spørsmål som «Hva er Kafka?».',
+      'Cmd eller Ctrl + Enter sender. Enter gir ny linje.',
+    ],
+  },
+
   consultants: {
     intro:
       'Finn konsulenter på navn og utforsk kompetansen deres. Åpne en profil for detaljer, eller ' +

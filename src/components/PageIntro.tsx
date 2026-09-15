@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Box, Button, Collapse, Stack, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -28,6 +28,7 @@ const PageIntro: React.FC<{ page: PageIntroKey }> = ({ page }) => {
   // table down. Somebody who has read them once turns the whole thing off with "Skjul", which is a
   // better trade than making everyone click to find out what a page does.
   const [stepsOpen, setStepsOpen] = useState(true);
+  const stepsId = useId();
   const hidden = usePageIntrosHidden();
   const { intro, steps } = PAGE_INTROS[page];
 
@@ -54,6 +55,7 @@ const PageIntro: React.FC<{ page: PageIntroKey }> = ({ page }) => {
         <Button
           size="small"
           aria-expanded={stepsOpen}
+          aria-controls={stepsId}
           onClick={() => setStepsOpen(open => !open)}
           endIcon={
             <ExpandMoreIcon
@@ -75,7 +77,7 @@ const PageIntro: React.FC<{ page: PageIntroKey }> = ({ page }) => {
 
       {/* unmountOnExit so the folded steps are not read out, or found by a search, while invisible. */}
       <Collapse in={stepsOpen} unmountOnExit>
-        <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5, maxWidth: 760 }}>
+        <Box component="ul" id={stepsId} sx={{ m: 0, mt: 0.5, pl: 2.5, maxWidth: 760 }}>
           {steps.map(step => (
             <Typography
               key={step}

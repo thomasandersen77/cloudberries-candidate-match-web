@@ -1,3 +1,4 @@
+import PageIntro from '../../components/PageIntro';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Container, Typography, TextField, Button, Paper, CircularProgress, Stack,
@@ -1079,6 +1080,7 @@ const ChatAnalyzePage: React.FC = () => {
 
   return (
     <Container sx={{ py: isMobile ? 2 : 4, display: 'flex', flexDirection: 'column' }} maxWidth="lg">
+      <PageIntro page="chat" />
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
         <Typography variant={isMobile ? 'h6' : 'h5'}>Spør om konsulenter og avrop</Typography>
         <Button

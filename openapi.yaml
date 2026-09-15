@@ -2522,12 +2522,25 @@ components:
 
     ProjectRequestSummaryDto:
       type: object
-      required: [ id, customerName, createdAt ]
+      description: One request in the matching overview, with how many candidates its run scored.
+      required: [ id, customerName, status ]
       properties:
         id: { type: integer, format: int64 }
         title: { type: string, nullable: true }
         customerName: { type: string }
-        createdAt: { type: string, format: date-time }
+        uploadedAt: { type: string, format: date-time, nullable: true, description: When the document was uploaded; null for a request created without one }
+        status: { type: string, description: OPEN, IN_PROGRESS or CLOSED }
+        coverage:
+          $ref: '#/components/schemas/CoverageDto'
+
+    CoverageDto:
+      type: object
+      description: How many candidates the request's matching run scored. COVERED when at least one, PENDING otherwise.
+      required: [ status, label, count ]
+      properties:
+        status: { type: string, enum: [ COVERED, PENDING ] }
+        label: { type: string }
+        count: { type: integer }
 
     PagedMatchesListDto:
       type: object

@@ -78,7 +78,7 @@ const ProjectMatchCard: React.FC<ProjectCardProps> = ({
               <Box display="flex" alignItems="center" gap={0.5}>
                 <ScheduleIcon fontSize="small" color="action" />
                 <Typography variant="body2" color="text.secondary">
-                  {formatRelativeTime(project.createdAt)}
+                  {project.uploadedAt ? formatRelativeTime(project.uploadedAt) : 'ukjent tidspunkt'}
                 </Typography>
               </Box>
             </Box>

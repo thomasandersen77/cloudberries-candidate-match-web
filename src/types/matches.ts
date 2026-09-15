@@ -1,12 +1,14 @@
 // Types for the matches functionality
 // These extend the OpenAPI generated types with specific UI types
 
-export interface ProjectRequestSummary {
-  id: number;
-  title?: string | null;
-  customerName: string;
-  createdAt: string;
-}
+import type { ProjectRequestSummaryDto } from './api';
+
+/**
+ * The generated type, under the name this folder has used. It was a handwritten copy with a
+ * `createdAt` the server never sent; the contract has `uploadedAt`, nullable, and the copy is what
+ * kept a mismatch like that from being a compile error.
+ */
+export type ProjectRequestSummary = ProjectRequestSummaryDto;
 
 export interface MatchCandidate {
   consultantId: number;
