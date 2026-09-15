@@ -79,9 +79,9 @@ const HomePage: React.FC = () => {
             <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.03rem', lineHeight: 1.68, maxWidth: 800 }}>
               Spør assistenten på vanlig norsk: hvem kan Java og Kotlin, hva krever avropet fra
               Skatteetaten, hvem passer best til det. Søket rangerer på dokumentert erfaring i
-              CV-ene, kravene leses ut av kundeforespørselen, og hver påstand viser hvilken CV eller
-              hvilket avrop den kommer fra. Står det ikke i basen, sier assistenten det i stedet for
-              å gjette.
+              CV-ene, kravene leses ut av kundeforespørselen, og svaret viser kildene sine, så du
+              kan kontrollere det mot CV-en eller avropet. Står det ikke i basen, sier assistenten
+              det i stedet for å gjette.
             </Typography>
           </Stack>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>

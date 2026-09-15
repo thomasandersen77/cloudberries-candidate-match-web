@@ -17,11 +17,34 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
  * databasen" — and this is the part that says why that is more than a promise. It was a box of its
  * own underneath for one afternoon, which read as a separate module rather than as the assistant
  * explaining itself.
+ *
+ * Two sentences here used to promise more than the backend delivers, and a text that exists to earn
+ * trust has to be true in exactly the details it uses to earn it:
+ *
+ *  - "Ingen AI er involvert ennå" was false for a semantic lookup. The question is embedded by
+ *    gemini-embedding-001 before the vector search: one request logged "Query embedding dimension:
+ *    768" and "Found 5 semantic matches" before the answering model saw anything. The lookup is
+ *    free of the *answering* model, not of models.
+ *  - "Hver påstand viser hvilken CV eller hvilket avrop den kommer fra" promised claim-level
+ *    provenance. SourceReferenceGuard.enforce removes cited labels that were not in the turn's
+ *    allowed set and returns the answer untouched when it removed nothing; it never requires a
+ *    claim to carry a source. What it does guarantee is worth saying instead, because it is
+ *    concrete: a source you can see is a source that was really in the lookup.
+ *
+ * The third step says the reference is removed and the answer marked, not that the content goes.
+ * An earlier draft said "fjernes det før du ser svaret", which reads as unsupported text being
+ * taken out. It is not: enforce() strips the label and appends a note saying the claims that leaned
+ * on it were not checked against the database. The sentence itself stays, and a reader who thought
+ * otherwise would trust it more than they should.
+ *
+ * The steps also apply to the "Interne data" mode only. ChatAssistantService branches on
+ * ChatScope.GENERAL before grounding is touched, so the caveat belongs where the steps are, not
+ * only in the card's own description above them.
  */
 const STEPS = [
   {
     title: 'Vi slår opp først',
-    body: 'Spørsmålet går til vår egen database før noe annet skjer: CV-ene fra Flowcase og avropene som er lastet opp. Ingen AI er involvert ennå.',
+    body: 'Spørsmålet går til vår egen database før noe annet skjer: CV-ene fra Flowcase og avropene som er lastet opp. Selve søket kan bruke AI til å finne innhold som ligner, men svaret er ikke skrevet ennå.',
     Icon: SearchOutlinedIcon,
   },
   {
@@ -31,7 +54,7 @@ const STEPS = [
   },
   {
     title: 'Svaret peker tilbake',
-    body: 'Modellen formulerer svaret, men dataene bestemmer innholdet. Hver påstand viser hvilken CV eller hvilket avrop den kommer fra, og finner oppslaget ingenting, sier assistenten det i stedet for å gjette.',
+    body: 'Modellen formulerer svaret, men dataene bestemmer innholdet. Kildene følger med, så du kan kontrollere det mot CV-en eller avropet. Viser svaret til en kilde som ikke var i oppslaget, fjernes referansen og svaret merkes med at påstanden ikke er kontrollert. Finner oppslaget ingenting, sier assistenten det i stedet for å gjette.',
     Icon: FactCheckOutlinedIcon,
   },
 ];
@@ -53,7 +76,9 @@ const HowTheAssistantAnswers: React.FC = () => {
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: 760 }}>
         Den kombinerer våre egne data med en AI-modell, i den rekkefølgen. Modellen kjenner ikke
-        konsulentene våre; den får dem utlevert for hvert spørsmål.
+        konsulentene våre; den får dem utlevert for hvert spørsmål. Slik er det når du spør med
+        Interne data. Velger du Generell AI, svarer modellen på egen hånd, uten å hente noe fra
+        basen.
       </Typography>
 
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 2, md: 2.5 }}>

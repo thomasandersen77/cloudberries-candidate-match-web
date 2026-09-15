@@ -50,6 +50,18 @@ import type {
 /** Shown before the reader has to ask for more. Six is a choice; eleven is a search page. */
 const SUGGESTIONS_SHOWN = 6;
 
+/**
+ * Which modifier the hint under the field names.
+ *
+ * Only the label depends on this; both modifiers send on both platforms, so guessing wrong here
+ * shows the wrong symbol rather than breaking the shortcut. `navigator.platform` is deprecated and
+ * still the most reliable of the three, so it is tried first and the user agent backs it up.
+ */
+const SEND_SHORTCUT = (() => {
+  const hint = `${navigator.platform ?? ''} ${navigator.userAgent ?? ''}`;
+  return /Mac|iPhone|iPad|iPod/i.test(hint) ? '⌘ + Enter' : 'Ctrl + Enter';
+})();
+
 interface PickedAlternative {
   kind: 'PROJECT_REQUEST' | 'CONSULTANT';
   id: string;
@@ -196,7 +208,7 @@ const PromptSuggestions: React.FC<{
       </Stack>
       {suggestions.length > SUGGESTIONS_SHOWN && (
         <Button size="small" onClick={() => setShowAll(v => !v)} sx={{ textTransform: 'none' }}>
-          {showAll ? 'Vis færre' : 'Vis flere eksempler'}
+          {showAll ? 'Vis færre' : 'Vis flere forslag'}
         </Button>
       )}
       {suggestions.some(s => s.assessment) && (
@@ -782,6 +794,8 @@ const ChatAnalyzePage: React.FC = () => {
   const [matchingBusy, setMatchingBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  /** The box you write in. Scrolled to after every turn, see the effect below. */
+  const composerRef = useRef<HTMLDivElement | null>(null);
   /** So a picked example lands in a focused field, ready to edit or send. */
   const questionFieldRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -884,11 +898,17 @@ const ChatAnalyzePage: React.FC = () => {
       .catch(() => { /* the examples that need a name are left out */ });
   }, []);
 
-  // Newest last, so the conversation reads top to bottom like every other chat. Optional call
-  // because scrollIntoView is not universal: jsdom has no implementation, and a missing browser
-  // API should not take the page down with it.
+  // Newest last, so the conversation reads top to bottom like every other chat.
+  //
+  // Scrolls to the composer, not to the end of the message list. The anchor used to sit inside the
+  // conversation paper, and the field you type in sits in a paper below it: aligning the list's
+  // bottom edge with the viewport's left the field just off screen every single turn, so answering
+  // one question and asking the next meant scrolling down by hand first.
+  //
+  // Optional call because scrollIntoView is not universal: jsdom has no implementation, and a
+  // missing browser API should not take the page down with it.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
+    (composerRef.current ?? bottomRef.current)?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
   }, [messages]);
 
   const ask = useCallback(async (
@@ -1038,8 +1058,19 @@ const ChatAnalyzePage: React.FC = () => {
     }
   }, [selected, targetRequestId]);
 
+  /**
+   * Cmd+Enter on a Mac, Ctrl+Enter elsewhere. Enter on its own makes a new line.
+   *
+   * Enter used to send, which is the right gesture for a one-line chat box and the wrong one for
+   * this field: it is three rows high and grows to seven, because the questions worth asking here
+   * run long enough to want a line break. Enter sending meant the break cost you a half-written
+   * question instead, and Shift+Enter is a thing you have to know.
+   *
+   * No platform check in the handler. Both modifiers send, on both platforms, so a Mac user with
+   * Ctrl-muscle-memory is not told they are holding it wrong. The platform only decides the label.
+   */
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       ask(content);
     }
@@ -1245,7 +1276,7 @@ const ChatAnalyzePage: React.FC = () => {
         </Paper>
       )}
 
-      <Paper elevation={2} sx={{ p: 2 }}>
+      <Paper elevation={2} ref={composerRef} sx={{ p: 2 }}>
         {/*
           The examples used to live in the empty state and nowhere else, so after the first answer
           there was nothing left on screen saying what else the assistant could be asked. They stay
@@ -1259,7 +1290,12 @@ const ChatAnalyzePage: React.FC = () => {
               onClick={() => setExamplesOpen(open => !open)}
               sx={{ textTransform: 'none' }}
             >
-              {examplesOpen ? 'Skjul eksempler' : 'Eksempler'}
+              {/*
+                "Eksempler" said what the things are, not what the button gets you. The reader is
+                looking at an empty field wondering what this assistant can be asked, and the label
+                should answer that question rather than name a category.
+              */}
+              {examplesOpen ? 'Skjul forslagene' : 'Forslag til spørsmål'}
             </Button>
             {/*
               unmountOnExit, so the folded examples are not in the page while they are invisible.
@@ -1294,7 +1330,7 @@ const ChatAnalyzePage: React.FC = () => {
         />
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }} justifyContent="space-between">
           <Typography variant="caption" color="text.secondary">
-            {content.length} tegn • Enter for å sende
+            {content.length} tegn • {SEND_SHORTCUT} for å sende, Enter gir ny linje
             {scope === 'GENERAL' && ' • generell AI'}
             {conversationId && ' • fortsetter samtalen'}
           </Typography>

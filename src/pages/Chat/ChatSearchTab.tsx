@@ -422,8 +422,11 @@ const ChatSearchTab = () => {
         }
     }, []);
 
+    // Same chord as the assistant tab next door: Cmd+Enter or Ctrl+Enter sends, Enter breaks the
+    // line. This field is multiline too, and two tabs on one page that disagree about what Enter
+    // does is worse than either rule on its own.
     const handleKeyPress = useCallback((event: React.KeyboardEvent) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
+        if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
             event.preventDefault();
             onSubmit();
         }

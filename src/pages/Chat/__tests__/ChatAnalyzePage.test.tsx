@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ChatAnalyzePage from '../ChatAnalyzePage';
@@ -68,6 +68,9 @@ const ask = (question: string) => {
   fireEvent.change(screen.getByLabelText('Spørsmål'), { target: { value: question } });
   fireEvent.click(screen.getByRole('button', { name: /send/i }));
 };
+
+const type = (question: string) =>
+  fireEvent.change(screen.getByLabelText('Spørsmål'), { target: { value: question } });
 
 /**
  * The endpoint used to answer with `content`; it now answers with `answer`, `answerKind` and
@@ -423,7 +426,7 @@ describe('ChatAnalyzePage', () => {
 
     render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
     // The button only exists once more examples have been built than are shown.
-    const showMore = await screen.findByRole('button', { name: 'Vis flere eksempler' });
+    const showMore = await screen.findByRole('button', { name: 'Vis flere forslag' });
 
     expect(screen.queryByText(/Hvem er tidligere vurdert mot/)).not.toBeInTheDocument();
 
@@ -443,9 +446,100 @@ describe('ChatAnalyzePage', () => {
     ask('Hva kan Thomas Andersen best?');
     await screen.findByText(/sterkest på Kotlin/);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Eksempler' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Forslag til spørsmål' }));
 
     expect(await screen.findByText('Hvilke avrop har vi?')).toBeInTheDocument();
+  });
+
+  /**
+   * What sends the question, and what does not.
+   *
+   * The field is three rows high and grows to seven, so a line break is an ordinary thing to want
+   * in it. While Enter sent, wanting one cost you a half-finished question.
+   */
+  describe('sending from the keyboard', () => {
+    it('does not send on Enter alone', () => {
+      render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+      type('Hvem kan Kotlin');
+
+      fireEvent.keyDown(screen.getByLabelText('Spørsmål'), { key: 'Enter' });
+
+      expect(mockedAnalyze).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Not sending is only half of it. The line break is the browser's own default action for Enter
+     * in a textarea, so what the page has to do is get out of the way: call preventDefault on the
+     * chord and on nothing else. Neither jsdom nor the browser automation inserts the character
+     * itself, so this is the honest assertion available.
+     */
+    it('leaves the browser free to break the line on Enter', () => {
+      render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+      type('Hvem kan Kotlin');
+      const field = screen.getByLabelText('Spørsmål');
+
+      expect(fireEvent.keyDown(field, { key: 'Enter' })).toBe(true);
+      expect(fireEvent.keyDown(field, { key: 'Enter', metaKey: true })).toBe(false);
+    });
+
+    it('sends on Cmd+Enter', () => {
+      mockedAnalyze.mockResolvedValue(factualAnswer as never);
+      render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+      type('Hvem kan Kotlin');
+
+      fireEvent.keyDown(screen.getByLabelText('Spørsmål'), { key: 'Enter', metaKey: true });
+
+      expect(mockedAnalyze).toHaveBeenCalledOnce();
+    });
+
+    /** The same chord on a Mac, so nobody is told they are holding the wrong key. */
+    it('sends on Ctrl+Enter', () => {
+      mockedAnalyze.mockResolvedValue(factualAnswer as never);
+      render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+      type('Hvem kan Kotlin');
+
+      fireEvent.keyDown(screen.getByLabelText('Spørsmål'), { key: 'Enter', ctrlKey: true });
+
+      expect(mockedAnalyze).toHaveBeenCalledOnce();
+    });
+
+    it('says which chord sends, and that Enter does not', () => {
+      render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+      expect(screen.getByText(/(⌘|Ctrl) \+ Enter for å sende, Enter gir ny linje/)).toBeInTheDocument();
+    });
+  });
+
+  /**
+   * Where the page scrolls to when an answer lands.
+   *
+   * It used to scroll to the end of the message list, and the field you write in sits in a box
+   * below that list: every answer left the field just under the fold, so asking a second question
+   * meant scrolling down by hand first. The anchor is the composer now.
+   *
+   * jsdom has no scrollIntoView, so the assertion is on which element the page asked to scroll to.
+   */
+  it('scrolls to the field you write in, not to the end of the answer', async () => {
+    const scrolledTo: Element[] = [];
+    // jsdom does not define it at all, so this adds rather than replaces. Removed again afterwards
+    // so the rest of the file runs against the same DOM as before.
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: function (this: Element) { scrolledTo.push(this); },
+      writable: true,
+      configurable: true
+    });
+    onTestFinished(() => {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    });
+    mockedAnalyze.mockResolvedValue(factualAnswer as never);
+
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    ask('Hva kan Thomas Andersen best?');
+    await screen.findByText(/sterkest på Kotlin/);
+
+    await waitFor(() => expect(scrolledTo.length).toBeGreaterThan(0));
+    const field = screen.getByLabelText('Spørsmål');
+    expect(scrolledTo.some(el => el.contains(field))).toBe(true);
   });
 
   /** Where a reader usually goes next, read off the answer's typed sources rather than its prose. */
