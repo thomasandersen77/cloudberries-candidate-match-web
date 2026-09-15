@@ -1436,8 +1436,15 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Trigger AI analysis for an existing project request
+         * Score the shortlist against this request and answer with the result
          * @deprecated
+         * @description A way into the one matching pipeline, kept for the detail page's «Analyser (AI)» button.
+         *     Runs a fresh interactive matching run (`forceRecompute`, never a batch) and returns the
+         *     request with the scored candidates in `aiSuggestions`; the same run is what
+         *     `/matches/requests/{id}/top-consultants` reads. Prefer the matching endpoints for new
+         *     clients. This used to run a second pipeline of its own with a different prompt, shortlist
+         *     and cut-off, which is why it is deprecated.
+         *
          */
         post: {
             parameters: {
@@ -1792,7 +1799,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get AI suggestions for a project request */
+        /**
+         * The newest matching run for a project request, as suggestions
+         * @description The candidates of the most recent matching run, in the suggestion shape. `matchScore` is
+         *     the percent, `createdAt` is the run's time. Empty until a run has been made.
+         *
+         */
         get: {
             parameters: {
                 query?: never;
