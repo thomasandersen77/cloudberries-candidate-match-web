@@ -4,43 +4,6 @@
  */
 
 export interface paths {
-    "/admin/anthropic-usage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Anthropic API usage and cost statistics */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Usage statistics */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["AnthropicUsageResponse"];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/project-requests/{id}/document-kind": {
         parameters: {
             query?: never;
@@ -182,130 +145,6 @@ export interface paths {
                 default: components["responses"]["ErrorResponse"];
             };
         };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/rag/chat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Chat with AI using RAG (Retrieval-Augmented Generation) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["RagChatRequest"];
-                };
-            };
-            responses: {
-                /** @description Chat response with sources */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["RagChatResponse"];
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/rag/ingest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ingest a CV into the RAG vector store */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["RagIngestRequest"];
-                };
-            };
-            responses: {
-                /** @description Ingestion result */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            ingested?: number;
-                        };
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/rag/ingest/db": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ingest all CVs from the database into the RAG vector store */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Batch ingestion report */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            rowsProcessed?: number;
-                            chunksAdded?: number;
-                        };
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2748,6 +2587,466 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/anthropic/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Anthropic token counts and an estimated cost since the process started
+         * @description Read from the process's own meters, so it resets on restart. The cost is an estimate at a fixed price per million tokens, not an invoice.
+         *
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Usage statistics */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AnthropicUsageResponse"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultants/offering-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Everyone with a recorded decision about being offered to a customer
+         * @description Whether a person can be offered is recorded here rather than inferred from the CV headline, which is empty for a quarter of the company. No row means nobody has decided and the title heuristic keeps its say; a row means somebody did, either way.
+         *
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The recorded decisions */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConsultantOfferingStatusDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultants/{userId}/offering-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Record whether this person can be offered to a customer */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The Flowcase user id, which survives a CV sync */
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetConsultantOfferingStatusRequest"];
+                };
+            };
+            responses: {
+                /** @description The recorded decision */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConsultantOfferingStatusDto"];
+                    };
+                };
+                /** @description No consultant with that user id */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        post?: never;
+        /** Forget the decision, and let the CV headline decide again */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Forgotten */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Nothing was recorded for that user id */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultants/embeddings/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many CVs have an embedding, and the state of the chunk corpus */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Counts by provider and model, with a `chunking` block for the section corpus */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultants/embeddings/rebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Embed every CV that lacks a vector for the configured provider and model */
+        post: {
+            parameters: {
+                query?: {
+                    /** @description Re-embed CVs that already have a vector */
+                    force?: boolean;
+                    /** @description Stop after this many CVs */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What the run did */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EmbeddingRebuildResult"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultants/embeddings/cleanup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete the vectors of a provider and model that are no longer in use */
+        delete: {
+            parameters: {
+                query: {
+                    provider: string;
+                    model: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description How many rows went */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            deleted?: number;
+                            provider?: string;
+                            model?: string;
+                        };
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cv-score/run/all/status/{runId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The state of a batch scoring run */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    runId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The run */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CvScoringRunResponse"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skills/consultants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consultants who have a skill, paged, with the skill given as a query parameter
+         * @description The same listing as `/skills/{skill}/consultants`, for skill names that do not fit in a path segment.
+         */
+        get: {
+            parameters: {
+                query: {
+                    skill: string;
+                    page?: number;
+                    size?: number;
+                    /** @description `name,asc` or `name,desc`; anything else keeps the ranking order */
+                    sort?: string[];
+                    onlyActiveCv?: boolean;
+                    /** @description Leave out people who cannot be offered to a customer */
+                    eligibleOnly?: boolean;
+                    includeSynthetic?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description One page of consultants */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConsultantSkillPageDto"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skills/top-ranked-consultants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The top consultants for a skill, ranked on documented experience, with the skill as a query parameter */
+        get: {
+            parameters: {
+                query: {
+                    skill: string;
+                    limit?: number;
+                    onlyActiveCv?: boolean;
+                    eligibleOnly?: boolean;
+                    includeSynthetic?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The ranking */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SkillConsultantRankingDto"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/industries/backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tag industries on stored CVs that were saved before tagging existed */
+        post: {
+            parameters: {
+                query?: {
+                    /** @description Stop after this many CVs */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description How many CVs were processed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            processed: number;
+                        };
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2979,34 +3278,6 @@ export interface components {
         AIResponseModel: {
             content?: string;
             modelUsed?: string;
-        };
-        RagChatRequest: {
-            message: string;
-            /** @default 4 */
-            topK: number;
-            /**
-             * Format: double
-             * @default 0.7
-             */
-            similarityThreshold: number;
-            filter?: string | null;
-        };
-        RagChatResponse: {
-            answer?: string;
-            sources?: components["schemas"]["SourceDocument"][];
-        };
-        SourceDocument: {
-            id?: string | null;
-            contentPreview?: string;
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
-        RagIngestRequest: {
-            /** Format: int64 */
-            candidateId: number;
-            name?: string | null;
-            cvText: string;
         };
         SkillConsultantRankingDto: {
             id?: string;
@@ -3626,6 +3897,44 @@ export interface components {
             scoring?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** @description Whether a person can be offered to a customer, as somebody decided it. */
+        ConsultantOfferingStatusDto: {
+            /** @description The Flowcase user id */
+            userId: string;
+            name?: string | null;
+            offerable: boolean;
+            /** @description Why */
+            reason?: string | null;
+            decidedBy?: string | null;
+            /** Format: date-time */
+            decidedAt?: string | null;
+        };
+        SetConsultantOfferingStatusRequest: {
+            offerable: boolean;
+            /** @description Stored so the decision can be reviewed */
+            reason?: string | null;
+            decidedBy?: string | null;
+        };
+        EmbeddingRebuildResult: {
+            processed: number;
+            created: number;
+            updated: number;
+            skipped: number;
+            failed: number;
+            provider: string;
+            model: string;
+            dimension: number;
+        };
+        ConsultantSkillPageDto: {
+            content: components["schemas"]["ConsultantSummaryDto"][];
+            number: number;
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            totalPages: number;
+            first: boolean;
+            last: boolean;
         };
     };
     responses: {

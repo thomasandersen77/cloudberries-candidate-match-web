@@ -28,11 +28,6 @@ export type RequestFit = components['schemas']['RequestFit'];
 export type ChatReading = components['schemas']['ChatReading'];
 export type ChatReadingAlternative = components['schemas']['ChatReadingAlternative'];
 
-export type RagChatRequest = components['schemas']['RagChatRequest'];
-export type SourceDocument = components['schemas']['SourceDocument'];
-export type RagChatResponse = components['schemas']['RagChatResponse'];
-export type RagIngestRequest = components['schemas']['RagIngestRequest'];
-
 export type ConsultantSummaryDto = components['schemas']['ConsultantSummaryDto'];
 type OpenApiPageConsultantSummaryDto = components['schemas']['PageConsultantSummaryDto'];
 export type PageConsultantSummaryDto = OpenApiPageConsultantSummaryDto & {
@@ -128,16 +123,6 @@ export type RecalculateMatchesResponse = {
   requestId?: number;
   status?: string;
   message?: string;
-};
-
-export type RagIngestResponse = {
-  indexed?: number;
-  skipped?: number;
-  status?: string;
-};
-export type RagIngestDbResponse = {
-  processed?: number;
-  status?: string;
 };
 
 // --- Legacy types (endpoints not in current OpenAPI spec) ---

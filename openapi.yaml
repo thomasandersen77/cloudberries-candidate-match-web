@@ -3,7 +3,7 @@ info:
   title: Cloudberries Candidate Match API
   version: 1.2.0
   description: |
-    API for candidate matching, CV retrieval, embeddings, RAG operations, and administrative utilities.
+    API for candidate matching, CV retrieval, embeddings, the grounded chat, and administrative utilities.
     Includes cost optimization monitoring and asynchronous matching support.
   contact:
     name: Cloudberries
@@ -34,20 +34,6 @@ tags:
     description: Aggregated statistics across consultants (skills, roles, languages)
 
 paths:
-  /admin/anthropic-usage:
-    get:
-      tags: [ Admin ]
-      summary: Get Anthropic API usage and cost statistics
-      responses:
-        '200':
-          description: Usage statistics
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AnthropicUsageResponse'
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
   /project-requests/{id}/document-kind:
     put:
       tags: [ ProjectRequests ]
@@ -119,68 +105,6 @@ paths:
       responses:
         '204':
           description: Forgotten
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
-  /rag/chat:
-    post:
-      tags: [ Chat ]
-      summary: Chat with AI using RAG (Retrieval-Augmented Generation)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RagChatRequest'
-      responses:
-        '200':
-          description: Chat response with sources
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RagChatResponse'
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
-  /rag/ingest:
-    post:
-      tags: [ Chat ]
-      summary: Ingest a CV into the RAG vector store
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RagIngestRequest'
-      responses:
-        '200':
-          description: Ingestion result
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ingested:
-                    type: integer
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
-  /rag/ingest/db:
-    post:
-      tags: [ Chat ]
-      summary: Ingest all CVs from the database into the RAG vector store
-      responses:
-        '200':
-          description: Batch ingestion report
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  rowsProcessed:
-                    type: integer
-                  chunksAdded:
-                    type: integer
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -1626,6 +1550,267 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /anthropic/usage:
+    get:
+      tags: [ Admin ]
+      summary: Anthropic token counts and an estimated cost since the process started
+      description: >
+        Read from the process's own meters, so it resets on restart. The cost is an estimate at a
+        fixed price per million tokens, not an invoice.
+      responses:
+        '200':
+          description: Usage statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnthropicUsageResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /consultants/offering-status:
+    get:
+      tags: [ Consultants ]
+      summary: Everyone with a recorded decision about being offered to a customer
+      description: >
+        Whether a person can be offered is recorded here rather than inferred from the CV headline,
+        which is empty for a quarter of the company. No row means nobody has decided and the title
+        heuristic keeps its say; a row means somebody did, either way.
+      responses:
+        '200':
+          description: The recorded decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsultantOfferingStatusDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /consultants/{userId}/offering-status:
+    put:
+      tags: [ Consultants ]
+      summary: Record whether this person can be offered to a customer
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string }
+          description: The Flowcase user id, which survives a CV sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetConsultantOfferingStatusRequest'
+      responses:
+        '200':
+          description: The recorded decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultantOfferingStatusDto'
+        '404':
+          description: No consultant with that user id
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+    delete:
+      tags: [ Consultants ]
+      summary: Forget the decision, and let the CV headline decide again
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Forgotten
+        '404':
+          description: Nothing was recorded for that user id
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /consultants/embeddings/status:
+    get:
+      tags: [ Embeddings ]
+      summary: How many CVs have an embedding, and the state of the chunk corpus
+      responses:
+        '200':
+          description: Counts by provider and model, with a `chunking` block for the section corpus
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /consultants/embeddings/rebuild:
+    post:
+      tags: [ Embeddings ]
+      summary: Embed every CV that lacks a vector for the configured provider and model
+      parameters:
+        - in: query
+          name: force
+          schema: { type: boolean, default: false }
+          description: Re-embed CVs that already have a vector
+        - in: query
+          name: limit
+          schema: { type: integer }
+          description: Stop after this many CVs
+      responses:
+        '200':
+          description: What the run did
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbeddingRebuildResult'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /consultants/embeddings/cleanup:
+    delete:
+      tags: [ Embeddings ]
+      summary: Delete the vectors of a provider and model that are no longer in use
+      parameters:
+        - in: query
+          name: provider
+          required: true
+          schema: { type: string }
+        - in: query
+          name: model
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: How many rows went
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { type: integer }
+                  provider: { type: string }
+                  model: { type: string }
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /cv-score/run/all/status/{runId}:
+    get:
+      tags: [ CV Scoring ]
+      summary: The state of a batch scoring run
+      parameters:
+        - in: path
+          name: runId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: The run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvScoringRunResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /skills/consultants:
+    get:
+      tags: [ Skills ]
+      summary: Consultants who have a skill, paged, with the skill given as a query parameter
+      description: The same listing as `/skills/{skill}/consultants`, for skill names that do not fit in a path segment.
+      parameters:
+        - in: query
+          name: skill
+          required: true
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 10 }
+        - in: query
+          name: sort
+          schema:
+            type: array
+            items: { type: string }
+          description: "`name,asc` or `name,desc`; anything else keeps the ranking order"
+        - in: query
+          name: onlyActiveCv
+          schema: { type: boolean, default: true }
+        - in: query
+          name: eligibleOnly
+          schema: { type: boolean, default: false }
+          description: Leave out people who cannot be offered to a customer
+        - in: query
+          name: includeSynthetic
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: One page of consultants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultantSkillPageDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /skills/top-ranked-consultants:
+    get:
+      tags: [ Skills ]
+      summary: The top consultants for a skill, ranked on documented experience, with the skill as a query parameter
+      parameters:
+        - in: query
+          name: skill
+          required: true
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 3 }
+        - in: query
+          name: onlyActiveCv
+          schema: { type: boolean, default: true }
+        - in: query
+          name: eligibleOnly
+          schema: { type: boolean, default: true }
+        - in: query
+          name: includeSynthetic
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: The ranking
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillConsultantRankingDto'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /industries/backfill:
+    post:
+      tags: [ Admin ]
+      summary: Tag industries on stored CVs that were saved before tagging existed
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer }
+          description: Stop after this many CVs
+      responses:
+        '200':
+          description: How many CVs were processed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ processed ]
+                properties:
+                  processed: { type: integer }
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
 components:
   parameters:
     PageParam:
@@ -2016,41 +2201,6 @@ components:
       properties:
         content: { type: string }
         modelUsed: { type: string }
-
-    RagChatRequest:
-      type: object
-      required: [ message ]
-      properties:
-        message: { type: string }
-        topK: { type: integer, default: 4 }
-        similarityThreshold: { type: number, format: double, default: 0.7 }
-        filter: { type: string, nullable: true }
-
-    RagChatResponse:
-      type: object
-      properties:
-        answer: { type: string }
-        sources:
-          type: array
-          items:
-            $ref: '#/components/schemas/SourceDocument'
-
-    SourceDocument:
-      type: object
-      properties:
-        id: { type: string, nullable: true }
-        contentPreview: { type: string }
-        metadata:
-          type: object
-          additionalProperties: true
-
-    RagIngestRequest:
-      type: object
-      required: [ candidateId, cvText ]
-      properties:
-        candidateId: { type: integer, format: int64 }
-        name: { type: string, nullable: true }
-        cvText: { type: string }
 
     SkillConsultantRankingDto:
       type: object
@@ -2908,3 +3058,51 @@ components:
           type: object
           additionalProperties: true
           nullable: true
+
+    ConsultantOfferingStatusDto:
+      type: object
+      description: Whether a person can be offered to a customer, as somebody decided it.
+      required: [ userId, offerable ]
+      properties:
+        userId: { type: string, description: The Flowcase user id }
+        name: { type: string, nullable: true }
+        offerable: { type: boolean }
+        reason: { type: string, nullable: true, description: Why, in the decider's words }
+        decidedBy: { type: string, nullable: true }
+        decidedAt: { type: string, format: date-time, nullable: true }
+
+    SetConsultantOfferingStatusRequest:
+      type: object
+      required: [ offerable ]
+      properties:
+        offerable: { type: boolean }
+        reason: { type: string, nullable: true, description: Stored so the decision can be reviewed, and shown when a run refuses the person }
+        decidedBy: { type: string, nullable: true }
+
+    EmbeddingRebuildResult:
+      type: object
+      required: [ processed, created, updated, skipped, failed, provider, model, dimension ]
+      properties:
+        processed: { type: integer }
+        created: { type: integer }
+        updated: { type: integer }
+        skipped: { type: integer }
+        failed: { type: integer }
+        provider: { type: string }
+        model: { type: string }
+        dimension: { type: integer }
+
+    ConsultantSkillPageDto:
+      type: object
+      required: [ content, number, size, totalElements, totalPages, first, last ]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsultantSummaryDto'
+        number: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+        first: { type: boolean }
+        last: { type: boolean }

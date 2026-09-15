@@ -1,14 +1,9 @@
-import apiClient, { aiScoringClient } from './apiClient';
+import { aiScoringClient } from './apiClient';
 import type {
   ChatAnalyzeRequest,
   ChatAnalyzeResponse,
   ChatSearchRequest,
   ChatSearchResponse,
-  RagChatRequest,
-  RagChatResponse,
-  RagIngestRequest,
-  RagIngestResponse,
-  RagIngestDbResponse,
 } from '../types/api';
 
 /**
@@ -30,20 +25,5 @@ export async function clearAnalyzeConversation(conversationId: string): Promise<
 /** The advanced search tab. Now in the root OpenAPI spec; ChatSearchTab is its only caller. */
 export async function searchChat(payload: ChatSearchRequest): Promise<ChatSearchResponse> {
   const { data } = await aiScoringClient.post<ChatSearchResponse>('chatbot/search', payload);
-  return data;
-}
-
-export async function ragChat(payload: RagChatRequest): Promise<RagChatResponse> {
-  const { data } = await aiScoringClient.post<RagChatResponse>('rag/chat', payload);
-  return data;
-}
-
-export async function ragIngest(payload: RagIngestRequest): Promise<RagIngestResponse> {
-  const { data } = await apiClient.post<RagIngestResponse>('rag/ingest', payload);
-  return data;
-}
-
-export async function ragIngestFromDb(): Promise<RagIngestDbResponse> {
-  const { data } = await aiScoringClient.post<RagIngestDbResponse>('rag/ingest/db');
   return data;
 }
