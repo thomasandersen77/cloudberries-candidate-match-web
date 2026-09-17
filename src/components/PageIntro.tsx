@@ -21,6 +21,12 @@ import { setPageIntrosHidden, usePageIntrosHidden } from './pageIntroPreference'
  *
  * Anything about what an action costs or changes belongs next to that action, not in here. This
  * can be switched off; a warning about spending money cannot.
+ *
+ * Nor does a module's claim about itself belong in here. `HowTheAssistantAnswers` is the assistant
+ * saying why its answers can be trusted; it borrows the fold and the button style from this
+ * component and keeps its own state, because switching the page help off is a decision about the
+ * app, and the basis for believing an answer does not go with it. The rule, for both: page help is
+ * visible on arrival, module explanations may fold.
  */
 const PageIntro: React.FC<{ page: PageIntroKey }> = ({ page }) => {
   // Open on arrival. They started folded away, on the reasoning that the work surface should be
