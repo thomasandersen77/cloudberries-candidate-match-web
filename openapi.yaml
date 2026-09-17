@@ -1319,22 +1319,6 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
-  /embeddings/run/jason:
-    post:
-      tags: [ Embeddings ]
-      summary: Generate embedding for the seed/demo consultant ("Jason")
-      responses:
-        '200':
-          description: Operation result
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  processedJason: { type: boolean }
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-
   /matches/{requestId}:
     get:
       tags: [ Matches ]
@@ -2483,6 +2467,7 @@ components:
         updated: { type: integer }
         skipped: { type: integer, description: Unchanged since the last run. }
         failed: { type: integer }
+        rateLimited: { type: integer, description: Consultants the provider refused for quota. The run stops on the first; the next run resumes where it stopped. }
         totalChunks: { type: integer, description: Chunks written across all processed CVs. }
         provider: { type: string }
         model: { type: string }

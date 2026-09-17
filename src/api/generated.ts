@@ -2155,45 +2155,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/embeddings/run/jason": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Generate embedding for the seed/demo consultant ("Jason") */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Operation result */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            processedJason?: boolean;
-                        };
-                    };
-                };
-                default: components["responses"]["ErrorResponse"];
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/matches/{requestId}": {
         parameters: {
             query?: never;
@@ -3465,6 +3426,8 @@ export interface components {
             /** @description Unchanged since the last run. */
             skipped?: number;
             failed?: number;
+            /** @description Consultants the provider refused for quota. The run stops on the first; the next run resumes where it stopped. */
+            rateLimited?: number;
             /** @description Chunks written across all processed CVs. */
             totalChunks?: number;
             provider?: string;

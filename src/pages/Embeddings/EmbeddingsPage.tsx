@@ -100,12 +100,6 @@ const EmbeddingsPage: React.FC = () => {
         )}
       </Paper>
 
-      {/*
-        The Jason demo embedded one hard-coded CV and answered {"processedJason": false}, which says
-        nothing to anybody who was not there when it was written. The endpoint is still there and
-        runJason still calls it; it is the button that is gone.
-      */}
-
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="h6">Kjør for User/CV</Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1 }}>

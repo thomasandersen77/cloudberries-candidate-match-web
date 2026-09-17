@@ -43,8 +43,6 @@ export type EmbeddingRunMissingResponse =
   paths['/embeddings/run/missing']['post']['responses'][200]['content']['application/json'];
 export type EmbeddingUserCvRunResponse =
   paths['/embeddings/run']['post']['responses'][200]['content']['application/json'];
-export type EmbeddingJasonRunResponse =
-  paths['/embeddings/run/jason']['post']['responses'][200]['content']['application/json'];
 export type EmbeddingProviderInfo = components['schemas']['EmbeddingProviderInfo'];
 
 export type CandidateDTO = components['schemas']['CandidateDTO'];
