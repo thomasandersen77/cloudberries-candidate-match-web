@@ -110,7 +110,7 @@ export type MatchStatusDto = components['schemas']['MatchStatusDto'];
 /** @deprecated Use MatchCandidateDto — kept for legacy service call sites */
 export type MatchConsultantDto = MatchCandidateDto & { relevanceScore?: number };
 export type AiModelsResponse = components['schemas']['AiModelsResponse'];
-export type TriggerMatchingResponse = components['schemas']['TriggerMatchingResponse'];
+export type MatchTop10Response = components['schemas']['MatchTop10Response'];
 
 /** Normalized persisted match results for UI (GET /project-requests/{id}/matches). */
 export type ProjectMatchResults = {

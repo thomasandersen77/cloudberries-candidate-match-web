@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  formatMatchScore,
-  formatMatchScoreSuffix,
-  formatLegacyMatchScoreLabel,
-  normalizeMatchScoreForVisualization,
-} from './matchUtils';
+import { formatMatchScore, formatMatchScoreSuffix, formatPercentScore } from './matchUtils';
 
 describe('formatMatchScore', () => {
   it('preserves one decimal place for OpenAPI 0–10 scores', () => {
@@ -30,22 +25,14 @@ describe('formatMatchScoreSuffix', () => {
   });
 });
 
-describe('formatLegacyMatchScoreLabel', () => {
-  it('uses decimal score form for 0–10 scale', () => {
-    expect(formatLegacyMatchScoreLabel(8.3)).toBe('score 8.3 / 10');
+describe('formatPercentScore', () => {
+  it('rounds a 0..1 signal to a whole percentage with a Norwegian space', () => {
+    expect(formatPercentScore(0.904)).toBe('90 %');
+    expect(formatPercentScore(0)).toBe('0 %');
   });
 
-  it('uses percent for 0–100 legacy integers', () => {
-    expect(formatLegacyMatchScoreLabel(83)).toBe('83%');
-  });
-
-  it('uses percent for 0–1 fractional legacy values', () => {
-    expect(formatLegacyMatchScoreLabel(0.87)).toBe('87.0%');
-  });
-});
-
-describe('normalizeMatchScoreForVisualization', () => {
-  it('maps 0–10 scores to 0–1', () => {
-    expect(normalizeMatchScoreForVisualization(8.3)).toBeCloseTo(0.83);
+  it('returns dash when the signal is missing', () => {
+    expect(formatPercentScore(undefined)).toBe('–');
+    expect(formatPercentScore(null)).toBe('–');
   });
 });
