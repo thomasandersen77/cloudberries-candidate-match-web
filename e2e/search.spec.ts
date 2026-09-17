@@ -4,7 +4,8 @@ test.describe('Consultant search', () => {
   test('loads search page and shows tabs', async ({ page }) => {
     await page.goto('/search');
 
-    await expect(page.getByText('Relasjonelt søk')).toBeVisible();
-    await expect(page.getByText('Semantisk søk')).toBeVisible();
+    // By role: the page help under the title names both searches too, and getByText found both.
+    await expect(page.getByRole('tab', { name: 'Relasjonelt søk' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Semantisk søk' })).toBeVisible();
   });
 });
