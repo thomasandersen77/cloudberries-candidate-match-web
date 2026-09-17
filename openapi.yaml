@@ -290,6 +290,10 @@ paths:
     post:
       tags: [ Consultants ]
       summary: Trigger a sync from Flowcase
+      description: >
+        Fetches Flowcase's user list once and each CV once. People missing from the list are marked
+        as departed and kept; a CV Flowcase says is unchanged since the last sync is not rewritten
+        unless force is set.
       parameters:
         - in: query
           name: batchSize
@@ -298,14 +302,19 @@ paths:
             minimum: 1
             maximum: 1000
             default: 100
+        - in: query
+          name: force
+          description: Rewrite every CV, also those Flowcase says are unchanged. For a mapping fix that has to reach CVs nobody edited.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Sync summary
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/ConsultantSyncResponse'
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -2230,7 +2239,7 @@ components:
 
     ConsultantSyncResponse:
       type: object
-      required: [ total, totalInDatabase, attempted, succeeded, failed, skipped, created, updated, skippedReasons, departed, returned ]
+      required: [ total, totalInDatabase, attempted, succeeded, failed, skipped, created, updated, skippedReasons, departed, returned, unchanged ]
       properties:
         total: { type: integer }
         totalInDatabase: { type: integer, format: int64 }
@@ -2250,6 +2259,9 @@ components:
         returned:
           type: integer
           description: People who had been marked departed and are on the list again; the mark is cleared.
+        unchanged:
+          type: integer
+          description: People present in Flowcase whose CV has not changed since the last sync. Their person fields are refreshed; the CV rows are left as they are.
 
     PageConsultantSummaryDto:
       type: object

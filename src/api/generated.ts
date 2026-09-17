@@ -416,11 +416,17 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Trigger a sync from Flowcase */
+        /**
+         * Trigger a sync from Flowcase
+         * @description Fetches Flowcase's user list once and each CV once. People missing from the list are marked as departed and kept; a CV Flowcase says is unchanged since the last sync is not rewritten unless force is set.
+         *
+         */
         post: {
             parameters: {
                 query?: {
                     batchSize?: number;
+                    /** @description Rewrite every CV, also those Flowcase says are unchanged. For a mapping fix that has to reach CVs nobody edited. */
+                    force?: boolean;
                 };
                 header?: never;
                 path?: never;
@@ -434,9 +440,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
+                        "application/json": components["schemas"]["ConsultantSyncResponse"];
                     };
                 };
                 default: components["responses"]["ErrorResponse"];
@@ -3291,6 +3295,8 @@ export interface components {
             departed: number;
             /** @description People who had been marked departed and are on the list again; the mark is cleared. */
             returned: number;
+            /** @description People present in Flowcase whose CV has not changed since the last sync. Their person fields are refreshed; the CV rows are left as they are. */
+            unchanged: number;
         };
         PageConsultantSummaryDto: {
             content?: components["schemas"]["ConsultantSummaryDto"][];
