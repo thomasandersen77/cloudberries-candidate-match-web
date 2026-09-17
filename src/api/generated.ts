@@ -418,7 +418,7 @@ export interface paths {
         put?: never;
         /**
          * Trigger a sync from Flowcase
-         * @description Fetches Flowcase's user list once and each CV once. People missing from the list are marked as departed and kept; a CV Flowcase says is unchanged since the last sync is not rewritten unless force is set.
+         * @description Fetches Flowcase's user list once and each CV once. People missing from the list are marked as departed and kept; a CV Flowcase says is unchanged since the last sync is not rewritten unless force is set. Afterwards the departed lose their vectors and the changed CVs are embedded again, whole and in chunks; unchanged CVs cost no provider call. The same sequence runs nightly where sync.schedule.enabled is set.
          *
          */
         post: {
@@ -3297,6 +3297,16 @@ export interface components {
             returned: number;
             /** @description People present in Flowcase whose CV has not changed since the last sync. Their person fields are refreshed; the CV rows are left as they are. */
             unchanged: number;
+            /** @description What happened to the vectors after the sync. Null when embeddings are off, and for a single-consultant sync. */
+            embeddings?: components["schemas"]["SyncEmbeddingRefresh"] | null;
+        };
+        SyncEmbeddingRefresh: {
+            /** @description Departed consultants whose vectors and chunks were removed. */
+            vectorsDeletedFor: number;
+            /** @description The whole-CV rebuild, skipping by hash so only changed CVs reached the provider. Null when nothing changed. */
+            wholeCv?: components["schemas"]["EmbeddingRebuildResult"] | null;
+            /** @description The chunk rebuild, likewise. Null when nothing changed. */
+            chunks?: components["schemas"]["ChunkRebuildResult"] | null;
         };
         PageConsultantSummaryDto: {
             content?: components["schemas"]["ConsultantSummaryDto"][];
