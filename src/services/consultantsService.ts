@@ -96,12 +96,9 @@ export function mapToConsultantSummaryPage(
     };
 }
 
-export interface ConsultantSyncResponse {
-    total?: number;
-    succeeded?: number;
-    failed?: number;
-    [key: string]: unknown;
-}
+/** The generated shape. A handwritten copy with an index signature hid every field the server added. */
+import type { ConsultantSyncResponse } from '../types/api';
+export type { ConsultantSyncResponse };
 
 export async function runConsultantSync(batchSize = 120): Promise<ConsultantSyncResponse> {
     const {data} = await aiScoringClient.post<ConsultantSyncResponse>('consultants/sync/run', null, {params: {batchSize}});

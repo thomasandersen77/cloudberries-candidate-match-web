@@ -2246,7 +2246,7 @@ components:
 
     ConsultantSyncResponse:
       type: object
-      required: [ total, totalInDatabase, attempted, succeeded, failed, skipped, created, updated, skippedReasons ]
+      required: [ total, totalInDatabase, attempted, succeeded, failed, skipped, created, updated, skippedReasons, departed, returned ]
       properties:
         total: { type: integer }
         totalInDatabase: { type: integer, format: int64 }
@@ -2260,6 +2260,12 @@ components:
           type: object
           additionalProperties:
             type: integer
+        departed:
+          type: integer
+          description: People missing from Flowcase's user list this run. Marked as departed and kept, not deleted; they leave every search, pool and list.
+        returned:
+          type: integer
+          description: People who had been marked departed and are on the list again; the mark is cleared.
 
     PageConsultantSummaryDto:
       type: object

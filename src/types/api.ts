@@ -111,6 +111,7 @@ export type MatchStatusDto = components['schemas']['MatchStatusDto'];
 export type MatchConsultantDto = MatchCandidateDto & { relevanceScore?: number };
 export type AiModelsResponse = components['schemas']['AiModelsResponse'];
 export type MatchTop10Response = components['schemas']['MatchTop10Response'];
+export type ConsultantSyncResponse = components['schemas']['ConsultantSyncResponse'];
 
 /** Normalized persisted match results for UI (GET /project-requests/{id}/matches). */
 export type ProjectMatchResults = {

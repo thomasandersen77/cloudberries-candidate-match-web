@@ -3326,6 +3326,10 @@ export interface components {
             skippedReasons: {
                 [key: string]: number;
             };
+            /** @description People missing from Flowcase's user list this run. Marked as departed and kept, not deleted; they leave every search, pool and list. */
+            departed: number;
+            /** @description People who had been marked departed and are on the list again; the mark is cleared. */
+            returned: number;
         };
         PageConsultantSummaryDto: {
             content?: components["schemas"]["ConsultantSummaryDto"][];
