@@ -1,4 +1,5 @@
 import PageIntro from '../../components/PageIntro';
+import HowTheAssistantAnswers from '../HowTheAssistantAnswers';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Container, Typography, TextField, Button, Paper, CircularProgress, Stack,
@@ -1347,6 +1348,16 @@ const ChatAnalyzePage: React.FC = () => {
           </Button>
         </Stack>
       </Paper>
+
+      {/*
+        The assistant's own account of how an answer comes about, open, under the composer. This is
+        the page where somebody decides whether to trust what came back, and the front page only
+        has room for the folded version. Its own thing, not part of PageIntro: turning the page help
+        off must not take the basis for believing an answer with it.
+      */}
+      <Box sx={{ mt: 2 }}>
+        <HowTheAssistantAnswers />
+      </Box>
     </Container>
   );
 };

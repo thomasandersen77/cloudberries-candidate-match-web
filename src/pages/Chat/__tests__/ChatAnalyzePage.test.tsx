@@ -953,4 +953,16 @@ describe('ChatAnalyzePage', () => {
       expect(screen.getByText('«Joacim» er lest som Joachim Lous')).toBeInTheDocument()
     );
   });
+
+  /**
+   * The whole explanation, open, on the page where somebody decides whether to trust an answer.
+   * The front page only has room for it folded.
+   */
+  it('shows how the assistant arrives at an answer, without having to open anything', () => {
+    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+
+    expect(screen.getByText('Hvordan assistenten kommer fram til svaret')).toBeInTheDocument();
+    expect(screen.getByText(/Vi slår opp først/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Hvordan fungerer dette?' })).not.toBeInTheDocument();
+  });
 });
