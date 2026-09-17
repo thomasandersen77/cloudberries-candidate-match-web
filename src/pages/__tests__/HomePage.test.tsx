@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import HomePage from '../HomePage';
 import { ColorModeProvider } from '../../theme';
@@ -18,6 +18,9 @@ const renderPage = () => render(
     <MemoryRouter><HomePage /></MemoryRouter>
   </ColorModeProvider>
 );
+
+/** The explanation starts folded; these tests are about what is in it once opened. */
+const openExplanation = () => fireEvent.click(screen.getByRole('button', { name: 'Hvordan fungerer dette?' }));
 
 describe('HomePage', () => {
   beforeEach(() => {
@@ -67,6 +70,7 @@ describe('HomePage', () => {
    */
   it('explains that the lookup happens before the model does', async () => {
     renderPage();
+    openExplanation();
 
     expect(screen.getByText(/Hvordan assistenten kommer fram til svaret/)).toBeInTheDocument();
     expect(screen.getByText(/Vi slår opp først/)).toBeInTheDocument();
@@ -91,6 +95,7 @@ describe('HomePage', () => {
    */
   it('does not claim the lookup is model-free or that every claim carries a source', async () => {
     renderPage();
+    openExplanation();
 
     // Case-insensitive: the same promise stood mid-sentence in the hero paragraph as well, and a
     // capitalised pattern would have walked straight past it.
@@ -101,8 +106,29 @@ describe('HomePage', () => {
   /** Both modes exist, and only one of them looks anything up. */
   it('says that the general mode answers without the database', async () => {
     renderPage();
+    openExplanation();
 
     expect(screen.getByText(/Generell AI, svarer modellen på egen hånd/)).toBeInTheDocument();
+  });
+
+  /**
+   * Folded on arrival, because open it was most of the page on a phone, and reachable behind a
+   * button that says what it opens and tells assistive technology whether it is open. The steps
+   * are not in the document while folded: a Collapse keeps its children mounted by default, which
+   * would read the whole explanation out to a screen reader that cannot see it is hidden.
+   */
+  it('folds the explanation on arrival and opens it on request', async () => {
+    renderPage();
+
+    const toggle = screen.getByRole('button', { name: 'Hvordan fungerer dette?' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText(/Vi slår opp først/)).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toggle).toHaveAttribute('aria-controls', screen.getByText(/Vi slår opp først/).closest('[id]')!.id);
+    expect(screen.getByText(/Vi slår opp først/)).toBeInTheDocument();
   });
 
   /** Moved, not removed: the way to the rest is on the page that no longer lists them. */

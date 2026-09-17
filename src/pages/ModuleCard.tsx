@@ -61,7 +61,7 @@ const ModuleCard: React.FC<React.PropsWithChildren<{ link: ModuleLink }>> = ({ l
               },
             }}
           >
-            <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ p: { xs: 2.5, sm: 3 }, flex: 1, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ pr: 1 }}>
                   <Typography
