@@ -2311,8 +2311,12 @@ components:
         name: { type: string }
         cvId: { type: string }
         email: { type: string, nullable: true }
-        office: { type: string, nullable: true }
-        role: { type: string, nullable: true }
+        office: { type: string, nullable: true, description: "Flowcase's office name: Oslo, Sør-Øst, Sør-Vest." }
+        role: { type: string, nullable: true, description: The CV headline, which states the position. }
+        flowcaseRoles:
+          type: array
+          items: { type: string }
+          description: "Flowcase's account roles: consultant, internationalmanager, external. Empty when unknown."
         qualityScore:
           type: integer
           nullable: true

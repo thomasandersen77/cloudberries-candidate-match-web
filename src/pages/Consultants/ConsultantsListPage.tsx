@@ -16,6 +16,7 @@ import ScoringOverlay from '../../components/ScoringOverlay';
 import { getSkillsDisplay } from '../../utils/skillUtils';
 import { compareByQualityThenName, getActiveQualityScore } from '../../utils/scoreUtils';
 import CvScoreBadge from '../../components/CvScoreBadge';
+import ConsultantOfficeLine from '../../components/ConsultantOfficeLine';
 
 // Mobile consultant card component
 const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetailsClick: () => void; onCvClick: () => void }> = ({ 
@@ -33,9 +34,10 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
               {consultant.name}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
               ID: {consultant.userId}
             </Typography>
+            <ConsultantOfficeLine consultant={consultant} />
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {quality !== null ? (
@@ -468,6 +470,7 @@ const fetchData = async () => {
                               <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.25, letterSpacing: '-0.01em' }}>
                                 {c.name}
                               </Typography>
+                              <ConsultantOfficeLine consultant={c} />
                               {isTablet && (
                                 <Box sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.25 }}>
                                   {tabletSkills.map((s, idx) => (

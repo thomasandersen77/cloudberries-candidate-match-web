@@ -3325,8 +3325,12 @@ export interface components {
             name: string;
             cvId: string;
             email?: string | null;
+            /** @description Flowcase's office name: Oslo, Sør-Øst, Sør-Vest. */
             office?: string | null;
+            /** @description The CV headline */
             role?: string | null;
+            /** @description Flowcase's account roles: consultant, internationalmanager, external. Empty when unknown. */
+            flowcaseRoles?: string[];
             /** @description CV quality score 0-100 for the consultant's active CV, or the first CV that has one. Surfaced at the top level so result lists can show how sellable a CV is without unpacking the nested CV payload. */
             qualityScore?: number | null;
             skills: string[];

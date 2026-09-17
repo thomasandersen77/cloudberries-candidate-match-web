@@ -8,6 +8,7 @@ import SkillsSection from '../../components/CV/SkillsSection';
 import SyncButton from '../../components/Sync/SyncButton';
 import SyncNotificationPanel, { type SyncNotification } from '../../components/Sync/SyncNotificationPanel';
 import CvScoreBadge from '../../components/CvScoreBadge';
+import ConsultantOfficeLine from '../../components/ConsultantOfficeLine';
 
 const ConsultantDetailPage: React.FC = () => {
   const { userId } = useParams();
@@ -142,9 +143,12 @@ const ConsultantDetailPage: React.FC = () => {
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 1 }}>
             {consultant.name}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: hasQuality ? 2 : 0 }}>
+          <Typography variant="body2" color="text.secondary">
             Bruker-ID: {consultant.userId}
           </Typography>
+          <Box sx={{ mb: hasQuality ? 2 : 0 }}>
+            <ConsultantOfficeLine consultant={consultant} />
+          </Box>
           {hasQuality && (
             <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
