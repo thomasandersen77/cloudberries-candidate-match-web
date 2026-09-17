@@ -2272,11 +2272,14 @@ components:
 
     SyncEmbeddingRefresh:
       type: object
-      required: [ vectorsDeletedFor ]
+      required: [ vectorsDeleted, chunksDeleted ]
       properties:
-        vectorsDeletedFor:
+        vectorsDeleted:
           type: integer
-          description: Departed consultants whose vectors and chunks were removed.
+          description: Whole-CV vectors removed because their owner is marked as departed, whenever they left.
+        chunksDeleted:
+          type: integer
+          description: Chunks removed for the same reason.
         wholeCv:
           nullable: true
           allOf:

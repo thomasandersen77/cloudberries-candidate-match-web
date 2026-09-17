@@ -3301,8 +3301,10 @@ export interface components {
             embeddings?: components["schemas"]["SyncEmbeddingRefresh"] | null;
         };
         SyncEmbeddingRefresh: {
-            /** @description Departed consultants whose vectors and chunks were removed. */
-            vectorsDeletedFor: number;
+            /** @description Whole-CV vectors removed because their owner is marked as departed, whenever they left. */
+            vectorsDeleted: number;
+            /** @description Chunks removed for the same reason. */
+            chunksDeleted: number;
             /** @description The whole-CV rebuild, skipping by hash so only changed CVs reached the provider. Null when nothing changed. */
             wholeCv?: components["schemas"]["EmbeddingRebuildResult"] | null;
             /** @description The chunk rebuild, likewise. Null when nothing changed. */
