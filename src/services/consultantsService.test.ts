@@ -176,24 +176,26 @@ expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenC
   });
 
   describe('syncSingleConsultant', () => {
-    it('should trigger minimal batch sync and map response', async () => {
-      (mockedAiClient.post as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-        data: { total: 1, succeeded: 1, failed: 0 },
-      });
+    it('calls the endpoint for one consultant, not the full run with batchSize 1', async () => {
+      const data = { total: 1, attempted: 1, succeeded: 1, failed: 0, skipped: 0, created: 0, updated: 1 };
+      (mockedAiClient.post as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ data });
 
       const result = await syncSingleConsultant('123', 'cv123');
 
-      expect((mockedAiClient.post as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
-        'consultants/sync/run',
-        null,
-        { params: { batchSize: 1 } }
-      );
-      expect(result).toEqual({
-        userId: '123',
-        cvId: 'cv123',
-        processed: true,
-        message: 'Sync batch triggered',
-      });
+      const post = mockedAiClient.post as unknown as ReturnType<typeof vi.fn>;
+      expect(post).toHaveBeenCalledTimes(1);
+      expect(post.mock.calls[0][0]).toBe('consultants/sync/123/cv123');
+      expect(post).not.toHaveBeenCalledWith('consultants/sync/run', expect.anything(), expect.anything());
+      expect(result).toEqual(data);
+    });
+
+    it('encodes the ids into the path', async () => {
+      (mockedAiClient.post as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ data: {} });
+
+      await syncSingleConsultant('a/b', 'c d');
+
+      const post = mockedAiClient.post as unknown as ReturnType<typeof vi.fn>;
+      expect(post.mock.calls[0][0]).toBe('consultants/sync/a%2Fb/c%20d');
     });
   });
 

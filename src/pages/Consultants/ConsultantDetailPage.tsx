@@ -7,6 +7,7 @@ import CvSummary from '../../components/CV/CvSummary';
 import SkillsSection from '../../components/CV/SkillsSection';
 import SyncButton from '../../components/Sync/SyncButton';
 import SyncNotificationPanel, { type SyncNotification } from '../../components/Sync/SyncNotificationPanel';
+import { singleSyncNotification } from '../../components/Sync/singleSyncNotification';
 import CvScoreBadge from '../../components/CvScoreBadge';
 import ConsultantOfficeLine from '../../components/ConsultantOfficeLine';
 
@@ -66,12 +67,7 @@ const ConsultantDetailPage: React.FC = () => {
 
     try {
       const result = await syncSingleConsultant(consultant.userId, consultant.cvId);
-      setNotification({
-        type: 'success',
-        title: 'CV oppdatert',
-        message: 'CV-en er hentet fra Flowcase',
-        details: { processed: result.processed },
-      });
+      setNotification(singleSyncNotification(result));
 
       const consultants = await listConsultantsWithCv(false);
       const updatedConsultant = consultants.find((c) => c.userId === userId);

@@ -10,6 +10,7 @@ import ProjectExperienceTable from '../../components/CV/ProjectExperienceTable';
 import SyncButton from '../../components/Sync/SyncButton';
 import SyncNotificationPanel from '../../components/Sync/SyncNotificationPanel';
 import type { SyncNotification } from '../../components/Sync/SyncNotificationPanel';
+import { singleSyncNotification } from '../../components/Sync/singleSyncNotification';
 
 const CvViewPage: React.FC = () => {
   const { userId } = useParams();
@@ -69,12 +70,7 @@ const CvViewPage: React.FC = () => {
 
     try {
       const result = await syncSingleConsultant(consultant.userId, consultant.cvId);
-      setNotification({
-        type: 'success',
-        title: 'CV oppdatert',
-        message: 'CV-en er hentet fra Flowcase',
-        details: { processed: result.processed }
-      });
+      setNotification(singleSyncNotification(result));
       
       // Refresh consultant data
       const consultants = await listConsultantsWithCv(false);

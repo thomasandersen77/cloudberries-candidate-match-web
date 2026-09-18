@@ -104,30 +104,20 @@ export async function runConsultantSync(batchSize = 120): Promise<ConsultantSync
     const {data} = await aiScoringClient.post<ConsultantSyncResponse>('consultants/sync/run', null, {params: {batchSize}});
     return data;
 }
-export interface ConsultantSyncSingleResponse {
-    userId: string;
-    cvId: string;
-    processed: boolean;
-    message?: string;
-}
-
 /**
- * Compatibility helper for UI flows that trigger a targeted CV sync.
- * Backend exposes batch sync in OpenAPI, so this triggers a minimal batch run.
+ * One consultant, written whatever Flowcase says about the CV's age.
+ *
+ * This used to call the full run with batchSize 1, which walked every consultant in Flowcase
+ * one at a time and refreshed the vectors afterwards; "Oppdater CV" on one person cost the same
+ * as "Hent alle CV-er". The endpoint for one consultant has been in the contract all along.
+ * The backend answers 200 with counters: `succeeded` when the CV was written, `skipped` when
+ * Flowcase no longer has the person or the CV, `failed` when Flowcase did not answer properly.
  */
-export async function syncSingleConsultant(userId: string, cvId: string): Promise<ConsultantSyncSingleResponse> {
-    const {data} = await aiScoringClient.post<ConsultantSyncResponse>('consultants/sync/run', null, {
-        params: {batchSize: 1}
-    });
-    const succeeded = typeof data?.succeeded === 'number' ? data.succeeded : undefined;
-    const total = typeof data?.total === 'number' ? data.total : undefined;
-    const processed = (succeeded ?? total ?? 0) > 0;
-    return {
-        userId,
-        cvId,
-        processed,
-        message: processed ? 'Sync batch triggered' : 'No consultants processed by sync batch',
-    };
+export async function syncSingleConsultant(userId: string, cvId: string): Promise<ConsultantSyncResponse> {
+    const {data} = await aiScoringClient.post<ConsultantSyncResponse>(
+        `consultants/sync/${encodeURIComponent(userId)}/${encodeURIComponent(cvId)}`
+    );
+    return data;
 }
 
 // New CV-related endpoints
