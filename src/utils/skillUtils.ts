@@ -58,6 +58,40 @@ export function getTopSkills(consultant: ConsultantWithCvDto, limit: number = 3)
     .map(skill => skill.name);
 }
 
+export interface RankedSkill {
+  name: string;
+  durationYears: number;
+  category?: string;
+}
+
+/**
+ * The skills with the most years behind them, across every category, longest first and then by
+ * name, one entry per name. Skills without a duration are left out: there is nothing to rank them
+ * by, and the full list is one click away.
+ */
+export function rankSkillsByDuration(skillCategories: SkillCategoryDto[], limit: number): RankedSkill[] {
+  const byName = new Map<string, RankedSkill>();
+  for (const category of skillCategories) {
+    for (const skill of category.skills ?? []) {
+      const name = skill.name?.trim();
+      const years = skill.durationYears ?? 0;
+      if (!name || years <= 0) continue;
+      const seen = byName.get(name.toLowerCase());
+      if (!seen || seen.durationYears < years) {
+        byName.set(name.toLowerCase(), { name, durationYears: years, category: category.name ?? undefined });
+      }
+    }
+  }
+  return Array.from(byName.values())
+    .sort((a, b) => (b.durationYears - a.durationYears) || a.name.localeCompare(b.name, 'no'))
+    .slice(0, limit);
+}
+
+/** Every skill entry in the categories, the number the full CV page shows as chips. */
+export function countSkills(skillCategories: SkillCategoryDto[]): number {
+  return skillCategories.reduce((n, c) => n + (c.skills?.filter(s => s.name?.trim()).length ?? 0), 0);
+}
+
 /**
  * Gets all skills from a consultant including those with duration info
  * @param consultant The consultant data

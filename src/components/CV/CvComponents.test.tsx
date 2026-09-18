@@ -1,6 +1,6 @@
 import React from 'react';
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import CvSummary from './CvSummary';
 import SkillsSection from './SkillsSection';
@@ -40,6 +40,56 @@ describe('CvSummary', () => {
 
     expect(screen.getAllByText('Sammendrag')[0]).toBeInTheDocument();
     expect(screen.getByText('Ingen nøkkelkvalifikasjoner tilgjengelig')).toBeInTheDocument();
+  });
+
+  /** Three CVs label their one key qualification "Sammendrag"; under the heading it read twice. */
+  it('does not repeat the heading when Flowcase used it as the label', () => {
+    render(<CvSummary keyQualifications={[{ label: 'Sammendrag', description: 'Senior utvikler.' }]} />);
+
+    expect(screen.getAllByText('Sammendrag')).toHaveLength(1);
+    expect(screen.getByText('Senior utvikler.')).toBeInTheDocument();
+  });
+
+  describe('clamped', () => {
+    const long = 'Lang tekst. '.repeat(120);
+    const sizes = { scrollHeight: 0, clientHeight: 0 };
+    const define = (prop: 'scrollHeight' | 'clientHeight') =>
+      Object.defineProperty(HTMLElement.prototype, prop, { configurable: true, get: () => sizes[prop] });
+    const originals = {
+      scrollHeight: Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight'),
+      clientHeight: Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight'),
+    };
+    afterEach(() => {
+      cleanup();
+      for (const p of ['scrollHeight', 'clientHeight'] as const) {
+        if (originals[p]) Object.defineProperty(HTMLElement.prototype, p, originals[p]!);
+      }
+    });
+
+    it('cuts to the asked lines and offers the rest when the browser says text was cut', () => {
+      sizes.scrollHeight = 400; sizes.clientHeight = 80; define('scrollHeight'); define('clientHeight');
+      render(<CvSummary keyQualifications={[{ label: 'Profil', description: long }]} clampLines={4} />);
+
+      const text = screen.getByText(long.trim());
+      expect(text).toHaveStyle({ WebkitLineClamp: '4' });
+      const more = screen.getByRole('button', { name: 'Vis mer' });
+      fireEvent.click(more);
+      expect(screen.getByText(long.trim())).not.toHaveStyle({ overflow: 'hidden' });
+      expect(screen.getByRole('button', { name: 'Vis mindre' })).toBeInTheDocument();
+    });
+
+    it('shows no toggle when everything fits', () => {
+      sizes.scrollHeight = 60; sizes.clientHeight = 60; define('scrollHeight'); define('clientHeight');
+      render(<CvSummary keyQualifications={[{ label: 'Profil', description: 'Kort.' }]} clampLines={4} />);
+
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('shows everything when no clamp was asked for', () => {
+      render(<CvSummary keyQualifications={[{ label: 'Profil', description: long }]} />);
+      expect(screen.getByText(long.trim())).not.toHaveStyle({ overflow: 'hidden' });
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
   });
 });
 

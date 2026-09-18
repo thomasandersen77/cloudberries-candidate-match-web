@@ -4,7 +4,7 @@ import { Box, Container, Typography, Paper, Button, Stack, Alert, Divider, Skele
 import { listConsultantsWithCv, syncSingleConsultant } from '../../services/consultantsService';
 import type { ConsultantWithCvDto, ConsultantCvDto } from '../../types/api';
 import CvSummary from '../../components/CV/CvSummary';
-import SkillsSection from '../../components/CV/SkillsSection';
+import SkillsOverview from '../../components/CV/SkillsOverview';
 import SyncButton from '../../components/Sync/SyncButton';
 import SyncNotificationPanel, { type SyncNotification } from '../../components/Sync/SyncNotificationPanel';
 import { singleSyncNotification, singleSyncProgressNotification } from '../../components/Sync/singleSyncNotification';
@@ -135,9 +135,6 @@ const ConsultantDetailPage: React.FC = () => {
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 1 }}>
             {consultant.name}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Bruker-ID: {consultant.userId}
-          </Typography>
           <Box sx={{ mb: hasQuality ? 2 : 0 }}>
             <ConsultantOfficeLine consultant={consultant} />
           </Box>
@@ -162,8 +159,17 @@ const ConsultantDetailPage: React.FC = () => {
 
       {activeCv ? (
         <Box>
-          <CvSummary keyQualifications={activeCv.keyQualifications || []} />
-          <SkillsSection skillCategories={activeCv.skillCategories || []} skills={consultant.skills} />
+          {/*
+            Key figures and competence, as the intro promises; the document itself is "Se hele CV".
+            This page used to render the CV's whole summary and skills section, which for a senior
+            consultant was two and a half screens, most of it 133 chips.
+          */}
+          <CvSummary keyQualifications={activeCv.keyQualifications || []} clampLines={4} />
+          <SkillsOverview
+            skillCategories={activeCv.skillCategories || []}
+            skills={consultant.skills}
+            onShowAll={handleViewFullCV}
+          />
 
           <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3 }, mb: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, letterSpacing: '-0.01em', mb: 2 }}>
@@ -212,6 +218,11 @@ const ConsultantDetailPage: React.FC = () => {
           </Typography>
         </Paper>
       )}
+
+      {/* Flowcase's id, for whoever has to look the person up there. It sat under the name. */}
+      <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1 }}>
+        Flowcase-id {consultant.userId}
+      </Typography>
     </Container>
   );
 };
