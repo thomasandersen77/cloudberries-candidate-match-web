@@ -1,5 +1,7 @@
 import apiClient, { aiScoringClient } from './apiClient';
+import { isAxiosError } from 'axios';
 import type {
+  MatchesListItemDto,
   PagedMatchesListDto,
   MatchCandidateDto,
   ProjectRequestSummaryDto,
@@ -10,6 +12,17 @@ import type { MatchItemDto } from './newMatchesService';
 export async function listMatchRequestSummaries(): Promise<ProjectRequestSummaryDto[]> {
   const { data } = await apiClient.get<ProjectRequestSummaryDto[]>('matches/requests');
   return data;
+}
+
+/** One request as the list shows it, with its requirement coverage; null when there is no such request. */
+export async function getMatchRequest(id: number): Promise<MatchesListItemDto | null> {
+  try {
+    const { data } = await apiClient.get<MatchesListItemDto>(`matches/requests/${id}`);
+    return data;
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.status === 404) return null;
+    throw error;
+  }
 }
 
 export async function listMatchRequests(params: { page?: number; size?: number; sort?: string } = {}): Promise<PagedMatchesListDto> {

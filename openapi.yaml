@@ -462,6 +462,27 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /matches/requests/{id}:
+    get:
+      tags: [ Matches ]
+      summary: One project request as the list shows it, with its requirement coverage
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: The request with coverage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchesListItemDto'
+        '404':
+          description: No such request
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /matches/requests/{id}/top-consultants:
     get:
       tags: [ Matches ]
@@ -2592,7 +2613,7 @@ components:
 
     MatchesListItemDto:
       type: object
-      required: [ id, coverageStatus, coverageLabel ]
+      required: [ id, coverageStatus, coverageLabel, coverage ]
       properties:
         id: { type: integer, format: int64 }
         title: { type: string, nullable: true, description: The document's own heading. }
@@ -2612,14 +2633,66 @@ components:
             verdict on whether anybody satisfies the request. Null when the requirements named no
             technology, so a missing basis is never reported as a count of zero.
         coverageStatus: { $ref: '#/components/schemas/CoverageStatus' }
-        coverageLabel: { type: string, description: Norwegian label matching coverageStatus. }
+        coverageLabel:
+          type: string
+          description: >-
+            Norwegian words for coverageStatus, e.g. "4 dekker alle må-krav", "Ingen dekker alle
+            må-krav", "Ingen teknologikrav gjenkjent". The server owns the wording.
+        coverage: { $ref: '#/components/schemas/RequirementCoverageDto' }
+        aiMatchCount:
+          type: integer
+          nullable: true
+          description: Stored AI assessments for this request. Null when none has been run; nothing is computed for the list.
+        aiLastUpdated: { type: string, format: date-time, nullable: true }
 
     CoverageStatus:
       type: string
       description: >-
-        Traffic light over hitCount. GREEN from 5 hits, YELLOW from 2, RED below that including
-        zero. NEUTRAL means the count could not be established, which is not the same as zero.
+        Traffic light over coverage.fullMatchCount, the consultants who hold a skill for every must
+        (or every should, when the request has no must naming a technology). GREEN from 3, YELLOW
+        for 1 or 2, RED for 0. NEUTRAL means no requirement named a technology the corpus knows,
+        which is not the same as zero.
       enum: [ GREEN, YELLOW, RED, NEUTRAL ]
+
+    RequirementPriority:
+      type: string
+      enum: [ MUST, SHOULD ]
+
+    RequirementCoverageItemDto:
+      type: object
+      required: [ name, priority, skills, consultants ]
+      description: One requirement aimed at the consultant that named a technology the corpus knows.
+      properties:
+        name: { type: string, description: The requirement as written. }
+        priority: { $ref: '#/components/schemas/RequirementPriority' }
+        skills:
+          type: array
+          items: { type: string }
+          description: Canonical skill names it resolved to; holding any one of them covers it.
+        consultants: { type: integer, description: Active consultants holding at least one of the skills. }
+
+    RequirementCoverageDto:
+      type: object
+      required: [ technologyRequirements, covered, fullMatchCount, requirements, otherRequirements ]
+      description: >-
+        How the corpus covers a request, requirement by requirement. Requirements aimed at the
+        supplier are left out. Requirements naming no technology the corpus knows (years, language,
+        sector) are listed under otherRequirements rather than counted as uncovered.
+      properties:
+        technologyRequirements: { type: integer, description: Consultant requirements that named a technology. }
+        covered: { type: integer, description: "Of those, how many at least one active consultant holds." }
+        fullMatchCount: { type: integer, description: Active consultants holding a skill for every requirement in the basis. }
+        fullMatchBasis:
+          allOf: [ { $ref: '#/components/schemas/RequirementPriority' } ]
+          nullable: true
+          description: MUST when the request has must technology requirements, SHOULD when it only has shoulds, null when neither.
+        requirements:
+          type: array
+          items: { $ref: '#/components/schemas/RequirementCoverageItemDto' }
+          description: Musts first, otherwise in the request's own order.
+        otherRequirements:
+          type: array
+          items: { type: string }
 
     MatchCandidateDto:
       type: object
@@ -2686,6 +2759,16 @@ components:
         combinedScore: { type: number, format: double }
         reason: { type: string }
         email: { type: string, nullable: true }
+        matchedRequirements:
+          type: array
+          items: { type: string }
+          description: The request's technology requirements this consultant holds a skill for, by the requirement's name.
+        missingRequirements:
+          type: array
+          items: { type: string }
+          description: The ones they do not, musts first.
+        mustCovered: { type: integer, description: How many of the must technology requirements are matched. }
+        mustTotal: { type: integer, description: How many must technology requirements the request has. }
 
     RunMatchingRequest:
       type: object

@@ -650,6 +650,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/matches/requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One project request as the list shows it, with its requirement coverage */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The request with coverage */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchesListItemDto"];
+                    };
+                };
+                /** @description No such request */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/matches/requests/{id}/top-consultants": {
         parameters: {
             query?: never;
@@ -3540,14 +3586,45 @@ export interface components {
              */
             hitCount?: number | null;
             coverageStatus: components["schemas"]["CoverageStatus"];
-            /** @description Norwegian label matching coverageStatus. */
+            /** @description Norwegian words for coverageStatus, e.g. "4 dekker alle må-krav", "Ingen dekker alle må-krav", "Ingen teknologikrav gjenkjent". The server owns the wording. */
             coverageLabel: string;
+            coverage: components["schemas"]["RequirementCoverageDto"];
+            /** @description Stored AI assessments for this request. Null when none has been run; nothing is computed for the list. */
+            aiMatchCount?: number | null;
+            /** Format: date-time */
+            aiLastUpdated?: string | null;
         };
         /**
-         * @description Traffic light over hitCount. GREEN from 5 hits, YELLOW from 2, RED below that including zero. NEUTRAL means the count could not be established, which is not the same as zero.
+         * @description Traffic light over coverage.fullMatchCount, the consultants who hold a skill for every must (or every should, when the request has no must naming a technology). GREEN from 3, YELLOW for 1 or 2, RED for 0. NEUTRAL means no requirement named a technology the corpus knows, which is not the same as zero.
          * @enum {string}
          */
         CoverageStatus: "GREEN" | "YELLOW" | "RED" | "NEUTRAL";
+        /** @enum {string} */
+        RequirementPriority: "MUST" | "SHOULD";
+        /** @description One requirement aimed at the consultant that named a technology the corpus knows. */
+        RequirementCoverageItemDto: {
+            /** @description The requirement as written. */
+            name: string;
+            priority: components["schemas"]["RequirementPriority"];
+            /** @description Canonical skill names it resolved to; holding any one of them covers it. */
+            skills: string[];
+            /** @description Active consultants holding at least one of the skills. */
+            consultants: number;
+        };
+        /** @description How the corpus covers a request, requirement by requirement. Requirements aimed at the supplier are left out. Requirements naming no technology the corpus knows (years, language, sector) are listed under otherRequirements rather than counted as uncovered. */
+        RequirementCoverageDto: {
+            /** @description Consultant requirements that named a technology. */
+            technologyRequirements: number;
+            /** @description Of those, how many at least one active consultant holds. */
+            covered: number;
+            /** @description Active consultants holding a skill for every requirement in the basis. */
+            fullMatchCount: number;
+            /** @description MUST when the request has must technology requirements, SHOULD when it only has shoulds, null when neither. */
+            fullMatchBasis?: components["schemas"]["RequirementPriority"] | null;
+            /** @description Musts first, otherwise in the request's own order. */
+            requirements: components["schemas"]["RequirementCoverageItemDto"][];
+            otherRequirements: string[];
+        };
         MatchCandidateDto: {
             userId: string;
             name: string;
@@ -3603,6 +3680,14 @@ export interface components {
             combinedScore?: number;
             reason?: string;
             email?: string | null;
+            /** @description The request's technology requirements this consultant holds a skill for, by the requirement's name. */
+            matchedRequirements?: string[];
+            /** @description The ones they do not, musts first. */
+            missingRequirements?: string[];
+            /** @description How many of the must technology requirements are matched. */
+            mustCovered?: number;
+            /** @description How many must technology requirements the request has. */
+            mustTotal?: number;
         };
         /** @description Optional body for an AI matching run. Naming candidates skips preselection entirely.
          *     Preselection is a recall filter and its ordering predicts the LLM's ranking poorly, so a

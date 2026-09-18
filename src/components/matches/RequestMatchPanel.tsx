@@ -18,7 +18,6 @@ import {
   Stack,
   ToggleButton,
   ToggleButtonGroup,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -26,6 +25,8 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { Link as RouterLink } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import HighQualityToggle from '../HighQualityToggle';
+import { CoverageChips } from './RequestCoverage';
+import { describeCoverage, type RequirementCoverage } from './coverageText';
 import {
   getProjectMatchResults,
   getProjectMatchStatus,
@@ -52,6 +53,15 @@ import { getScoreColor } from '../../utils/scoreUtils';
 const LIMIT_OPTIONS = [5, 10, 15] as const;
 const CV_WEIGHT_OPTIONS = [20, 30, 50, 60, 80] as const;
 const DETAIL_PREVIEW_LENGTH = 140;
+/** How many of the requirements that cannot be checked against skills are spelled out before "+N". */
+const OTHER_REQUIREMENTS_SHOWN = 4;
+
+/** A heading over one of the panel's three parts: the requirements, the candidates, the AI. */
+const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Typography variant="overline" component="h3" sx={{ display: 'block', lineHeight: 1.6, color: 'text.secondary' }}>
+    {children}
+  </Typography>
+);
 
 function truncateDetail(text: string, maxLength = DETAIL_PREVIEW_LENGTH): string {
   if (text.length <= maxLength) return text;
@@ -150,9 +160,10 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
               )}
             </Stack>
           </Stack>
+          {/* Closed, the first line only: for a preview row that is what they lack, for an AI row the start of the reasoning. */}
           {hasDetail && !isExpanded && (
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-              {truncateDetail(detail!)}
+              {truncateDetail(detail!.split('\n')[0])}
             </Typography>
           )}
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
@@ -208,14 +219,23 @@ function resolvePhase(status: ProjectMatchStatusResponse | MatchStatusDto, hasRe
 
 export type RequestMatchPanelProps = {
   requestId: number;
-  hitCount?: number | null;
+  /** The request's requirement coverage, from the list; absent when the page could not load it. */
+  coverage?: RequirementCoverage | null;
 };
 
-const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCount }) => {
+/**
+ * One request, in the order the work happens: the requirements, then the candidates, then the AI.
+ *
+ * It used to open on two scales, a switch, four buttons and two disclaimers, with the numbers that
+ * mattered (who covers what) nowhere. The preview is free, so it loads by itself; the settings
+ * sit behind one button; and the only paid action, the AI run, is last with its one sentence.
+ */
+const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, coverage }) => {
   const mountedRef = useRef(true);
   const [limit, setLimit] = useState<number>(10);
   const [cvWeightPercent, setCvWeightPercent] = useState<number>(30);
   const [highQuality, setHighQuality] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingRun, setLoadingRun] = useState(false);
@@ -304,7 +324,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
     if (!state.preview) setSelectedUserIds([]);
   }, [state.preview]);
 
-  const handlePreview = async () => {
+  const handlePreview = useCallback(async () => {
     setLoadingPreview(true);
     setState((prev) => ({ ...prev, error: null }));
     try {
@@ -337,7 +357,13 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
     } finally {
       if (mountedRef.current) setLoadingPreview(false);
     }
-  };
+  }, [requestId, limit]);
+
+  // The preview costs nothing (no model call), so it is there when the card opens, and follows
+  // the limit. The AI run is the one thing that waits for a click.
+  useEffect(() => {
+    void handlePreview();
+  }, [handlePreview]);
 
   const executeRun = async () => {
     setLoadingRun(true);
@@ -405,215 +431,224 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, hitCou
 
   const aiMatches = state.results?.matches ?? [];
   const hasAiResults = aiMatches.length > 0;
+  const previewCandidates = state.preview?.candidates ?? [];
+  const otherRequirements = coverage?.otherRequirements ?? [];
 
   return (
-    <Stack spacing={1.5}>
-      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap alignItems="center">
-        <Chip size="small" label={phaseLabel(state.phase)} color={state.phase === 'COMPLETED' ? 'success' : state.phase === 'FAILED' ? 'error' : 'default'} />
-        {/*
-          Two numbers that were being read as one. "Dekning: 49 treff" sat next to the AI results
-          and looked like 49 assessed candidates; it is how many consultants know at least one of
-          the technologies. The AI-assessed count is the one that means somebody was measured
-          against this request, so it is named as such and only shown once there is one.
-        */}
-        {typeof hitCount === 'number' && (
-          <Tooltip title="Konsulenter med minst én av teknologiene i forespørselen. Ikke en vurdering mot kravene.">
-            <Chip size="small" variant="outlined" label={`${hitCount} søketreff`} />
-          </Tooltip>
-        )}
-        {hasAiResults && (
-          <Chip
-            size="small"
-            color="success"
-            variant="outlined"
-            label={`${aiMatches.length} AI-vurdert`}
-          />
-        )}
-        {state.semanticReady === true && (
-          <Chip size="small" color="info" variant="outlined" label="Semantisk søk er klart" />
-        )}
-        {state.semanticReady === false && (
-          <Chip size="small" color="warning" variant="outlined" label="Semantisk søk mangler embeddings" />
-        )}
-        {state.results?.lastUpdated && (
-          <Typography variant="caption" color="text.secondary">
-            Sist oppdatert: {new Date(state.results.lastUpdated).toLocaleString('no-NO')}
-          </Typography>
-        )}
-      </Stack>
-
+    <Stack spacing={2.5}>
       {state.error && <Alert severity="error">{state.error}</Alert>}
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap>
-        <Stack spacing={0.25}>
-          <Typography variant="caption" color="text.secondary">Antall kandidater</Typography>
-          <ToggleButtonGroup size="small" exclusive value={limit} onChange={(_e, v) => { if (v != null) setLimit(v); }}>
-            {LIMIT_OPTIONS.map((n) => (
-              <ToggleButton key={n} value={n} disabled={loadingRun || loadingPreview}>{n}</ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Stack>
-        <Stack spacing={0.25}>
-          <Typography variant="caption" color="text.secondary">CV-kvalitet teller</Typography>
-          <ToggleButtonGroup size="small" exclusive value={cvWeightPercent} onChange={(_e, v) => { if (v != null) setCvWeightPercent(v); }}>
-            {CV_WEIGHT_OPTIONS.map((w) => (
-              <ToggleButton key={w} value={w} disabled={loadingRun}>{w}%</ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Stack>
-        <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={loadingRun} />
-      </Stack>
-
-      <Typography variant="caption" color="text.secondary">
-        Forhåndsvisning bruker billig rangering uten AI-kall. Uten et utvalg sender AI-matchingen
-        de 15 best rangerte.
-      </Typography>
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-        <Button size="small" variant="outlined" disabled={loadingPreview || loadingRun} onClick={() => void handlePreview()}>
-          {loadingPreview ? 'Laster…' : 'Forhåndsvis kandidater'}
-        </Button>
-        <Button
-          size="small"
-          variant="contained"
-          disabled={loadingRun || loadingPreview || (Boolean(state.preview) && selectedCount === 0)}
-          onClick={() => requestRun('run')}
-        >
-          {loadingRun
-            ? 'Kjører…'
-            : selectedCount > 0
-              ? `Kjør AI-matching (${selectedCount})`
-              : 'Kjør AI-matching'}
-        </Button>
-        {hasAiResults && (
-          <Button size="small" variant="outlined" color="secondary" disabled={loadingRun} onClick={() => requestRun('rerun')}>
-            Kjør på nytt
-          </Button>
+      {/* 1. What the customer asks for, and who in the corpus has it. */}
+      <Box>
+        <SectionTitle>Krav</SectionTitle>
+        {coverage ? (
+          <Stack spacing={0.75}>
+            <Typography variant="body2" color="text.secondary">{describeCoverage(coverage)}</Typography>
+            <CoverageChips coverage={coverage} />
+            {otherRequirements.length > 0 && (
+              <Typography variant="caption" color="text.secondary">
+                Sjekkes ikke mot ferdigheter: {otherRequirements.slice(0, OTHER_REQUIREMENTS_SHOWN).join('; ')}
+                {otherRequirements.length > OTHER_REQUIREMENTS_SHOWN && ` … og ${otherRequirements.length - OTHER_REQUIREMENTS_SHOWN} til`}
+              </Typography>
+            )}
+          </Stack>
+        ) : (
+          <Typography variant="body2" color="text.secondary">Kravene står i avropet.</Typography>
         )}
-        <Button size="small" variant="text" disabled={loadingInitial} onClick={() => void refreshPersisted()}>
-          Oppdater status
-        </Button>
-      </Stack>
+        <MuiLink component={RouterLink} to={`/project-requests/${requestId}`} underline="hover" variant="body2" sx={{ display: 'inline-block', mt: 0.75 }}>
+          Se hele avropet
+        </MuiLink>
+      </Box>
 
-      {/*
-        Sits by the buttons, not in the page help above, because the page help can be switched off
-        and this cannot: it says what the button on the right costs. Forhåndsvisning is free
-        (GET /matches/preview does no LLM call), the run is one call per selected candidate, and
-        neither starts on its own when the page loads.
-      */}
-      <Typography variant="caption" color="text.secondary">
-        Forhåndsvisning er gratis. AI-matching bruker ett modellkall per kandidat du har valgt, og
-        starter først når du trykker. Ingenting kjøres automatisk når siden åpnes.
-      </Typography>
-
-      {state.phase === 'RUNNING' && loadingRun && (
-        <Stack direction="row" spacing={1} alignItems="center">
-          <CircularProgress size={16} />
-          <Typography variant="body2">
-            {selectedCount > 0
-              ? `Kjører AI-vurdering på ${selectedCount} valgte kandidater…`
-              : 'Kjører AI-vurdering på de best rangerte kandidatene…'}
-          </Typography>
-        </Stack>
-      )}
-
-      {state.preview && (state.preview.candidates?.length ?? 0) > 0 && (
-        <Box>
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1}
-            alignItems={{ sm: 'center' }}
-            justifyContent="space-between"
-            sx={{ mb: 1 }}
-          >
-            <Typography variant="subtitle2">
-              Forhåndsvisning (uten full AI-vurdering)
-              {state.preview.semanticSearchUsed === false && ' — semantisk søk ikke brukt'}
-            </Typography>
+      {/* 2. Who could be offered. Free, so already here; the operator picks who goes to the AI. */}
+      <Box>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'baseline' }} justifyContent="space-between" sx={{ mb: 0.5 }}>
+          <SectionTitle>Kandidater</SectionTitle>
+          {previewCandidates.length > 0 && (
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="caption" color="text.secondary">
                 {selectedCount} av {previewUserIds.length} valgt
               </Typography>
-              <Button
-                size="small"
-                variant="text"
-                disabled={loadingRun}
-                onClick={() => toggleAllCandidates(!allPreviewSelected)}
-              >
+              <Button size="small" variant="text" disabled={loadingRun} onClick={() => toggleAllCandidates(!allPreviewSelected)}>
                 {allPreviewSelected ? 'Fjern alle' : 'Velg alle'}
               </Button>
             </Stack>
-          </Stack>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-            Rangeringen her er et grovfilter og treffer dårlig på hvem AI-en ender opp med å
-            foretrekke. Huk av dem du faktisk vil ha vurdert.
-          </Typography>
-          <Stack spacing={0.75}>
-            {(state.preview.candidates ?? []).map((c) => {
-              const rowKey = `preview-${c.userId ?? c.name}`;
-              return (
-                <ExpandableConsultantRow
-                  key={rowKey}
-                  rowKey={rowKey}
-                  name={c.name ?? 'Ukjent'}
-                  // Preselection scores are on a 0..1 scale; show them as a percentage.
-                  scoreLabel={typeof c.combinedScore === 'number' ? ` • rang ${formatPercentScore(c.combinedScore)}` : ''}
-                  qualityScore={typeof c.cvQualityScore === 'number' ? c.cvQualityScore * 100 : null}
-                  detail={c.reason}
-                  userId={c.userId}
-                  expandedKey={expandedRowKey}
-                  onToggle={toggleExpandedRow}
-                  selected={c.userId ? selectedUserIds.includes(c.userId) : false}
-                  onSelectedChange={
-                    c.userId ? (checked) => toggleCandidate(c.userId!, checked) : undefined
-                  }
-                />
-              );
-            })}
-          </Stack>
-        </Box>
-      )}
+          )}
+        </Stack>
 
-      {!state.previewAvailable && !state.preview && (
-        <Alert severity="info" sx={{ py: 0.5 }}>
-          Forhåndsvisning er ikke tilgjengelig fra backend ennå. Bruk «Kjør AI-matching» for full vurdering,
-          eller sjekk dekningstall over.
-        </Alert>
-      )}
-
-      {hasAiResults ? (
-        <Box>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-            <Chip label="AI-vurdert" size="small" color="primary" variant="outlined" />
+        {loadingPreview && (
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 1 }}>
+            <CircularProgress size={16} />
+            <Typography variant="body2">Henter kandidater…</Typography>
           </Stack>
-          <Stack spacing={0.75}>
-            {aiMatches
-              .slice()
-              .sort((a: MatchCandidateDto, b: MatchCandidateDto) => (b.score ?? 0) - (a.score ?? 0))
-              .slice(0, limit)
-              .map((s: MatchCandidateDto) => {
-                const rowKey = `ai-${s.userId ?? s.name}`;
+        )}
+
+        {!loadingPreview && previewCandidates.length > 0 && (
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+              Sortert etter et grovt anslag uten AI. Hver rad sier hvilke må-krav personen dekker og mangler; kryss av dem du vil ha vurdert.
+              {state.preview?.semanticSearchUsed === false && ' Semantisk søk ble ikke brukt.'}
+            </Typography>
+            <Stack spacing={0.75}>
+              {previewCandidates.map((c) => {
+                const rowKey = `preview-${c.userId ?? c.name}`;
+                const mustTotal = c.mustTotal ?? 0;
+                const missing = c.missingRequirements ?? [];
+                const detail = [
+                  missing.length > 0 ? `Mangler: ${missing.join(', ')}` : (mustTotal > 0 ? 'Har noe for hvert teknologikrav.' : null),
+                  c.reason,
+                ].filter(Boolean).join('\n');
                 return (
                   <ExpandableConsultantRow
                     key={rowKey}
                     rowKey={rowKey}
-                    name={s.name}
-                    scoreLabel={formatMatchScoreSuffix(s.score)}
-                    detail={s.justification}
-                    skills={s.skills}
-                    userId={s.userId}
+                    name={c.name ?? 'Ukjent'}
+                    scoreLabel={
+                      mustTotal > 0
+                        ? ` • dekker ${c.mustCovered ?? 0} av ${mustTotal} må-krav`
+                        : (typeof c.combinedScore === 'number' ? ` • rang ${formatPercentScore(c.combinedScore)}` : '')
+                    }
+                    qualityScore={typeof c.cvQualityScore === 'number' ? c.cvQualityScore * 100 : null}
+                    detail={detail}
+                    skills={c.matchedRequirements}
+                    userId={c.userId}
                     expandedKey={expandedRowKey}
                     onToggle={toggleExpandedRow}
+                    selected={c.userId ? selectedUserIds.includes(c.userId) : false}
+                    onSelectedChange={c.userId ? (checked) => toggleCandidate(c.userId!, checked) : undefined}
                   />
                 );
               })}
-          </Stack>
-        </Box>
-      ) : !state.preview && state.phase !== 'RUNNING' && (
-        <Typography variant="body2" color="text.secondary">
-          Ingen lagrede AI-resultater ennå. Start med forhåndsvisning eller kjør AI-matching.
+            </Stack>
+          </Box>
+        )}
+
+        {!loadingPreview && state.preview && previewCandidates.length === 0 && (
+          <Typography variant="body2" color="text.secondary">Ingen kandidater å vise for denne forespørselen.</Typography>
+        )}
+
+        {!state.previewAvailable && !state.preview && !loadingPreview && (
+          <Alert severity="info" sx={{ py: 0.5 }}>
+            Forhåndsvisning er ikke tilgjengelig fra backend. «Kjør AI-matching» lar backend velge kandidatene.
+          </Alert>
+        )}
+      </Box>
+
+      {/* 3. The paid step, last, with what it costs in one sentence and its settings behind a button. */}
+      <Box>
+        <SectionTitle>AI-vurdering</SectionTitle>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+          <Button
+            size="small"
+            variant="contained"
+            disabled={loadingRun || loadingPreview || (Boolean(state.preview) && selectedCount === 0)}
+            onClick={() => requestRun('run')}
+          >
+            {loadingRun
+              ? 'Kjører…'
+              : selectedCount > 0
+                ? `Kjør AI-matching (${selectedCount})`
+                : 'Kjør AI-matching'}
+          </Button>
+          {hasAiResults && (
+            <Button size="small" variant="outlined" color="secondary" disabled={loadingRun} onClick={() => requestRun('rerun')}>
+              Kjør på nytt
+            </Button>
+          )}
+          <Button size="small" variant="text" disabled={loadingInitial} onClick={() => void refreshPersisted()}>
+            Oppdater status
+          </Button>
+          <Button
+            size="small"
+            variant="text"
+            aria-expanded={settingsOpen}
+            aria-controls={`match-settings-${requestId}`}
+            onClick={() => setSettingsOpen((v) => !v)}
+          >
+            {settingsOpen ? 'Skjul innstillinger' : 'Innstillinger'}
+          </Button>
+          <Chip
+            size="small"
+            label={hasAiResults || state.phase === 'RUNNING' || state.phase === 'FAILED' ? phaseLabel(state.phase) : 'Ikke kjørt'}
+            color={state.phase === 'COMPLETED' ? 'success' : state.phase === 'FAILED' ? 'error' : 'default'}
+            variant="outlined"
+          />
+          {state.semanticReady === false && (
+            <Chip size="small" color="warning" variant="outlined" label="Semantisk søk mangler embeddings" />
+          )}
+        </Stack>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          Ett modellkall per valgt kandidat, og ingenting før du trykker. Uten avkryssing sender backend de 15 best rangerte.
         </Typography>
-      )}
+
+        <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
+          <Stack id={`match-settings-${requestId}`} direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
+            <Stack spacing={0.25}>
+              <Typography variant="caption" color="text.secondary">Antall kandidater</Typography>
+              <ToggleButtonGroup size="small" exclusive value={limit} onChange={(_e, v) => { if (v != null) setLimit(v); }}>
+                {LIMIT_OPTIONS.map((n) => (
+                  <ToggleButton key={n} value={n} disabled={loadingRun || loadingPreview}>{n}</ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </Stack>
+            <Stack spacing={0.25}>
+              <Typography variant="caption" color="text.secondary">CV-kvalitet teller</Typography>
+              <ToggleButtonGroup size="small" exclusive value={cvWeightPercent} onChange={(_e, v) => { if (v != null) setCvWeightPercent(v); }}>
+                {CV_WEIGHT_OPTIONS.map((w) => (
+                  <ToggleButton key={w} value={w} disabled={loadingRun}>{w}%</ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </Stack>
+            <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={loadingRun} />
+          </Stack>
+        </Collapse>
+
+        {state.phase === 'RUNNING' && loadingRun && (
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
+            <CircularProgress size={16} />
+            <Typography variant="body2">
+              {selectedCount > 0
+                ? `Kjører AI-vurdering på ${selectedCount} valgte kandidater…`
+                : 'Kjører AI-vurdering på de best rangerte kandidatene…'}
+            </Typography>
+          </Stack>
+        )}
+
+        {hasAiResults && (
+          <Box sx={{ mt: 1.5 }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+              <Chip label={`${aiMatches.length} AI-vurdert`} size="small" color="primary" variant="outlined" />
+              {state.results?.lastUpdated && (
+                <Typography variant="caption" color="text.secondary">
+                  Sist oppdatert: {new Date(state.results.lastUpdated).toLocaleString('no-NO')}
+                </Typography>
+              )}
+            </Stack>
+            <Stack spacing={0.75}>
+              {aiMatches
+                .slice()
+                .sort((a: MatchCandidateDto, b: MatchCandidateDto) => (b.score ?? 0) - (a.score ?? 0))
+                .slice(0, limit)
+                .map((s: MatchCandidateDto) => {
+                  const rowKey = `ai-${s.userId ?? s.name}`;
+                  return (
+                    <ExpandableConsultantRow
+                      key={rowKey}
+                      rowKey={rowKey}
+                      name={s.name}
+                      scoreLabel={formatMatchScoreSuffix(s.score)}
+                      detail={s.justification}
+                      skills={s.skills}
+                      userId={s.userId}
+                      expandedKey={expandedRowKey}
+                      onToggle={toggleExpandedRow}
+                    />
+                  );
+                })}
+            </Stack>
+          </Box>
+        )}
+      </Box>
 
       <Dialog open={confirmOpen} onClose={() => { if (!loadingRun) { setConfirmOpen(false); setPendingRun(null); } }}>
         <DialogTitle>Bekreft høyeste kvalitet</DialogTitle>

@@ -8,7 +8,12 @@ vi.mock('../../../services/matchesRequestsService', async () => {
   return {
     listMatchRequests: vi.fn().mockResolvedValue({
       content: [
-        { id: 1, title: 'Forespørsel A', customerName: 'Kunde A', date: '2025-01-01T10:00:00Z', hitCount: 12, coverageStatus: 'GREEN', coverageLabel: 'God dekning' },
+        {
+          id: 1, title: 'Forespørsel A', customerName: 'Kunde A', date: '2025-01-01T10:00:00Z', hitCount: 12,
+          coverageStatus: 'GREEN', coverageLabel: 'God dekning',
+          coverage: { technologyRequirements: 1, covered: 1, fullMatchCount: 5, fullMatchBasis: 'MUST', requirements: [{ name: 'Java', priority: 'MUST', skills: ['JAVA'], consultants: 25 }], otherRequirements: [] },
+          aiMatchCount: null, aiLastUpdated: null,
+        },
       ],
       currentPage: 0,
       totalPages: 1,
@@ -16,9 +21,7 @@ vi.mock('../../../services/matchesRequestsService', async () => {
       hasNext: false,
       hasPrevious: false,
     }),
-    getTopConsultantsForRequest: vi.fn().mockResolvedValue([
-      { consultantName: 'Ola', userId: 'ola', matchScore: 95.1, skills: ['JAVA', 'KOTLIN'], justification: 'Overlapper med krav' },
-    ]),
+    getMatchRequest: vi.fn(),
   };
 });
 

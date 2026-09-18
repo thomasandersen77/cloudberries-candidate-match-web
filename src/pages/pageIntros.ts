@@ -71,9 +71,9 @@ export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
       'Vurder kandidater mot en kundeforespørsel. Forhåndsvis kandidatene, velg hvem du vil ' +
       'vurdere, og sammenlign resultatene fra AI-matching.',
     steps: [
-      'Velg en forespørsel, forhåndsvis kandidatene, og kryss av for dem du vil ha vurdert.',
-      'Forhåndsvisningen er en kortliste ut fra registrerte ferdigheter og CV-kvalitet. Den er ikke en egnethetsvurdering.',
-      'AI-vurderingen starter først når du ber om den, og gir en begrunnelse per kandidat.',
+      'Hvert kort viser kravene med hvor mange konsulenter som har hver ferdighet, og hvor mange som dekker alle må-kravene. Rødt krav er flaskehalsen.',
+      'Åpne et kort: kandidatene kommer opp av seg selv, med hvilke må-krav hver av dem dekker og mangler. Kryss av dem du vil ha vurdert.',
+      'AI-vurderingen nederst starter først når du trykker, koster ett modellkall per valgt kandidat, og gir en begrunnelse per person.',
     ],
   },
 
