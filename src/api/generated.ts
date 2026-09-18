@@ -3297,7 +3297,7 @@ export interface components {
             returned: number;
             /** @description People present in Flowcase whose CV has not changed since the last sync. Their person fields are refreshed; the CV rows are left as they are. */
             unchanged: number;
-            /** @description What happened to the vectors after the sync. Null when embeddings are off, and for a single-consultant sync. */
+            /** @description What happened to the vectors after the sync. Null when embeddings are off. For a single-consultant sync, only that person's vectors are looked at, and vectorsDeleted and chunksDeleted are always 0. */
             embeddings?: components["schemas"]["SyncEmbeddingRefresh"] | null;
         };
         SyncEmbeddingRefresh: {

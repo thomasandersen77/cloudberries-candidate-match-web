@@ -20,6 +20,8 @@ interface ScoringOverlayProps {
   estimatedTime?: string;
   /** The line in the box at the bottom. The default names scoring, which is what the overlay was made for. */
   hint?: string;
+  /** The big icon. The default is the brain, which says AI; a job that calls no model passes its own. */
+  icon?: React.ReactNode;
 }
 
 const ScoringOverlay: React.FC<ScoringOverlayProps> = ({
@@ -28,7 +30,8 @@ const ScoringOverlay: React.FC<ScoringOverlayProps> = ({
   message = "Dette kan ta tid - AI analyserer alle CV-er for å gi kvalitetsscore",
   progress,
   estimatedTime = "1-3 minutter",
-  hint = "Du kan la denne siden være åpen. Scoringen fortsetter i bakgrunnen."
+  hint = "Du kan la denne siden være åpen. Scoringen fortsetter i bakgrunnen.",
+  icon,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -55,15 +58,8 @@ const ScoringOverlay: React.FC<ScoringOverlayProps> = ({
         }}
       >
         <Stack spacing={3} alignItems="center">
-          {/* AI Icon with animation */}
-          <Box sx={{ position: 'relative' }}>
-            <AiIcon
-              sx={{
-                fontSize: 64,
-                color: 'primary.main',
-                animation: 'pulse 2s infinite'
-              }}
-            />
+          <Box sx={{ position: 'relative', '& > svg': { fontSize: 64, color: 'primary.main', animation: 'pulse 2s infinite' } }}>
+            {icon ?? <AiIcon />}
             <CircularProgress
               size={80}
               thickness={2}

@@ -7,7 +7,7 @@ import CvSummary from '../../components/CV/CvSummary';
 import SkillsSection from '../../components/CV/SkillsSection';
 import SyncButton from '../../components/Sync/SyncButton';
 import SyncNotificationPanel, { type SyncNotification } from '../../components/Sync/SyncNotificationPanel';
-import { singleSyncNotification } from '../../components/Sync/singleSyncNotification';
+import { singleSyncNotification, singleSyncProgressNotification } from '../../components/Sync/singleSyncNotification';
 import CvScoreBadge from '../../components/CvScoreBadge';
 import ConsultantOfficeLine from '../../components/ConsultantOfficeLine';
 
@@ -59,11 +59,7 @@ const ConsultantDetailPage: React.FC = () => {
     if (!consultant || !activeCv) return;
 
     setSyncLoading(true);
-    setNotification({
-      type: 'progress',
-      title: 'Oppdaterer CV',
-      message: 'Henter nyeste versjon fra Flowcase...',
-    });
+    setNotification(singleSyncProgressNotification());
 
     try {
       const result = await syncSingleConsultant(consultant.userId, consultant.cvId);

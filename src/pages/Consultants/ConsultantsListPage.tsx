@@ -14,6 +14,7 @@ import SyncNotificationPanel from '../../components/Sync/SyncNotificationPanel';
 import type { SyncNotification } from '../../components/Sync/SyncNotificationPanel';
 import { describeSyncResult } from '../../components/Sync/syncResultText';
 import ScoringOverlay from '../../components/ScoringOverlay';
+import { CloudDownload } from '@mui/icons-material';
 import { getSkillsDisplay } from '../../utils/skillUtils';
 import { compareByQualityThenName, getActiveQualityScore } from '../../utils/scoreUtils';
 import CvScoreBadge from '../../components/CvScoreBadge';
@@ -562,13 +563,16 @@ const fetchData = async () => {
       
       {/*
         What the run does, not what an earlier version did. It walks the Flowcase list, writes the
-        CVs that changed, marks the people who left, and re-embeds only the changed CVs. Measured
-        2026-09-17: 50 s when nothing changed, 7.5 min the first time 16 changed CVs were embedded.
+        CVs that changed, marks the people who left, and re-embeds only the changed CVs; no language
+        model reads or scores anything, so the brain icon and the word "scorer" were wrong here.
+        Measured 2026-09-17: 50 s when nothing changed, 7.5 min the first time 16 changed CVs were
+        embedded.
       */}
       <ScoringOverlay
         open={showScoringOverlay}
+        icon={<CloudDownload />}
         title="Henter CV-er fra Flowcase"
-        message="Bare CV-er som er endret siden sist blir skrevet og får nye vektorer. De som har sluttet blir merket."
+        message="CV-er som er endret siden sist blir skrevet på nytt, og teksten deres sendes til embedding-modellen for nye søkevektorer. Ingen språkmodell leser eller vurderer CV-ene. De som har sluttet blir merket."
         estimatedTime="rundt ett minutt, mer når mange CV-er er endret"
         hint="Du kan la denne siden være åpen. Synkroniseringen fortsetter i bakgrunnen."
       />
