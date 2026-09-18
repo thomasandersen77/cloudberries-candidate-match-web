@@ -44,7 +44,6 @@ const row = (over: Record<string, unknown>) => ({
   customerName: 'Statens vegvesen',
   date: '2026-01-01T10:00:00Z',
   deadlineDate: '2026-01-20T10:00:00Z',
-  hitCount: 20,
   coverageStatus: 'RED',
   coverageLabel: 'Ingen dekker alle må-krav',
   coverage,

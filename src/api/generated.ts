@@ -3580,11 +3580,6 @@ export interface components {
             date?: string | null;
             /** Format: date-time */
             deadlineDate?: string | null;
-            /**
-             * Format: int64
-             * @description Consultants matching at least one of the request's technologies. A recall number, not a verdict on whether anybody satisfies the request. Null when the requirements named no technology, so a missing basis is never reported as a count of zero.
-             */
-            hitCount?: number | null;
             coverageStatus: components["schemas"]["CoverageStatus"];
             /** @description Norwegian words for coverageStatus, e.g. "4 dekker alle må-krav", "Ingen dekker alle må-krav", "Ingen teknologikrav gjenkjent". The server owns the wording. */
             coverageLabel: string;
