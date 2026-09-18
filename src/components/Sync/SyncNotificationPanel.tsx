@@ -9,17 +9,19 @@ import {
   Chip
 } from '@mui/material';
 import { CheckCircle, Error, Info } from '@mui/icons-material';
+import type { ConsultantSyncResponse } from '../../types/api';
+import SyncResultSummary from './SyncResultSummary';
 
 export interface SyncNotification {
   type: 'success' | 'error' | 'info' | 'progress';
   title: string;
   message?: string;
-  details?: {
-    total?: number;
-    succeeded?: number;
-    failed?: number;
-    processed?: boolean;
-  };
+  /**
+   * Either the one flag a single-consultant sync reports, or the whole response of a full run.
+   * The full run used to arrive as three numbers picked out of it, and the rest of what the
+   * backend reported (departed, returned, unchanged, the vector refresh) never reached the screen.
+   */
+  details?: { processed: boolean } | { sync: ConsultantSyncResponse };
 }
 
 interface SyncNotificationPanelProps {
@@ -66,36 +68,7 @@ const SyncNotificationPanel: React.FC<SyncNotificationPanelProps> = ({
       );
     }
 
-    if ('total' in details) {
-      // Bulk sync with statistics
-      return (
-        <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {details.total && (
-            <Chip 
-              label={`Totalt: ${details.total}`} 
-              variant="outlined" 
-              size="small" 
-            />
-          )}
-          {details.succeeded && (
-            <Chip 
-              label={`Vellykket: ${details.succeeded}`} 
-              color="success" 
-              size="small" 
-            />
-          )}
-          {details.failed && details.failed > 0 && (
-            <Chip 
-              label={`Feilet: ${details.failed}`} 
-              color="error" 
-              size="small" 
-            />
-          )}
-        </Box>
-      );
-    }
-
-    return null;
+    return <SyncResultSummary result={details.sync} />;
   };
 
   return (

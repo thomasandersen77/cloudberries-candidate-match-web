@@ -18,6 +18,8 @@ interface ScoringOverlayProps {
   message?: string;
   progress?: number;
   estimatedTime?: string;
+  /** The line in the box at the bottom. The default names scoring, which is what the overlay was made for. */
+  hint?: string;
 }
 
 const ScoringOverlay: React.FC<ScoringOverlayProps> = ({
@@ -25,7 +27,8 @@ const ScoringOverlay: React.FC<ScoringOverlayProps> = ({
   title = "Scorer alle konsulenter via AI",
   message = "Dette kan ta tid - AI analyserer alle CV-er for å gi kvalitetsscore",
   progress,
-  estimatedTime = "1-3 minutter"
+  estimatedTime = "1-3 minutter",
+  hint = "Du kan la denne siden være åpen. Scoringen fortsetter i bakgrunnen."
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -132,7 +135,7 @@ const ScoringOverlay: React.FC<ScoringOverlayProps> = ({
             }}
           >
             <Typography variant="caption" color="info.main" sx={{ fontWeight: 500 }}>
-              💡 Du kan la denne siden være åpen. Scoringen fortsetter i bakgrunnen.
+              💡 {hint}
             </Typography>
           </Box>
         </Stack>

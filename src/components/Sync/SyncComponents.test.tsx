@@ -133,22 +133,35 @@ describe('SyncNotificationPanel', () => {
     expect(screen.getAllByRole('progressbar')[0]).toBeInTheDocument();
   });
 
-  it('renders bulk sync details', () => {
+  it('renders the full sync response as readable rows, not JSON', () => {
     const notification: SyncNotification = {
       type: 'success',
-      title: 'Bulk sync complete',
+      title: 'Synkronisering fullført',
       details: {
-        total: 100,
-        succeeded: 95,
-        failed: 5
-      }
+        sync: {
+          total: 100,
+          totalInDatabase: 116,
+          attempted: 100,
+          succeeded: 95,
+          failed: 5,
+          skipped: 0,
+          created: 2,
+          updated: 3,
+          unchanged: 90,
+          departed: 16,
+          returned: 0,
+          skippedReasons: {},
+          embeddings: null,
+        },
+      },
     };
 
     render(<SyncNotificationPanel notification={notification} />);
 
-    expect(screen.getByText('Totalt: 100')).toBeInTheDocument();
-    expect(screen.getByText('Vellykket: 95')).toBeInTheDocument();
-    expect(screen.getByText('Feilet: 5')).toBeInTheDocument();
+    expect(screen.getByText('Sluttet')).toBeInTheDocument();
+    expect(screen.getByText('16')).toBeInTheDocument();
+    expect(screen.getByText('Feilet')).toBeInTheDocument();
+    expect(screen.queryByText(/"departed"/)).not.toBeInTheDocument();
   });
 
   it('renders single consultant sync details', () => {

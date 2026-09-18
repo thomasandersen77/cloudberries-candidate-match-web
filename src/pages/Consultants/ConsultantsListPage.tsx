@@ -12,6 +12,7 @@ import SyncButton from '../../components/Sync/SyncButton';
 import PageIntro from '../../components/PageIntro';
 import SyncNotificationPanel from '../../components/Sync/SyncNotificationPanel';
 import type { SyncNotification } from '../../components/Sync/SyncNotificationPanel';
+import { describeSyncResult } from '../../components/Sync/syncResultText';
 import ScoringOverlay from '../../components/ScoringOverlay';
 import { getSkillsDisplay } from '../../utils/skillUtils';
 import { compareByQualityThenName, getActiveQualityScore } from '../../utils/scoreUtils';
@@ -252,15 +253,15 @@ const fetchData = async () => {
     
     try {
       const result = await runConsultantSync();
+      // The result is readable at once; the list refreshes behind it with its own skeleton.
+      setShowScoringOverlay(false);
       setNotification({
-        type: 'success',
-        title: 'CV-synkronisering fullført',
-        message: 'Alle CV-er er oppdatert og scoret fra Flowcase',
-        details: {
-          total: result.total || 0,
-          succeeded: result.succeeded || 0,
-          failed: result.failed || 0
-        }
+        // A run where someone failed is not a success, but it is not an error either: the rest
+        // went through, and the rows below say who did not.
+        type: result.failed > 0 ? 'info' : 'success',
+        title: 'Synkronisering fullført',
+        message: describeSyncResult(result),
+        details: { sync: result },
       });
       // Refresh data after sync
       await fetchData();
@@ -559,12 +560,17 @@ const fetchData = async () => {
         </>
       )}
       
-      {/* AI Scoring Overlay */}
-      <ScoringOverlay 
+      {/*
+        What the run does, not what an earlier version did. It walks the Flowcase list, writes the
+        CVs that changed, marks the people who left, and re-embeds only the changed CVs. Measured
+        2026-09-17: 50 s when nothing changed, 7.5 min the first time 16 changed CVs were embedded.
+      */}
+      <ScoringOverlay
         open={showScoringOverlay}
-        title="Scorer alle konsulenter via AI"
-        message="AI analyserer og scorer alle CV-er for kvalitet. Dette kan ta litt tid."
-        estimatedTime="2-5 minutter"
+        title="Henter CV-er fra Flowcase"
+        message="Bare CV-er som er endret siden sist blir skrevet og får nye vektorer. De som har sluttet blir merket."
+        estimatedTime="rundt ett minutt, mer når mange CV-er er endret"
+        hint="Du kan la denne siden være åpen. Synkroniseringen fortsetter i bakgrunnen."
       />
     </Container>
   );
