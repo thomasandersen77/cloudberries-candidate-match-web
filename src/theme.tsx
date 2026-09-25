@@ -455,6 +455,25 @@ function remembered(key: string): string | null {
   }
 }
 
+/**
+ * The browser's own chrome, painted in the skin's colour.
+ *
+ * `theme-color` tints the toolbar around the page on a phone, and it sat in index.html as
+ * Cloudberries' orange whatever skin was on: the browser framed a Sopra Steria page in another
+ * company's colour. It follows [palettes] now, from the same effect that records the skin.
+ *
+ * The tag is created when the document has none, so the rule holds in a test renderer as well as
+ * in the real index.html, and a document without a head (there is none in practice) is left alone
+ * rather than throwing during render.
+ */
+function applyBrandThemeColor(brandTheme: BrandTheme): void {
+  const head = document.head;
+  if (!head) return;
+  const existing = head.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  const meta = existing ?? head.appendChild(Object.assign(document.createElement('meta'), { name: 'theme-color' }));
+  meta.content = palettes[brandTheme].primary;
+}
+
 export const ColorModeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
   const [mode, setMode] = React.useState<ColorMode>(() => {
@@ -469,6 +488,7 @@ export const ColorModeProvider: React.FC<React.PropsWithChildren> = ({ children 
   React.useEffect(() => {
     document.body.dataset.colorMode = mode;
     document.body.dataset.brandTheme = brandTheme;
+    applyBrandThemeColor(brandTheme);
     try {
       window.localStorage.setItem(MODE_STORAGE_KEY, mode);
       window.localStorage.setItem(BRAND_STORAGE_KEY, brandTheme);

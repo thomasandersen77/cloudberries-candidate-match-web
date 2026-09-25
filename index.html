@@ -4,7 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#F26A21" />
+    <!--
+      The default skin's colour, for the moment before the app boots; ColorModeProvider then sets
+      it from whichever skin is on. Keep it in step with palettes.soprasteria.primary in
+      src/theme.tsx, the brand the app starts on.
+    -->
+    <meta name="theme-color" content="#0056B3" />
     <!--
       Brand-neutral: the app wears a skin (Cloudberries, Sopra Steria, …) chosen at runtime from
       src/config/branding.ts, and the header and the front page already say which one. A brand name
