@@ -25,7 +25,7 @@ vi.mock('../../../services/chatService', async () => {
         },
       },
     }),
-    analyzeContent: vi.fn(),
+    askAssistant: vi.fn(),
   };
 });
 

@@ -79,20 +79,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatAnalyzeRequest'
+              $ref: '#/components/schemas/ChatAskRequest'
       responses:
         '200':
           description: A grounded answer with its sources
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatAnalyzeResponse'
+                $ref: '#/components/schemas/ChatAskResponse'
         '400':
           description: Empty or oversized content
         default:
           $ref: '#/components/responses/ErrorResponse'
 
-  /chatbot/analyze/{conversationId}:
+  /chatbot/ask/{conversationId}:
     delete:
       tags: [ Chat ]
       summary: Forget a conversation
@@ -1948,7 +1948,7 @@ components:
       enum: [ DATABASE, GENERAL ]
       default: DATABASE
 
-    ChatAnalyzeRequest:
+    ChatAskRequest:
       type: object
       required: [ content ]
       properties:
@@ -2075,7 +2075,7 @@ components:
           nullable: true
           description: Set on a consultant found by a search, for rendering a result card.
 
-    ChatAnalyzeResponse:
+    ChatAskResponse:
       type: object
       required: [ conversationId, answer, answerKind, sources, modelUsed, latencyMs ]
       properties:

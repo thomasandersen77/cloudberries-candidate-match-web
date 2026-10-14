@@ -3,13 +3,13 @@ import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ChatAnalyzePage from '../ChatAnalyzePage';
-import { analyzeContent, clearAnalyzeConversation } from '../../../services/chatService';
+import { askAssistant, clearConversation } from '../../../services/chatService';
 import { listProjectRequests } from '../../../services/projectRequestsService';
 import { runProjectMatching } from '../../../api/matchingApi';
 
 vi.mock('../../../services/chatService', () => ({
-  analyzeContent: vi.fn(),
-  clearAnalyzeConversation: vi.fn().mockResolvedValue(undefined)
+  askAssistant: vi.fn(),
+  clearConversation: vi.fn().mockResolvedValue(undefined)
 }));
 // The examples are written around rows read from the database, so the page reads three small
 // lists at load. Every one of them is optional: a failure leaves the list shorter rather than
@@ -42,8 +42,8 @@ vi.mock('../../../api/matchingApi', () => ({
   runProjectMatching: vi.fn().mockResolvedValue(undefined)
 }));
 
-const mockedAnalyze = vi.mocked(analyzeContent);
-const mockedClear = vi.mocked(clearAnalyzeConversation);
+const mockedAnalyze = vi.mocked(askAssistant);
+const mockedClear = vi.mocked(clearConversation);
 const mockedListRequests = vi.mocked(listProjectRequests);
 const mockedRunMatching = vi.mocked(runProjectMatching);
 

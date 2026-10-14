@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { analyzeContent, clearAnalyzeConversation } from '../../services/chatService';
+import { askAssistant, clearConversation } from '../../services/chatService';
 import { listProjectRequests } from '../../services/projectRequestsService';
 import { listSkillSummary, listTopRankedConsultantsBySkill } from '../../services/skillsService';
 import { searchConsultantsRelational } from '../../services/consultantsService';
@@ -945,7 +945,7 @@ const ChatAnalyzePage: React.FC = () => {
       const turnId = pendingTurnId.current ?? crypto.randomUUID();
       pendingTurnId.current = turnId;
 
-      const res = await analyzeContent({
+      const res = await askAssistant({
         content: question.trim(),
         scope: askScope,
         topK: askTopK,
@@ -1020,7 +1020,7 @@ const ChatAnalyzePage: React.FC = () => {
     // they quote outlives a conversation the user asked to forget.
     if (previous) {
       try {
-        await clearAnalyzeConversation(previous);
+        await clearConversation(previous);
       } catch {
         // Saying nothing here left the impression that the turns were gone when they were not.
         // They quote CV and document text and expire on the server after 24 hours, so the reader

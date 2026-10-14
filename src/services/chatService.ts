@@ -1,7 +1,7 @@
 import { aiScoringClient } from './apiClient';
 import type {
-  ChatAnalyzeRequest,
-  ChatAnalyzeResponse,
+  ChatAskRequest,
+  ChatAskResponse,
   ChatSearchRequest,
   ChatSearchResponse,
 } from '../types/api';
@@ -12,14 +12,14 @@ import type {
  * Utelat conversationId for å starte en samtale; send tilbake den serveren returnerer for å
  * fortsette den. Svaret bærer kildene det hvilte på, så de kan vises uten å tolke svarteksten.
  */
-export async function analyzeContent(payload: ChatAnalyzeRequest): Promise<ChatAnalyzeResponse> {
-  const { data } = await aiScoringClient.post<ChatAnalyzeResponse>('chatbot/ask', payload);
+export async function askAssistant(payload: ChatAskRequest): Promise<ChatAskResponse> {
+  const { data } = await aiScoringClient.post<ChatAskResponse>('chatbot/ask', payload);
   return data;
 }
 
 /** Sletter turene og hva samtalen handlet om, på serveren. */
-export async function clearAnalyzeConversation(conversationId: string): Promise<void> {
-  await aiScoringClient.delete(`chatbot/analyze/${encodeURIComponent(conversationId)}`);
+export async function clearConversation(conversationId: string): Promise<void> {
+  await aiScoringClient.delete(`chatbot/ask/${encodeURIComponent(conversationId)}`);
 }
 
 /** The advanced search tab. Now in the root OpenAPI spec; ChatSearchTab is its only caller. */

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { analyzeContent, clearAnalyzeConversation, searchChat } from './chatService';
+import { askAssistant, clearConversation, searchChat } from './chatService';
 
 vi.mock('./apiClient', () => ({
   default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
@@ -36,7 +36,7 @@ function contractOperations(): string[] {
   return operations;
 }
 
-/** True when a concrete call such as "DELETE /chatbot/analyze/abc" matches a declared operation. */
+/** True when a concrete call such as "DELETE /chatbot/ask/abc" matches a declared operation. */
 function isDeclared(call: string, operations: string[]): boolean {
   return operations.some(operation => {
     const pattern = operation.replace(/[.*+?^$()|[\]\\]/g, '\\$&').replace(/\{[^/}]+\}/g, '[^/]+');
@@ -65,7 +65,7 @@ describe('chatService', () => {
   it('asks the assistant on a route the contract declares', async () => {
     client.post.mockResolvedValue({ data: { content: 'svar' } });
 
-    await analyzeContent({ content: 'Hvem kan Kotlin?' });
+    await askAssistant({ content: 'Hvem kan Kotlin?' });
 
     const [url, body] = client.post.mock.calls[0];
     expectDeclared(callOf('POST', url as string), operations);
@@ -76,10 +76,10 @@ describe('chatService', () => {
   it('forgets a conversation on a route the contract declares, with the id escaped', async () => {
     client.delete.mockResolvedValue({});
 
-    await clearAnalyzeConversation('a/b');
+    await clearConversation('a/b');
 
     const [url] = client.delete.mock.calls[0];
-    expect(url).toBe('chatbot/analyze/a%2Fb');
+    expect(url).toBe('chatbot/ask/a%2Fb');
     expectDeclared(callOf('DELETE', url as string), operations);
   });
 

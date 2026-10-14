@@ -12,10 +12,9 @@ Kilde: `openapi.yaml` v1.2.0. Oppdater ved spec-endringer.
 
 | Path | Method | Service | Funksjon |
 |------|--------|---------|----------|
-| `/chatbot/ask` | POST | `chatService.ts` | `analyzeContent()` |
-| `/rag/chat` | POST | `chatService.ts` | `ragChat()` |
-| `/rag/ingest` | POST | `chatService.ts` | `ragIngest()` |
-| `/rag/ingest/db` | POST | `chatService.ts` | `ragIngestFromDb()` |
+| `/chatbot/ask` | POST | `chatService.ts` | `askAssistant()` |
+| `/chatbot/ask/{conversationId}` | DELETE | `chatService.ts` | `clearConversation()` |
+| `/chatbot/search` | POST | `chatService.ts` | `searchChat()` |
 
 ## Consultants
 

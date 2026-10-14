@@ -81,7 +81,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["ChatAnalyzeRequest"];
+                    "application/json": components["schemas"]["ChatAskRequest"];
                 };
             };
             responses: {
@@ -91,7 +91,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ChatAnalyzeResponse"];
+                        "application/json": components["schemas"]["ChatAskResponse"];
                     };
                 };
                 /** @description Empty or oversized content */
@@ -110,7 +110,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/chatbot/analyze/{conversationId}": {
+    "/chatbot/ask/{conversationId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3115,7 +3115,7 @@ export interface components {
          * @enum {string}
          */
         ChatScope: "DATABASE" | "GENERAL";
-        ChatAnalyzeRequest: {
+        ChatAskRequest: {
             /** @description Conversation to continue. Omit to start one; the server returns the id. */
             conversationId?: string | null;
             /** @description The question */
@@ -3192,7 +3192,7 @@ export interface components {
             /** @description Set on a consultant found by a search, for rendering a result card. */
             retrieval?: components["schemas"]["RetrievalDetailsDto"] | null;
         };
-        ChatAnalyzeResponse: {
+        ChatAskResponse: {
             conversationId: string;
             answer: string;
             answerKind: components["schemas"]["ChatAnswerKind"];

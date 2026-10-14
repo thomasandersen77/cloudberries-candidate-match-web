@@ -12,8 +12,8 @@ export type AIResponseModel = components['schemas']['AIResponseModel'];
 
 // Den forankrede chatten. AIAnalysisRequest fantes tidligere her; endepunktet svarer nå med
 // `answer`, `answerKind` og `sources` i stedet for `content`.
-export type ChatAnalyzeRequest = components['schemas']['ChatAnalyzeRequest'];
-export type ChatAnalyzeResponse = components['schemas']['ChatAnalyzeResponse'];
+export type ChatAskRequest = components['schemas']['ChatAskRequest'];
+export type ChatAskResponse = components['schemas']['ChatAskResponse'];
 export type ChatAnswerKind = components['schemas']['ChatAnswerKind'];
 export type ChatSource = components['schemas']['ChatSource'];
 export type ChatSourceKind = components['schemas']['ChatSourceKindDto'];
