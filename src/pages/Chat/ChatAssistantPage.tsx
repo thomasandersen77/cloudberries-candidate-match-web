@@ -159,7 +159,7 @@ const formatTimestamp = (date: Date) =>
   date.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
 
 /*
- * The message components live at module scope, not inside ChatAnalyzePage.
+ * The message components live at module scope, not inside ChatAssistantPage.
  *
  * Declared in the page's body they were rebuilt on every render, and a new function identity is a
  * different component type to React: the whole transcript was unmounted and mounted again on each
@@ -770,7 +770,7 @@ const MessageBubble: React.FC<{
   );
 };
 
-const ChatAnalyzePage: React.FC = () => {
+const ChatAssistantPage: React.FC = () => {
   const [content, setContent] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -1362,4 +1362,4 @@ const ChatAnalyzePage: React.FC = () => {
   );
 };
 
-export default ChatAnalyzePage;
+export default ChatAssistantPage;

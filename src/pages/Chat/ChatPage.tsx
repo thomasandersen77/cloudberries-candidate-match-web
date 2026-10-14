@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Container, Paper, Tab, Tabs } from '@mui/material';
-import ChatAnalyzePage from './ChatAnalyzePage';
+import ChatAssistantPage from './ChatAssistantPage';
 import ChatSearchTab from './ChatSearchTab';
 
 // Bumped when the tabs swapped places. The old key stored an index whose meaning changed, so a
@@ -58,7 +58,7 @@ const ChatPage: React.FC = () => {
       </Paper>
 
       <Box>
-        {tab === ASSISTANT_TAB && <ChatAnalyzePage />}
+        {tab === ASSISTANT_TAB && <ChatAssistantPage />}
         {tab === ADVANCED_SEARCH_TAB && <ChatSearchTab />}
       </Box>
     </Container>

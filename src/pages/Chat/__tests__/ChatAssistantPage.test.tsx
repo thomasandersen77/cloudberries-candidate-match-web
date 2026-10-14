@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import ChatAnalyzePage from '../ChatAnalyzePage';
+import ChatAssistantPage from '../ChatAssistantPage';
 import { askAssistant, clearConversation } from '../../../services/chatService';
 import { listProjectRequests } from '../../../services/projectRequestsService';
 import { runProjectMatching } from '../../../api/matchingApi';
@@ -77,7 +77,7 @@ const type = (question: string) =>
  * `sources`. Reading the old field showed "Ingen respons mottatt fra AI" on every successful
  * answer, so these cases pin the fields the page actually reads.
  */
-describe('ChatAnalyzePage', () => {
+describe('ChatAssistantPage', () => {
   beforeEach(() => {
     sessionStorage.clear();
     vi.clearAllMocks();
@@ -87,7 +87,7 @@ describe('ChatAnalyzePage', () => {
 
   it('shows the answer, its kind and its sources', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hva kan Thomas Andersen best?');
 
@@ -104,7 +104,7 @@ describe('ChatAnalyzePage', () => {
    */
   it('shows which model answered, and says so when none did', async () => {
     mockedAnalyze.mockResolvedValueOnce({ ...factualAnswer, latencyMs: 2783 });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hva kan Thomas Andersen best?');
     await waitFor(() => expect(screen.getByText('claude-haiku-4-5 • 2.8 s')).toBeInTheDocument());
@@ -124,7 +124,7 @@ describe('ChatAnalyzePage', () => {
 
   it('sends no conversationId on the first turn and the server id on the next', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hva kan Thomas Andersen best?');
     await waitFor(() => expect(mockedAnalyze).toHaveBeenCalledTimes(1));
@@ -151,7 +151,7 @@ describe('ChatAnalyzePage', () => {
       answerKind: 'AD_HOC_EVALUATION',
       modelUsed: 'matching/DEFAULT'
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Passer Thomas til avrop 8?');
 
@@ -168,7 +168,7 @@ describe('ChatAnalyzePage', () => {
    */
   it('sends the internal-data scope by default', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvem kan Kafka?');
 
@@ -183,7 +183,7 @@ describe('ChatAnalyzePage', () => {
       answerKind: 'GENERAL',
       sources: []
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     fireEvent.click(screen.getByRole('button', { name: 'Generell AI' }));
     ask('Hva er Kafka?');
@@ -205,7 +205,7 @@ describe('ChatAnalyzePage', () => {
       sources: [],
       modelUsed: 'none'
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvordan bør et tilbud struktureres?');
     await waitFor(() => expect(screen.getByText('Uten grunnlag')).toBeInTheDocument());
@@ -249,7 +249,7 @@ describe('ChatAnalyzePage', () => {
       ]
     } as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
     ask('Hvem passer best av Joachim og Thomas?');
 
     expect(await screen.findByText('K2 Joachim Lous')).toBeInTheDocument();
@@ -276,7 +276,7 @@ describe('ChatAnalyzePage', () => {
       ]
     } as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
     ask('Hvem passer best?');
 
     expect(await screen.findByText('ikke vurdert')).toBeInTheDocument();
@@ -304,7 +304,7 @@ describe('ChatAnalyzePage', () => {
       ]
     } as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
     ask('Hvem passer best?');
 
     expect(await screen.findByText('K1 Thomas Andersen')).toBeInTheDocument();
@@ -337,7 +337,7 @@ describe('ChatAnalyzePage', () => {
       ]
     } as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
     ask('Hvilke avråd passer Thomas Andersen til?');
 
     expect(await screen.findByText('A1 Skatteetaten')).toBeInTheDocument();
@@ -373,7 +373,7 @@ describe('ChatAnalyzePage', () => {
     } as never);
     mockedAnalyze.mockResolvedValueOnce({ ...factualAnswer, readings: [] } as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
     ask('Hvilke avrop passer Thomas til?');
 
     fireEvent.click(await screen.findByRole('button', { name: 'Thomas Ruud' }));
@@ -397,7 +397,7 @@ describe('ChatAnalyzePage', () => {
    * the reader gets to see the question, and change it, before it costs anything.
    */
   it('puts a picked example in the field without sending it', async () => {
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     fireEvent.click(screen.getByText('Hvilke avrop har vi?'));
 
@@ -411,7 +411,7 @@ describe('ChatAnalyzePage', () => {
       { id: 8, customerName: 'Skatteetaten', title: 'Rådgiver skatteprosessen' }
     ] as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     expect(await screen.findByText('Hvem kan Kotlin og Kafka?')).toBeInTheDocument();
     expect(await screen.findByText('Hva krever Skatteetaten-avropet?')).toBeInTheDocument();
@@ -424,7 +424,7 @@ describe('ChatAnalyzePage', () => {
       { id: 8, customerName: 'Skatteetaten', title: 'Rådgiver skatteprosessen' }
     ] as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
     // The button only exists once more examples have been built than are shown.
     const showMore = await screen.findByRole('button', { name: 'Vis flere forslag' });
 
@@ -442,7 +442,7 @@ describe('ChatAnalyzePage', () => {
   it('keeps the examples reachable once the conversation has started', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
     ask('Hva kan Thomas Andersen best?');
     await screen.findByText(/sterkest på Kotlin/);
 
@@ -459,7 +459,7 @@ describe('ChatAnalyzePage', () => {
    */
   describe('sending from the keyboard', () => {
     it('does not send on Enter alone', () => {
-      render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+      render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
       type('Hvem kan Kotlin');
 
       fireEvent.keyDown(screen.getByLabelText('Spørsmål'), { key: 'Enter' });
@@ -474,7 +474,7 @@ describe('ChatAnalyzePage', () => {
      * itself, so this is the honest assertion available.
      */
     it('leaves the browser free to break the line on Enter', () => {
-      render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+      render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
       type('Hvem kan Kotlin');
       const field = screen.getByLabelText('Spørsmål');
 
@@ -484,7 +484,7 @@ describe('ChatAnalyzePage', () => {
 
     it('sends on Cmd+Enter', () => {
       mockedAnalyze.mockResolvedValue(factualAnswer as never);
-      render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+      render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
       type('Hvem kan Kotlin');
 
       fireEvent.keyDown(screen.getByLabelText('Spørsmål'), { key: 'Enter', metaKey: true });
@@ -495,7 +495,7 @@ describe('ChatAnalyzePage', () => {
     /** The same chord on a Mac, so nobody is told they are holding the wrong key. */
     it('sends on Ctrl+Enter', () => {
       mockedAnalyze.mockResolvedValue(factualAnswer as never);
-      render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+      render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
       type('Hvem kan Kotlin');
 
       fireEvent.keyDown(screen.getByLabelText('Spørsmål'), { key: 'Enter', ctrlKey: true });
@@ -504,7 +504,7 @@ describe('ChatAnalyzePage', () => {
     });
 
     it('says which chord sends, and that Enter does not', () => {
-      render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+      render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
       expect(screen.getByText(/(⌘|Ctrl) \+ Enter for å sende, Enter gir ny linje/)).toBeInTheDocument();
     });
@@ -533,7 +533,7 @@ describe('ChatAnalyzePage', () => {
     });
     mockedAnalyze.mockResolvedValue(factualAnswer as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
     ask('Hva kan Thomas Andersen best?');
     await screen.findByText(/sterkest på Kotlin/);
 
@@ -546,7 +546,7 @@ describe('ChatAnalyzePage', () => {
   it('offers follow-ups built from the answer’s own sources', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
     ask('Hva kan Thomas Andersen best?');
     await screen.findByText(/sterkest på Kotlin/);
 
@@ -561,7 +561,7 @@ describe('ChatAnalyzePage', () => {
   it('renders no table on a turn that produced no comparison', async () => {
     mockedAnalyze.mockResolvedValue({ ...factualAnswer, comparison: [] } as never);
 
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
     ask('Hva kan Thomas Andersen best?');
 
     await screen.findByText(/sterkest på Kotlin/);
@@ -590,7 +590,7 @@ describe('ChatAnalyzePage', () => {
         }
       ]
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvem har jobbet med modernisering av Java-systemer?');
 
@@ -606,7 +606,7 @@ describe('ChatAnalyzePage', () => {
 
   it('reuses the turn id when retrying, so the server can replay its answer', async () => {
     mockedAnalyze.mockRejectedValueOnce(new Error('network'));
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvem kan Kotlin?');
     await waitFor(() => expect(screen.getByText(/Spørsmålet feilet/)).toBeInTheDocument());
@@ -629,7 +629,7 @@ describe('ChatAnalyzePage', () => {
    */
   it('says the server may be down when the failure looks like that', async () => {
     mockedAnalyze.mockRejectedValueOnce({ response: { status: 500 } });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvem kan Kotlin?');
 
@@ -639,7 +639,7 @@ describe('ChatAnalyzePage', () => {
 
   it('says there was no answer at all when there is no response', async () => {
     mockedAnalyze.mockRejectedValueOnce(new Error('Network Error'));
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvem kan Kotlin?');
 
@@ -659,7 +659,7 @@ describe('ChatAnalyzePage', () => {
     mockedAnalyze.mockResolvedValue({
       ...factualAnswer, answer: 'Fem treff.', answerKind: 'SEARCH_RESULT', sources: fiveHits
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvem kan Kotlin?');
     await waitFor(() => expect(mockedAnalyze).toHaveBeenCalled());
@@ -686,7 +686,7 @@ describe('ChatAnalyzePage', () => {
         retrieval: { method: 'EXACT_SKILLS' as const, documentedSkills: [] }
       }]
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvem kan Kotlin?');
     await waitFor(() => expect(screen.getByText('K1 Kari Nordmann')).toBeInTheDocument());
@@ -715,7 +715,7 @@ describe('ChatAnalyzePage', () => {
         retrieval: { method: 'EXACT_SKILLS' as const, documentedSkills: [] }
       }]
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvem kan Kotlin?');
     await waitFor(() => expect(screen.getByText('K1 Kari Nordmann')).toBeInTheDocument());
@@ -730,7 +730,7 @@ describe('ChatAnalyzePage', () => {
   it('says so when the server did not confirm the deletion', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
     mockedClear.mockRejectedValueOnce(new Error('offline'));
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hva kan Thomas Andersen best?');
     await waitFor(() => expect(screen.getByText(/sterkest på Kotlin/)).toBeInTheDocument());
@@ -744,7 +744,7 @@ describe('ChatAnalyzePage', () => {
 
   it('clears the conversation on the server too', async () => {
     mockedAnalyze.mockResolvedValue(factualAnswer);
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hva kan Thomas Andersen best?');
     await waitFor(() => expect(screen.getByText(/sterkest på Kotlin/)).toBeInTheDocument());
@@ -759,7 +759,7 @@ describe('ChatAnalyzePage', () => {
 
   it('keeps the question and offers a retry when the call fails', async () => {
     mockedAnalyze.mockRejectedValueOnce(new Error('boom'));
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvem kan Kotlin?');
 
@@ -790,7 +790,7 @@ describe('ChatAnalyzePage', () => {
         '| Einar Flobak | 7 år |'
       ].join('\n')
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hvem kan Kotlin?');
 
@@ -816,7 +816,7 @@ describe('ChatAnalyzePage', () => {
         }
       ]
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hva krever avrop 10?');
 
@@ -848,7 +848,7 @@ describe('ChatAnalyzePage', () => {
         }
       ]
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hva krever Sparebank-avropet?');
 
@@ -890,7 +890,7 @@ describe('ChatAnalyzePage', () => {
         ]
       })
       .mockResolvedValue({ ...factualAnswer, answer: 'Avropet krever Java og Kafka [A1].' });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hva krever Sparebank-avropet?');
     await waitFor(() =>
@@ -922,7 +922,7 @@ describe('ChatAnalyzePage', () => {
         }
       ]
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('hvem kan java');
 
@@ -945,7 +945,7 @@ describe('ChatAnalyzePage', () => {
         }
       ]
     });
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     ask('Hva kan Joacim?');
 
@@ -959,7 +959,7 @@ describe('ChatAnalyzePage', () => {
    * The front page only has room for it folded.
    */
   it('shows how the assistant arrives at an answer, without having to open anything', () => {
-    render(<MemoryRouter><ChatAnalyzePage /></MemoryRouter>);
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
 
     expect(screen.getByText('Hvordan assistenten kommer fram til svaret')).toBeInTheDocument();
     expect(screen.getByText(/Vi slår opp først/)).toBeInTheDocument();
