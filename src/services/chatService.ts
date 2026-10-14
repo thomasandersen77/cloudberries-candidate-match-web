@@ -13,7 +13,7 @@ import type {
  * fortsette den. Svaret bærer kildene det hvilte på, så de kan vises uten å tolke svarteksten.
  */
 export async function analyzeContent(payload: ChatAnalyzeRequest): Promise<ChatAnalyzeResponse> {
-  const { data } = await aiScoringClient.post<ChatAnalyzeResponse>('chatbot/analyze', payload);
+  const { data } = await aiScoringClient.post<ChatAnalyzeResponse>('chatbot/ask', payload);
   return data;
 }
 

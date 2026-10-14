@@ -58,7 +58,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/chatbot/analyze": {
+    "/chatbot/ask": {
         parameters: {
             query?: never;
             header?: never;

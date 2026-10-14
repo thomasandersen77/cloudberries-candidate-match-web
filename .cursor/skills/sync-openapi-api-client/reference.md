@@ -12,7 +12,7 @@ Kilde: `openapi.yaml` v1.2.0. Oppdater ved spec-endringer.
 
 | Path | Method | Service | Funksjon |
 |------|--------|---------|----------|
-| `/chatbot/analyze` | POST | `chatService.ts` | `analyzeContent()` |
+| `/chatbot/ask` | POST | `chatService.ts` | `analyzeContent()` |
 | `/rag/chat` | POST | `chatService.ts` | `ragChat()` |
 | `/rag/ingest` | POST | `chatService.ts` | `ragIngest()` |
 | `/rag/ingest/db` | POST | `chatService.ts` | `ragIngestFromDb()` |

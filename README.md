@@ -100,7 +100,7 @@ flowchart TD
 | `/api/consultants/search` | POST | Relasjonelt søk (strukturerte filtre) |
 || `/api/consultants/search/semantic` | POST | Semantisk (vektor) søk |
 || **`/api/chatbot/search`** | **POST** | **🆕 AI-drevet søk med naturlig språk og konversasjonshistorikk** |
-|| **`/api/chatbot/analyze`** | **POST** | **🆕 Analyser innhold med AI** |
+|| **`/api/chatbot/ask`** | **POST** | **Spør assistenten; svar fra egne data, med kilder** |
 || `/api/cv/{userId}` | GET | Hent rå CV-data for konsulent |
 | `/api/embeddings/run/jason` | POST | Demo: generer embeddings for «Jason» |
 | `/api/embeddings/run?userId&cvId` | POST | Generer embeddings for spesifikk bruker/CV |
