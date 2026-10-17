@@ -408,6 +408,16 @@ const ResultCards: React.FC<{
     HYBRID: 'Krav filtrert, likhet rangert'
   };
 
+  /**
+   * "8 år", "prosjekt" or "ukjent varighet". A skill documented on a project experience never has
+   * years, which is a different fact from a category row whose duration nobody filled in; the two
+   * used to read the same.
+   */
+  const describeDocumentedSkill = (sk: { years?: number | null; source: 'CATEGORY' | 'PROJECT' }): string => {
+    if (sk.years != null) return `${sk.years} år`;
+    return sk.source === 'PROJECT' ? 'prosjekt' : 'ukjent varighet';
+  };
+
   return (
     <Stack spacing={1} sx={{ mt: 1, width: '100%' }}>
       {hits.map(hit => {
@@ -437,9 +447,10 @@ const ResultCards: React.FC<{
                 {/*
                   A missing duration is said, not left out. The database expresses "not recorded"
                   as NULL or as 0 on 17% of skill rows, and a bare name reads as "no years" as
-                  readily as "none recorded". Only one of those is what the row means.
+                  readily as "none recorded". Only one of those is what the row means. A skill
+                  documented on a project alone never has years, and "prosjekt" says why.
                 */}
-                Oppfyller: {r.documentedSkills.map(sk => `${sk.name} (${sk.years != null ? `${sk.years} år` : 'ukjent varighet'})`).join(', ')}
+                Oppfyller: {r.documentedSkills.map(sk => `${sk.name} (${describeDocumentedSkill(sk)})`).join(', ')}
               </Typography>
             )}
             {r.bestChunkLabel && (

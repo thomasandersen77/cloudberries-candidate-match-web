@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Chip, Tooltip, Typography } from '@mui/material';
-import type { RequirementCoverage, RequirementCoverageItem } from './coverageText';
+import { describeRequirement, type RequirementCoverage, type RequirementCoverageItem } from './coverageText';
 
 export type { RequirementCoverage, RequirementCoverageItem } from './coverageText';
 
@@ -36,7 +36,7 @@ export const CoverageChips: React.FC<CoverageChipsProps> = ({ coverage, mustOnly
         return (
           <Tooltip
             key={`${item.priority}-${item.name}`}
-            title={`${must ? 'Må-krav' : 'Bør-krav'}: ${item.name}. ${item.consultants} aktive konsulenter har ${item.skills.join(' eller ').toLowerCase()} på CV-en.`}
+            title={describeRequirement(item)}
           >
             <Chip
               size="small"

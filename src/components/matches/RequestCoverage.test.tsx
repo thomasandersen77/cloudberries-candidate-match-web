@@ -3,7 +3,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { CoverageChips } from './RequestCoverage';
-import { describeAiStatus, describeCoverage, type RequirementCoverage } from './coverageText';
+import { describeAiStatus, describeCoverage, describeRequirement, type RequirementCoverage } from './coverageText';
 
 afterEach(() => cleanup());
 
@@ -13,10 +13,10 @@ const coverage: RequirementCoverage = {
   fullMatchCount: 0,
   fullMatchBasis: 'MUST',
   requirements: [
-    { name: 'Kotlin', priority: 'MUST', skills: ['KOTLIN'], consultants: 16 },
-    { name: 'Flink', priority: 'MUST', skills: ['FLINK'], consultants: 0 },
-    { name: 'Dokumentert erfaring med Linux som kjøremiljø, samt bruk av Maven og Git', priority: 'MUST', skills: ['LINUX', 'MAVEN', 'GIT'], consultants: 32 },
-    { name: 'Terraform', priority: 'SHOULD', skills: ['TERRAFORM'], consultants: 11 },
+    { name: 'Kotlin', priority: 'MUST', skills: ['KOTLIN'], consultants: 16, projectOnly: 2 },
+    { name: 'Flink', priority: 'MUST', skills: ['FLINK'], consultants: 0, projectOnly: 0 },
+    { name: 'Dokumentert erfaring med Linux som kjøremiljø, samt bruk av Maven og Git', priority: 'MUST', skills: ['LINUX', 'MAVEN', 'GIT'], consultants: 32, projectOnly: 0 },
+    { name: 'Terraform', priority: 'SHOULD', skills: ['TERRAFORM'], consultants: 11, projectOnly: 0 },
   ],
   otherRequirements: ['Minimum 8 års relevant arbeidserfaring', 'Norsk muntlig og skriftlig'],
 };
@@ -29,6 +29,15 @@ describe('describeCoverage', () => {
   it('says so when nothing could be checked at all', () => {
     expect(describeCoverage({ ...coverage, technologyRequirements: 0, covered: 0, requirements: [], otherRequirements: ['Tilbud leveres i KGV'] }))
       .toBe('Ingen krav som kan sjekkes mot ferdighetene i CV-ene · 1 krav sjekkes ikke mot ferdigheter');
+  });
+});
+
+describe('describeRequirement', () => {
+  it('says how many hold the skill from a project alone, and nothing about it when nobody does', () => {
+    expect(describeRequirement(coverage.requirements[0]))
+      .toBe('Må-krav: Kotlin. 16 aktive konsulenter har kotlin på CV-en, 2 av dem bare fra prosjekterfaring.');
+    expect(describeRequirement(coverage.requirements[3]))
+      .toBe('Bør-krav: Terraform. 11 aktive konsulenter har terraform på CV-en.');
   });
 });
 

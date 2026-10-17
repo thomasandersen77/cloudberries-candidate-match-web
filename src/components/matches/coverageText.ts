@@ -19,6 +19,21 @@ export function describeCoverage(coverage: RequirementCoverage): string {
   return `Dekker ${coverage.covered} av ${coverage.technologyRequirements} teknologikrav${otherPart}`;
 }
 
+/**
+ * The tooltip behind one requirement chip.
+ *
+ * "Må-krav: Kotlin. 39 aktive konsulenter har kotlin på CV-en, 15 av dem bare fra prosjekterfaring."
+ * The second half is said whenever it is non-zero: a skill on a project carries no years, and the
+ * card used to count none of those people at all, so the reader should see both that they are
+ * counted now and that the record behind them is thinner.
+ */
+export function describeRequirement(item: RequirementCoverageItem): string {
+  const kind = item.priority === 'MUST' ? 'Må-krav' : 'Bør-krav';
+  const skills = item.skills.join(' eller ').toLowerCase();
+  const projectPart = item.projectOnly > 0 ? `, ${item.projectOnly} av dem bare fra prosjekterfaring` : '';
+  return `${kind}: ${item.name}. ${item.consultants} aktive konsulenter har ${skills} på CV-en${projectPart}.`;
+}
+
 /** "3 AI-vurdert 10.9.2026", or that nobody has been. */
 export function describeAiStatus(count: number | null | undefined, at: string | null | undefined): string {
   if (!count) return 'Ikke AI-vurdert';

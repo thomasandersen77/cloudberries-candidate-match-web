@@ -30,9 +30,9 @@ const coverage = {
   fullMatchCount: 0,
   fullMatchBasis: 'MUST',
   requirements: [
-    { name: 'Kotlin', priority: 'MUST', skills: ['KOTLIN'], consultants: 16 },
-    { name: 'Flink', priority: 'MUST', skills: ['FLINK'], consultants: 0 },
-    { name: 'Terraform', priority: 'SHOULD', skills: ['TERRAFORM'], consultants: 11 },
+    { name: 'Kotlin', priority: 'MUST', skills: ['KOTLIN'], consultants: 16, projectOnly: 0 },
+    { name: 'Flink', priority: 'MUST', skills: ['FLINK'], consultants: 0, projectOnly: 0 },
+    { name: 'Terraform', priority: 'SHOULD', skills: ['TERRAFORM'], consultants: 11, projectOnly: 0 },
   ],
   otherRequirements: ['Minimum 8 års relevant arbeidserfaring'],
 };

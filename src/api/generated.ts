@@ -3157,6 +3157,12 @@ export interface components {
         RetrievalMethodDto: "EXACT_SKILLS" | "SEMANTIC" | "HYBRID";
         DocumentedSkillDto: {
             name: string;
+            /**
+             * @description Where the CV documents the skill. CATEGORY is a row in the CV's skill categories, which carries years when the CV records them. PROJECT is a project experience's skill list, which never records years, so a PROJECT skill always has years null. Both are evidence the consultant wrote down; say "prosjekt" rather than "ukjent varighet" for the latter.
+             *
+             * @enum {string}
+             */
+            source: "CATEGORY" | "PROJECT";
             /** @description Years the CV records for it. Null means no duration is recorded, which the database expresses as either NULL or 0; both are normalised to null here, so null is unknown and never zero. Render it as unknown rather than as a number: 17% of skill rows have no duration, and an unrecorded one is not evidence of a short one.
              *      */
             years?: number | null;
@@ -3603,8 +3609,10 @@ export interface components {
             priority: components["schemas"]["RequirementPriority"];
             /** @description Canonical skill names it resolved to; holding any one of them covers it. */
             skills: string[];
-            /** @description Active consultants holding at least one of the skills. */
+            /** @description Active consultants holding at least one of the skills, in a CV skill category or on a project experience. Both are evidence the consultant wrote down; neither is inferred. */
             consultants: number;
+            /** @description Of consultants, how many hold the skill on a project experience alone. A project skill carries no recorded duration, so these people have the skill but no years for it. Show the number rather than folding it in or leaving it out. */
+            projectOnly: number;
         };
         /** @description How the corpus covers a request, requirement by requirement. Requirements aimed at the supplier are left out. Requirements naming no technology the corpus knows (years, language, sector) are listed under otherRequirements rather than counted as uncovered. */
         RequirementCoverageDto: {

@@ -12,8 +12,8 @@ const coverage: RequirementCoverage = {
   fullMatchCount: 1,
   fullMatchBasis: 'MUST',
   requirements: [
-    { name: 'Kotlin', priority: 'MUST', skills: ['KOTLIN'], consultants: 16 },
-    { name: 'Kafka', priority: 'MUST', skills: ['KAFKA'], consultants: 10 },
+    { name: 'Kotlin', priority: 'MUST', skills: ['KOTLIN'], consultants: 16, projectOnly: 0 },
+    { name: 'Kafka', priority: 'MUST', skills: ['KAFKA'], consultants: 10, projectOnly: 0 },
   ],
   otherRequirements: ['Minimum 8 års relevant arbeidserfaring'],
 };

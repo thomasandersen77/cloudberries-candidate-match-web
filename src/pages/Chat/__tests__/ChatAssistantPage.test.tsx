@@ -582,7 +582,7 @@ describe('ChatAssistantPage', () => {
           consultantCvId: 'cv-kari',
           retrieval: {
             method: 'HYBRID' as const,
-            documentedSkills: [{ name: 'Kotlin', years: 9 }],
+            documentedSkills: [{ name: 'Kotlin', years: 9, source: 'CATEGORY' as const }],
             cvQualityScore: 76,
             semanticSimilarity: 0.86,
             bestChunkLabel: 'Prosjekt: Skatteetaten'
@@ -654,7 +654,7 @@ describe('ChatAssistantPage', () => {
       kind: 'CONSULTANT' as const,
       label: `Konsulent ${i + 1}`,
       consultantUserId: `user-${i + 1}`,
-      retrieval: { method: 'EXACT_SKILLS' as const, documentedSkills: [{ name: 'Kotlin', years: 5 }] }
+      retrieval: { method: 'EXACT_SKILLS' as const, documentedSkills: [{ name: 'Kotlin', years: 5, source: 'CATEGORY' as const }] }
     }));
     mockedAnalyze.mockResolvedValue({
       ...factualAnswer, answer: 'Fem treff.', answerKind: 'SEARCH_RESULT', sources: fiveHits
@@ -917,7 +917,12 @@ describe('ChatAssistantPage', () => {
           consultantUserId: 'user-johan',
           retrieval: {
             method: 'EXACT_SKILLS' as const,
-            documentedSkills: [{ name: 'Java', years: null }, { name: 'Kafka', years: 6 }]
+            documentedSkills: [
+              { name: 'Java', years: null, source: 'CATEGORY' as const },
+              { name: 'Kafka', years: 6, source: 'CATEGORY' as const },
+              // On a project alone: never any years, and that is a different fact from "not recorded".
+              { name: 'Kotlin', years: null, source: 'PROJECT' as const }
+            ]
           }
         }
       ]
@@ -928,6 +933,7 @@ describe('ChatAssistantPage', () => {
 
     await waitFor(() => expect(screen.getByText(/Oppfyller:/)).toBeInTheDocument());
     expect(screen.getByText(/Java \(ukjent varighet\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Kotlin \(prosjekt\)/)).toBeInTheDocument();
     expect(screen.queryByText(/0 år/)).not.toBeInTheDocument();
   });
 

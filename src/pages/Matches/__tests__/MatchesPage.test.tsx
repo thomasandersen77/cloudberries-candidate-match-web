@@ -11,7 +11,7 @@ vi.mock('../../../services/matchesRequestsService', async () => {
         {
           id: 1, title: 'Forespørsel A', customerName: 'Kunde A', date: '2025-01-01T10:00:00Z',
           coverageStatus: 'GREEN', coverageLabel: 'God dekning',
-          coverage: { technologyRequirements: 1, covered: 1, fullMatchCount: 5, fullMatchBasis: 'MUST', requirements: [{ name: 'Java', priority: 'MUST', skills: ['JAVA'], consultants: 25 }], otherRequirements: [] },
+          coverage: { technologyRequirements: 1, covered: 1, fullMatchCount: 5, fullMatchBasis: 'MUST', requirements: [{ name: 'Java', priority: 'MUST', skills: ['JAVA'], consultants: 25, projectOnly: 0 }], otherRequirements: [] },
           aiMatchCount: null, aiLastUpdated: null,
         },
       ],

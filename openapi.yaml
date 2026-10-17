@@ -2019,9 +2019,17 @@ components:
 
     DocumentedSkillDto:
       type: object
-      required: [ name ]
+      required: [ name, source ]
       properties:
         name: { type: string }
+        source:
+          type: string
+          enum: [ CATEGORY, PROJECT ]
+          description: >
+            Where the CV documents the skill. CATEGORY is a row in the CV's skill categories, which
+            carries years when the CV records them. PROJECT is a project experience's skill list,
+            which never records years, so a PROJECT skill always has years null. Both are evidence
+            the consultant wrote down; say "prosjekt" rather than "ukjent varighet" for the latter.
         years:
           type: integer
           nullable: true
@@ -2652,7 +2660,7 @@ components:
 
     RequirementCoverageItemDto:
       type: object
-      required: [ name, priority, skills, consultants ]
+      required: [ name, priority, skills, consultants, projectOnly ]
       description: One requirement aimed at the consultant that named a technology the corpus knows.
       properties:
         name: { type: string, description: The requirement as written. }
@@ -2661,7 +2669,17 @@ components:
           type: array
           items: { type: string }
           description: Canonical skill names it resolved to; holding any one of them covers it.
-        consultants: { type: integer, description: Active consultants holding at least one of the skills. }
+        consultants:
+          type: integer
+          description: >-
+            Active consultants holding at least one of the skills, in a CV skill category or on a
+            project experience. Both are evidence the consultant wrote down; neither is inferred.
+        projectOnly:
+          type: integer
+          description: >-
+            Of consultants, how many hold the skill on a project experience alone. A project skill
+            carries no recorded duration, so these people have the skill but no years for it. Show
+            the number rather than folding it in or leaving it out.
 
     RequirementCoverageDto:
       type: object
