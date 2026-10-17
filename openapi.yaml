@@ -2723,6 +2723,9 @@ components:
           type: array
           items: { type: string }
         email: { type: string, nullable: true }
+        requirements:
+          type: array
+          items: { $ref: '#/components/schemas/RequirementScoreDto' }
 
     TriggerMatchingResponse:
       type: object
@@ -2932,12 +2935,48 @@ components:
 
     AISuggestionDto:
       type: object
+      required: [ consultantName, userId, cvId, matchScore, score, justification, createdAt, skills, requirements ]
       properties:
         id: { type: integer, format: int64, nullable: true }
         consultantName: { type: string }
-        matchScore: { type: number, format: double }
-        justification: { type: string }
+        userId: { type: string }
+        cvId: { type: string }
+        matchScore:
+          type: number
+          format: double
+          description: The screening score as 0-100. Not a percentage of anything; prefer score.
+        score:
+          type: number
+          format: double
+          description: The screening score on the 0.0-10.0 scale the model answers on, one decimal.
+        justification:
+          type: string
+          description: >
+            The model's summary of the candidate against the request. Plain prose; any tool-call
+            syntax the model wrote into it has been taken out.
         createdAt: { type: string, format: date-time }
+        skills:
+          type: array
+          items: { type: string }
+          description: The consultant's top skills overall, not the ones the request asked for.
+        requirements:
+          type: array
+          items: { $ref: '#/components/schemas/RequirementScoreDto' }
+          description: >
+            The score per requirement the total was made of, in the request's order. Empty for a
+            candidate whose breakdown was not stored.
+
+    RequirementScoreDto:
+      type: object
+      required: [ name, isMustHave, score ]
+      description: One requirement as the screening scored it.
+      properties:
+        name: { type: string }
+        isMustHave: { type: boolean }
+        score:
+          type: number
+          format: double
+          description: 0.0-10.0. The prompt's bands are 8-10 documented and recent, 5-7.9 relevant but thinner, under 5 indirect or missing.
 
     ProjectRequirementDto:
       type: object

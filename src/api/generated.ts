@@ -3646,6 +3646,7 @@ export interface components {
             justification?: string | null;
             skills?: string[];
             email?: string | null;
+            requirements?: components["schemas"]["RequirementScoreDto"][];
         };
         TriggerMatchingResponse: {
             /** Format: int64 */
@@ -3810,12 +3811,39 @@ export interface components {
         AISuggestionDto: {
             /** Format: int64 */
             id?: number | null;
-            consultantName?: string;
-            /** Format: double */
-            matchScore?: number;
-            justification?: string;
+            consultantName: string;
+            userId: string;
+            cvId: string;
+            /**
+             * Format: double
+             * @description The screening score as 0-100. Not a percentage of anything; prefer score.
+             */
+            matchScore: number;
+            /**
+             * Format: double
+             * @description The screening score on the 0.0-10.0 scale the model answers on, one decimal.
+             */
+            score: number;
+            /** @description The model's summary of the candidate against the request. Plain prose; any tool-call syntax the model wrote into it has been taken out.
+             *      */
+            justification: string;
             /** Format: date-time */
-            createdAt?: string;
+            createdAt: string;
+            /** @description The consultant's top skills overall, not the ones the request asked for. */
+            skills: string[];
+            /** @description The score per requirement the total was made of, in the request's order. Empty for a candidate whose breakdown was not stored.
+             *      */
+            requirements: components["schemas"]["RequirementScoreDto"][];
+        };
+        /** @description One requirement as the screening scored it. */
+        RequirementScoreDto: {
+            name: string;
+            isMustHave: boolean;
+            /**
+             * Format: double
+             * @description 0.0-10.0. The prompt's bands are 8-10 documented and recent, 5-7.9 relevant but thinner, under 5 indirect or missing.
+             */
+            score: number;
         };
         ProjectRequirementDto: {
             name: string;

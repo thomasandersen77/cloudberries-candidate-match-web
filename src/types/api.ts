@@ -170,16 +170,10 @@ export type ProjectRequestDto = {
   responsibleSalespersonEmail: string;
 };
 
-export type AISuggestionDto = {
-  id?: number;
-  consultantName: string;
-  userId: string;
-  cvId: string;
-  matchScore: number;
-  justification: string;
-  createdAt: string;
-  skills?: string[];
-};
+// Generated now. It was handwritten because the contract lacked userId, cvId and skills; the
+// contract has them, and the per-requirement breakdown besides.
+export type AISuggestionDto = components['schemas']['AISuggestionDto'];
+export type RequirementScoreDto = components['schemas']['RequirementScoreDto'];
 
 // Frontend-only types for skills summary endpoint (not in OpenAPI)
 export type SkillSummaryDto = { name: string; consultantCount: number };

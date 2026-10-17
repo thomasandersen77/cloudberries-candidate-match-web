@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Container, Paper, Stack, Typography, Table, TableHead, TableRow, TableCell, TableBody, LinearProgress, Button, Box, Chip, alpha } from '@mui/material';
-import type { ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
+import { Container, Paper, Stack, Typography, LinearProgress, Button, Box, Chip, alpha } from '@mui/material';
+import type { AISuggestionDto, ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
+import AiSuggestions from '../../components/matches/AiSuggestions';
 import { getProjectRequestById, analyzeProjectRequest, getProjectRequestSuggestions, closeProjectRequest } from '../../services/projectRequestsService';
 import HighQualityToggle from '../../components/HighQualityToggle';
 
@@ -9,7 +10,7 @@ const ProjectRequestDetailPage: React.FC = () => {
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [dto, setDto] = useState<ProjectRequestResponseDto | null>(null);
-  const [suggestions, setSuggestions] = useState<Array<{ consultantName: string; userId: string; cvId: string; matchScore: number; justification: string; createdAt: string; skills?: string[] }>>([]);
+  const [suggestions, setSuggestions] = useState<AISuggestionDto[]>([]);
   const [actionsLoading, setActionsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Default off every time; not persisted.
@@ -107,28 +108,7 @@ const ProjectRequestDetailPage: React.FC = () => {
           {suggestions.length === 0 ? (
             <Typography variant="body2" color="text.secondary">Ingen forslag (kjør "Analyser" for å generere).</Typography>
           ) : (
-            <Table size="small" stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Konsulent</TableCell>
-                  <TableCell>Score</TableCell>
-                  <TableCell>Begrunnelse</TableCell>
-                  <TableCell>Ferdigheter</TableCell>
-                  <TableCell>Tidspunkt</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {suggestions.map((s, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{s.consultantName}</TableCell>
-                    <TableCell>{s.matchScore.toFixed(1)}%</TableCell>
-                    <TableCell>{s.justification}</TableCell>
-                    <TableCell>{(s.skills ?? []).join(', ')}</TableCell>
-                    <TableCell>{new Date(s.createdAt).toLocaleString('no-NO')}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <AiSuggestions suggestions={suggestions} />
           )}
         </Paper>
       )}
