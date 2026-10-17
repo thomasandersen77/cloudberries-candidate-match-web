@@ -17,7 +17,7 @@ import ScoringOverlay from '../../components/ScoringOverlay';
 import { CloudDownload } from '@mui/icons-material';
 import { getSkillsDisplay } from '../../utils/skillUtils';
 import { compareByQualityThenName, getActiveQualityScore } from '../../utils/scoreUtils';
-import CvScoreBadge from '../../components/CvScoreBadge';
+import CvScoreBar from '../../components/CvScoreBar';
 import ConsultantOfficeLine from '../../components/ConsultantOfficeLine';
 
 // Mobile consultant card component
@@ -42,18 +42,7 @@ const ConsultantMobileCard: React.FC<{ consultant: ConsultantWithCvDto; onDetail
             <ConsultantOfficeLine consultant={consultant} />
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {quality !== null ? (
-              <>
-<CvScoreBadge score={quality} size="md" />
-                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary', textAlign: 'center' }}>
-                  CV-skår
-                </Typography>
-              </>
-            ) : (
-              <Typography variant="caption" sx={{ fontSize: '0.75rem', color: 'text.secondary', textAlign: 'center' }}>
-                -
-              </Typography>
-            )}
+            <CvScoreBar score={quality} />
           </Box>
         </Box>
         
@@ -499,19 +488,7 @@ const fetchData = async () => {
                           )}
                             <TableCell align="center">
                               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                {quality !== null ? (
-                                  <>
-<CvScoreBadge score={quality} size={isTablet ? 'md' : 'lg'} />
-                                    <Typography 
-                                      variant="caption" 
-                                      sx={{ fontSize: isTablet ? '0.6rem' : '0.65rem', color: 'text.secondary', textAlign: 'center' }}
-                                    >
-                                      CV-skår
-                                    </Typography>
-                                  </>
-                                ) : (
-                                  <Typography variant="body2" color="text.secondary">-</Typography>
-                                )}
+                                <CvScoreBar score={quality} square={isTablet ? 8 : 10} />
                               </Box>
                             </TableCell>
                             <TableCell align="right">
