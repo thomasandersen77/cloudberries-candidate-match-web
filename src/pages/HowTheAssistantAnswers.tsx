@@ -73,16 +73,55 @@ const STEPS = [
   },
 ];
 
+/**
+ * The same three steps in one line each, for the front page.
+ *
+ * Open, the full text was four paragraphs inside the assistant card and pushed the rest of the
+ * page below the fold. The short form keeps the order of events and the two promises that make an
+ * answer checkable; the assistant page still shows the full text under the composer, where the
+ * reader is deciding whether to trust an answer. Kept to what the backend does, for the same
+ * reasons as STEPS above.
+ */
+const SHORT_STEPS = [
+  { title: 'Vi slår opp først', body: 'Spørsmålet søkes i CV-ene og avropene før noe svar skrives.', Icon: SearchOutlinedIcon },
+  { title: 'AI-en får bare det vi fant', body: 'Modellen får treffene, ikke resten av basen.', Icon: AutoAwesomeOutlinedIcon },
+  { title: 'Svaret peker tilbake', body: 'Kildene følger med. En kilde som ikke var i oppslaget, fjernes og merkes.', Icon: FactCheckOutlinedIcon },
+];
+
 const HowTheAssistantAnswers: React.FC<{
   /** Folded behind a link until asked for. The front page; the assistant page shows it open. */
   collapsible?: boolean;
-}> = ({ collapsible = false }) => {
+  /** One line per step and no border, for the front page. */
+  compact?: boolean;
+}> = ({ collapsible = false, compact = false }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const [open, setOpen] = useState(!collapsible);
   const regionId = useId();
 
-  const explanation = (
+  const compactExplanation = (
+    <Box id={regionId}>
+      <Typography variant="subtitle2" component="h3" sx={{ fontWeight: 650, mb: 1 }}>
+        Hvordan assistenten kommer fram til svaret
+      </Typography>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 1, md: 2 }}>
+        {SHORT_STEPS.map(({ title, body, Icon }, index) => (
+          <Stack key={title} direction="row" spacing={1} sx={{ flex: 1, minWidth: 0 }} alignItems="flex-start">
+            <Icon sx={{ fontSize: 18, color: 'primary.main', mt: '2px', flexShrink: 0 }} aria-hidden />
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+              <Box component="span" sx={{ fontWeight: 650, color: 'text.primary' }}>{index + 1}. {title}.</Box>{' '}
+              {body}
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+        Gjelder Interne data. Velger du Generell AI, svarer modellen på egen hånd, uten basen.
+      </Typography>
+    </Box>
+  );
+
+  const explanation = compact ? compactExplanation : (
     <Box id={regionId}>
       <Typography variant="subtitle2" component="h3" sx={{ fontWeight: 650, mb: 0.5 }}>
         Hvordan assistenten kommer fram til svaret
@@ -129,7 +168,7 @@ const HowTheAssistantAnswers: React.FC<{
 
   return (
     <Box
-      sx={{
+      sx={compact ? {} : {
         mb: collapsible ? { xs: 1, sm: 2 } : 3,
         pt: collapsible ? { xs: 1, sm: 1.5 } : 2.5,
         borderTop: `1px solid ${alpha(theme.palette.divider, isDark ? 1 : 0.8)}`,
@@ -158,7 +197,7 @@ const HowTheAssistantAnswers: React.FC<{
           </Button>
           {/* unmountOnExit: the folded steps are not read out, or found by a search, while invisible. */}
           <Collapse in={open} unmountOnExit>
-            <Box sx={{ mt: 1.5 }}>{explanation}</Box>
+            <Box sx={{ mt: compact ? 1 : 1.5 }}>{explanation}</Box>
           </Collapse>
         </>
       ) : (

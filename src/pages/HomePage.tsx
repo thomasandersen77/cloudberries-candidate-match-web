@@ -1,26 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
-import { Box, Grid, Card, CardContent, Typography, Button, Stack, Chip, useMediaQuery } from '@mui/material';
+import { Box, Grid, Typography, Button, Stack } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
-import { useColorMode } from '../theme';
-import { BRANDING } from '../config/branding';
 import { listConsultantsWithCvPaged } from '../services/consultantsService';
 import { EVERYDAY_MODULES, SUPERUSER_MODULES } from './modules';
-import ModuleCard from './ModuleCard';
-import HowTheAssistantAnswers from './HowTheAssistantAnswers';
+import ModuleTile from './ModuleTile';
+import AssistantHero from './AssistantHero';
 
+/**
+ * The front page, on one screen.
+ *
+ * It was four layers deep: a hero with a tagline, a paragraph and three boxes, then the assistant
+ * as a card whose explanation opened into four paragraphs, then a heading, then six cards with a
+ * button each. On a laptop the last row was a scroll away, and the hero said most of what the
+ * assistant card said again. Now the tagline is one line with the one live figure beside it, the
+ * assistant carries the page, and the other modules are tiles under a line saying what they are
+ * for. Nothing that was a fact is gone: the consultant count, that answers show their sources, and
+ * that the assistant says so when the base has nothing. "Søk til forslag" was a slogan.
+ */
 const HomePage: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  // Rendered or not, rather than hidden with display: none, because a hidden first child still
-  // takes the Stack's spacing and the title under it kept a blank line where the chip was.
-  const isPhone = useMediaQuery(theme.breakpoints.down('sm'));
-  const { brandTheme } = useColorMode();
-  const brand = BRANDING[brandTheme] ?? BRANDING.cloudberries;
-  const heroBrandLabel = `${brand.displayName} Candidate Match`;
-
-  const links = EVERYDAY_MODULES;
 
   /**
    * The size of the database, read from it.
@@ -38,149 +39,72 @@ const HomePage: React.FC = () => {
       .catch(() => setConsultantCount(null));
   }, []);
 
-  const kpis = [
-    {
-      label: 'Konsulenter',
-      value: consultantCount === null ? '–' : String(consultantCount),
-      helper: 'Med aktiv CV i basen'
-    },
-    { label: 'Assistent', value: 'Svar med kilder', helper: 'Siterer CV-en eller avropet' },
-    // "End-to-end" stood here in a Norwegian interface. The fact is the same.
-    { label: 'Arbeidsflyt', value: 'Søk til forslag', helper: 'Alt i én arbeidsflate' },
-  ];
+  const others = EVERYDAY_MODULES.filter(l => !l.featured);
 
   return (
-    <Box sx={{ py: { xs: 1, md: 4 } }}>
-      <Card
-        sx={{
-          mb: { xs: 2, md: 5 },
-          overflow: 'hidden',
-          position: 'relative',
-          borderColor: alpha(theme.palette.primary.main, 0.26),
-        }}
+    <Box sx={{ py: { xs: 1, md: 1.5 } }}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={{ xs: 1.5, sm: 3 }}
+        alignItems={{ sm: 'flex-end' }}
+        justifyContent="space-between"
+        sx={{ mb: { xs: 2, md: 2 } }}
       >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ fontWeight: 700, letterSpacing: '-0.03em', fontSize: { xs: '1.4rem', sm: '1.7rem', md: '1.95rem' }, lineHeight: 1.2 }}
+          >
+            Intelligent kompetansesøk og AI-drevet matching
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
+            Finn konsulenter på dokumentert erfaring, vurder CV-kvalitet og match mot kundeforespørsler.
+          </Typography>
+        </Box>
         <Box
           sx={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            background: `linear-gradient(115deg, ${alpha(theme.palette.primary.main, 0.22)} 0%, transparent 40%, ${alpha(
-              theme.palette.secondary.main,
-              0.1
-            )} 100%)`,
+            flexShrink: 0,
+            px: 2,
+            py: 1,
+            borderRadius: 2,
+            border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
+            bgcolor: isDark ? alpha('#fff', 0.04) : alpha('#fff', 0.8),
+            textAlign: { xs: 'left', sm: 'right' },
           }}
-        />
-        <CardContent sx={{ p: { xs: 2, md: 4 }, position: 'relative' }}>
-          <Stack spacing={2} sx={{ maxWidth: 860 }}>
-            {/* The header already carries the brand; on a phone the chip is a line the title needs more. */}
-            {!isPhone && (
-              <Chip
-                label={heroBrandLabel}
-                size="small"
-                sx={{ width: 'fit-content', fontWeight: 600, bgcolor: alpha(theme.palette.primary.main, 0.12) }}
-              />
-            )}
-            {/*
-              Smaller on a phone. At h4 the title is four lines of 390 px, and the whole point of
-              the front page on a phone is that the modules are reachable without a scroll of three
-              screens; e2e/home.spec.ts measures where the first module card lands.
-            */}
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{ fontWeight: 700, letterSpacing: '-0.03em', maxWidth: 920, fontSize: { xs: '1.45rem', sm: '1.8rem', md: '2.125rem' } }}
-            >
-              Intelligent arbeidsflate for kompetansesøk, kvalitetsvurdering og AI-drevet matching
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.95rem', md: '1.03rem' }, lineHeight: { xs: 1.55, md: 1.68 }, maxWidth: 800 }}
-            >
-              Spør assistenten på vanlig norsk: hvem kan Java og Kotlin, hva krever avropet fra
-              Skatteetaten, hvem passer best til det.{' '}
-              {/* The middle of the paragraph is desktop reading; the promise at the end stays everywhere. */}
-              <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
-                Søket rangerer på dokumentert erfaring i CV-ene, kravene leses ut av
-                kundeforespørselen, og svaret viser kildene sine, så du kan kontrollere det mot
-                CV-en eller avropet.{' '}
-              </Box>
-              Står det ikke i basen, sier assistenten det i stedet for å gjette.
-            </Typography>
-          </Stack>
-          {/*
-            One row of three on every width. Stacked on a phone, the three were three cards of
-            their own before the modules, and two of them are not even numbers. On xs they keep
-            the label and the fact and drop the helper line; from sm up they read as before.
-          */}
-          <Grid container spacing={{ xs: 1, sm: 2 }} sx={{ mt: { xs: 0, sm: 0.5 } }}>
-            {kpis.map((kpi) => (
-              <Grid item xs={4} key={kpi.label}>
-                <Box
-                  sx={{
-                    borderRadius: 3,
-                    px: { xs: 1, sm: 2 },
-                    py: { xs: 1, sm: 1.75 },
-                    // Centred, because the three sit side by side under a paragraph that is not:
-                    // left-aligned inside their own boxes they read as three ragged columns rather
-                    // than as one row of figures.
-                    textAlign: 'center',
-                    height: '100%',
-                    bgcolor: isDark ? alpha('#fff', 0.04) : alpha('#fff', 0.8),
-                    border: `1px solid ${alpha(theme.palette.divider, 0.75)}`,
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ textTransform: 'uppercase', letterSpacing: { xs: '0.04em', sm: '0.08em' }, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
-                  >
-                    {kpi.label}
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.25rem' }, lineHeight: 1.3 }}>
-                    {kpi.value}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-                    {kpi.helper}
-                  </Typography>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </CardContent>
-      </Card>
-
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: { xs: 1.5, md: 2 } }}>
-        <Typography variant="h6" sx={{ fontWeight: 650 }}>
-          Moduloversikt
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Velg arbeidsområde
-        </Typography>
+        >
+          <Typography variant="h5" component="p" sx={{ fontWeight: 700, lineHeight: 1.1 }}>
+            {consultantCount === null ? '–' : consultantCount}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">Konsulenter med aktiv CV</Typography>
+        </Box>
       </Stack>
 
-      <Grid container spacing={{ xs: 2, md: 2.5 }}>
-        {links.filter(l => l.featured).map((l) => (
-          // Inside the card, because it is the card's own claim it explains. Folded, because open
-          // it was most of the page on a phone; the assistant page shows the whole of it.
-          <ModuleCard key={l.to} link={l}>
-            <HowTheAssistantAnswers collapsible />
-          </ModuleCard>
-        ))}
-      </Grid>
+      <AssistantHero />
 
-      <Grid container spacing={{ xs: 2, md: 2.5 }} sx={{ mt: { xs: 2, md: 3 } }}>
-        {links.filter(l => !l.featured).map((l) => (
-          <ModuleCard key={l.to} link={l} />
+      <Box sx={{ mt: { xs: 3, md: 2.5 }, mb: 1.25 }}>
+        <Typography variant="h6" component="h2" sx={{ fontWeight: 650 }}>
+          Andre arbeidsflater
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Konsulentlisten, matching mot avrop, opplasting av nye forespørsler og oversikter.
+        </Typography>
+      </Box>
+
+      <Grid container spacing={{ xs: 1.5, md: 2 }}>
+        {others.map(l => (
+          <Grid item xs={12} sm={6} md={4} key={l.to}>
+            <ModuleTile link={l} />
+          </Grid>
         ))}
       </Grid>
 
       {/*
         Nothing is hidden, only moved. The modules here are batch jobs and narrower ways into data
-        the cards above already show, and listing them as equals said they were equally often the
+        the tiles above already show, and listing them as equals said they were equally often the
         right thing to click.
       */}
-      <Stack direction="row" justifyContent="center" sx={{ mt: 4 }}>
+      <Stack direction="row" justifyContent="center" sx={{ mt: { xs: 2, md: 1.5 } }}>
         <Button
           component={RouterLink}
           to="/superbruker"

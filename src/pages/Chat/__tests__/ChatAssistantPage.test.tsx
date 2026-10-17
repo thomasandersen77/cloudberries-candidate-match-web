@@ -1011,4 +1011,20 @@ describe('ChatAssistantPage', () => {
     expect(screen.getByText(/Vi slår opp først/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Hvordan fungerer dette?' })).not.toBeInTheDocument();
   });
+
+  /**
+   * The front page offers example questions that open the assistant with the question filled in.
+   * Filled in, not sent: a click on the front page should not spend a model call before the reader
+   * has seen what will be asked.
+   */
+  it('fills the question from the address and waits for send', async () => {
+    render(
+      <MemoryRouter initialEntries={['/chat?q=Hvem%20kan%20Kotlin%20og%20Kafka%3F']}>
+        <ChatAssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByLabelText('Spørsmål')).toHaveValue('Hvem kan Kotlin og Kafka?');
+    expect(mockedAnalyze).not.toHaveBeenCalled();
+  });
 });

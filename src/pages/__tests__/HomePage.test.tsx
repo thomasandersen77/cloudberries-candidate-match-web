@@ -6,6 +6,7 @@ import HomePage from '../HomePage';
 import { ColorModeProvider } from '../../theme';
 import { listConsultantsWithCvPaged } from '../../services/consultantsService';
 import { EVERYDAY_MODULES, SUPERUSER_MODULES } from '../modules';
+import { EXAMPLE_QUESTIONS } from '../exampleQuestions';
 
 vi.mock('../../services/consultantsService', () => ({
   listConsultantsWithCvPaged: vi.fn().mockResolvedValue({ content: [], totalElements: 118 })
@@ -138,5 +139,33 @@ describe('HomePage', () => {
     const link = screen.getByRole('link', { name: /Superbruker/ });
     expect(link).toHaveAttribute('href', '/superbruker');
     expect(link).toHaveTextContent('Ferdigheter, Embeddings, Søk');
+  });
+
+  /**
+   * The assistant is the way in, so it carries the page: its own heading above the others, and
+   * questions to start from that open it with the question filled in.
+   */
+  it('offers example questions that open the assistant with the question filled in', async () => {
+    renderPage();
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Assistent' })).toBeInTheDocument();
+    for (const question of EXAMPLE_QUESTIONS) {
+      expect(screen.getByRole('link', { name: question })).toHaveAttribute('href', `/chat?q=${encodeURIComponent(question)}`);
+    }
+    expect(screen.getByRole('link', { name: /Åpne assistenten/ })).toHaveAttribute('href', '/chat');
+  });
+
+  /**
+   * The other modules are tiles under one heading that says what they are for, and each whole tile
+   * is the link, so there is one target per module instead of a card and a button.
+   */
+  it('lists the other modules as tiles that link to them', async () => {
+    renderPage();
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Andre arbeidsflater' })).toBeInTheDocument();
+    for (const module of EVERYDAY_MODULES.filter(m => !m.featured)) {
+      const tile = screen.getByRole('heading', { name: module.title }).closest('a');
+      expect(tile).toHaveAttribute('href', module.to);
+    }
   });
 });

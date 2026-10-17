@@ -36,7 +36,7 @@ import {
   type PromptSuggestion, type SuggestionSubjects
 } from './chatSuggestions';
 import { runProjectMatching } from '../../api/matchingApi';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import ExpandIcon from '@mui/icons-material/UnfoldMore';
 import CollapseIcon from '@mui/icons-material/UnfoldLess';
 import type {
@@ -802,7 +802,10 @@ const MessageBubble: React.FC<{
 };
 
 const ChatAssistantPage: React.FC = () => {
-  const [content, setContent] = useState('');
+  // `?q=` fills the composer and does not send: the front page's example questions open here, and
+  // trying one should not spend a model call until the reader presses send.
+  const [searchParams] = useSearchParams();
+  const [content, setContent] = useState(() => searchParams.get('q') ?? '');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

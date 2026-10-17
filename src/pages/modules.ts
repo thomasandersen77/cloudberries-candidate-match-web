@@ -29,10 +29,12 @@ export const EVERYDAY_MODULES: ModuleLink[] = [
     desc: 'Spør om konsulenter, avrop og tidligere vurderinger. Svarene bygger på databasen og viser kildene sine. Kan også svare generelt, uten interne data.',
     featured: true,
   },
-  { to: '/consultants', title: 'Konsulenter', desc: 'Se liste over konsulenter og CV-kvalitet' },
-  { to: '/matches', title: 'Matcher', desc: 'Finn kandidatmatcher mot prosjekter' },
-  { to: '/project-requests/upload', title: 'Last opp kundeforspørsel', desc: 'PDF, AI-analyse og lagring i databasen' },
-  { to: '/cv-score', title: 'CV-Score', desc: 'Analyser og sammenlign kandidat-CV-er' },
+  // One line each: the front page shows them as tiles, and a description that wraps is a tile that
+  // grows taller than its neighbours.
+  { to: '/consultants', title: 'Konsulenter', desc: 'Konsulentliste med CV-kvalitet' },
+  { to: '/matches', title: 'Matcher', desc: 'Kandidater vurdert mot avrop' },
+  { to: '/project-requests/upload', title: 'Last opp kundeforespørsel', desc: 'PDF inn, krav ut, klar for matching' },
+  { to: '/cv-score', title: 'CV-Score', desc: 'Kvalitet og forbedringer per CV' },
   { to: '/stats', title: 'Statistikk', desc: 'Programmeringsspråk og roller' },
   { to: '/health', title: 'Helse', desc: 'Systemstatus og tilgjengelighet' },
 ];
