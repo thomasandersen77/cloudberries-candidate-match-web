@@ -16,6 +16,7 @@ import {
   Description as DocumentIcon,
   Badge as ConsultantIcon,
   History as StoredMatchIcon,
+  Code as SkillIcon,
   Storage as DatabaseIcon,
   // Not a globe. A globe reads as web access, and this mode has none; the point of the label is to
   // set that expectation, not to undercut it with the icon next to it.
@@ -142,7 +143,10 @@ const ANSWER_KIND_LABELS: Record<ChatAnswerKind, { label: string; color: 'defaul
 const SOURCE_ICONS = {
   CONSULTANT: ConsultantIcon,
   PROJECT_REQUEST: DocumentIcon,
-  STORED_MATCH: StoredMatchIcon
+  STORED_MATCH: StoredMatchIcon,
+  // The kind is shared with readings, where SKILL means a misspelt technology. The server never
+  // sends a skill as a source; the entry is here so the map stays total.
+  SKILL: SkillIcon
 } as const;
 
 // Matches the backend's cap. Each hit is a summary card in the prompt, so this is deliberately
@@ -220,6 +224,12 @@ const PromptSuggestions: React.FC<{
       )}
     </Stack>
   );
+};
+
+/** [written] replaced as a whole word, in any case, by [replacement]. Letters in the Unicode sense, for æ, ø and å. */
+const replaceWord = (text: string, written: string, replacement: string): string => {
+  const escaped = written.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'giu'), replacement);
 };
 
 const ReadingNotices: React.FC<{
@@ -642,10 +652,20 @@ const MessageBubble: React.FC<{
               disabled={loading}
               pickedId={message.pickedAlternativeId}
               onPick={(reading, id) => {
+                if (!message.question) return;
+                // A skill has no pin. The question is asked again with the misspelt word replaced
+                // by the skill picked, so "Hvem kan kotin?" becomes "Hvem kan Kotlin?" and the
+                // transcript shows what was actually asked the second time.
+                if (reading.kind === 'SKILL') {
+                  const label = reading.alternatives.find(a => a.id === id)?.label;
+                  if (!label) return;
+                  onPickAlternative(message.id, id);
+                  onAsk(replaceWord(message.question, reading.written, label), 'DATABASE', message.topK ?? DEFAULT_TOP_K);
+                  return;
+                }
                 // Only the two kinds the server can be told to pin. A match result has no pin,
                 // and a button that sent one would come back to the same ambiguity.
                 if (reading.kind !== 'PROJECT_REQUEST' && reading.kind !== 'CONSULTANT') return;
-                if (!message.question) return;
                 onPickAlternative(message.id, id);
                 onAsk(message.question, 'DATABASE', message.topK ?? DEFAULT_TOP_K, {
                   kind: reading.kind,

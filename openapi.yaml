@@ -2006,7 +2006,12 @@ components:
 
     ChatSourceKindDto:
       type: string
-      enum: [ CONSULTANT, PROJECT_REQUEST, STORED_MATCH ]
+      enum: [ CONSULTANT, PROJECT_REQUEST, STORED_MATCH, SKILL ]
+      description: >
+        SKILL appears only on a reading, never on a source: a technology in the question that was
+        misspelt (status CORRECTED) or close to several skills (status AMBIGUOUS, with one
+        alternative per skill). A skill alternative has no pin; picking one asks the question again
+        with the written word replaced by the alternative's label.
 
     RetrievalMethodDto:
       type: string
@@ -2188,7 +2193,7 @@ components:
       properties:
         id:
           type: string
-          description: Request id, or consultant user id, depending on the reading's kind.
+          description: Request id, consultant user id, or a skill's canonical name, depending on the reading's kind.
         label: { type: string }
 
     CandidateComparison:

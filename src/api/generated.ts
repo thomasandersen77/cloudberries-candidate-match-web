@@ -3147,8 +3147,12 @@ export interface components {
          * @enum {string}
          */
         ChatAnswerKind: "FACTUAL" | "SEARCH_RESULT" | "STORED_MATCH" | "AD_HOC_EVALUATION" | "NO_GROUNDING" | "GENERAL";
-        /** @enum {string} */
-        ChatSourceKindDto: "CONSULTANT" | "PROJECT_REQUEST" | "STORED_MATCH";
+        /**
+         * @description SKILL appears only on a reading, never on a source: a technology in the question that was misspelt (status CORRECTED) or close to several skills (status AMBIGUOUS, with one alternative per skill). A skill alternative has no pin; picking one asks the question again with the written word replaced by the alternative's label.
+         *
+         * @enum {string}
+         */
+        ChatSourceKindDto: "CONSULTANT" | "PROJECT_REQUEST" | "STORED_MATCH" | "SKILL";
         /**
          * @description How a consultant came to be on a list. Deliberately not called a match: in this system a match is a candidate scored against a request's requirements by the matching pipeline. EXACT_SKILLS is documented skill rows, SEMANTIC is vector similarity against CV sections, HYBRID is exact criteria filtering the pool with similarity ordering what is left.
          *
@@ -3270,7 +3274,7 @@ export interface components {
             alternatives: components["schemas"]["ChatReadingAlternative"][];
         };
         ChatReadingAlternative: {
-            /** @description Request id, or consultant user id, depending on the reading's kind. */
+            /** @description Request id, consultant user id, or a skill's canonical name, depending on the reading's kind. */
             id: string;
             label: string;
         };

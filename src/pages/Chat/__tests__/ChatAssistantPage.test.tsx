@@ -352,6 +352,46 @@ describe('ChatAssistantPage', () => {
    * A tie between two people is a choice, and the choice has to reach the server as an id. The
    * button used to be rendered for consultants and do nothing: the handler took requests only.
    */
+  /**
+   * "Hvem kan kotin?" is one letter from Kotlin and one from Koin, and the server asks which. A
+   * skill has no pin, so picking one asks the question again with the word replaced.
+   */
+  it('asks again with the skill the reader picked out of a misspelling', async () => {
+    mockedAnalyze.mockResolvedValueOnce({
+      ...factualAnswer,
+      answer: '«kotin» kan være Kotlin eller Koin. Velg én, eller skriv navnet slik det står i CV-ene.',
+      answerKind: 'NO_GROUNDING',
+      sources: [],
+      comparison: [],
+      readings: [{
+        kind: 'SKILL' as const,
+        written: 'kotin',
+        readAs: null,
+        status: 'AMBIGUOUS' as const,
+        origin: 'DATABASE_FUZZY' as const,
+        alternatives: [
+          { id: 'kotlin', label: 'Kotlin' },
+          { id: 'koin', label: 'Koin' }
+        ]
+      }]
+    } as never);
+    mockedAnalyze.mockResolvedValueOnce({ ...factualAnswer, readings: [] } as never);
+
+    render(<MemoryRouter><ChatAssistantPage /></MemoryRouter>);
+    ask('Hvem kan kotin?');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Kotlin' }));
+
+    await waitFor(() => expect(mockedAnalyze).toHaveBeenCalledTimes(2));
+    expect(mockedAnalyze).toHaveBeenLastCalledWith(expect.objectContaining({ content: 'Hvem kan Kotlin?' }));
+    expect(mockedAnalyze).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ pinnedRequestId: expect.anything() })
+    );
+    expect(mockedAnalyze).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ pinnedConsultantUserId: expect.anything() })
+    );
+  });
+
   it('pins the consultant the reader picked out of an ambiguous name', async () => {
     mockedAnalyze.mockResolvedValueOnce({
       ...factualAnswer,
