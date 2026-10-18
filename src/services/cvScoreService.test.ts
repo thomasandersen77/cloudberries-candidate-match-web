@@ -46,4 +46,17 @@ describe('cvScoreService', () => {
     expect(cato?.scorePercent).toBe(0);
     expect(cato?.summary).toBe('');
   });
+
+  /** Whether a CV can be reviewed and whether its score is current both come from the server. */
+  it('carries assessability and staleness, with the safe defaults when absent', async () => {
+    const rows = await loadCvScoreListRows([
+      { id: 'vivi', name: 'Vivi Elton', birthYear: 0, assessable: false, stale: false },
+      { id: 'old', name: 'Gammel Skår', score: 78, birthYear: 0, assessable: true, stale: true, scoredAt: null },
+      ...candidates,
+    ] as never);
+
+    expect(rows.find(r => r.id === 'vivi')?.assessable).toBe(false);
+    expect(rows.find(r => r.id === 'old')?.stale).toBe(true);
+    expect(rows.find(r => r.id === 'user-a')).toMatchObject({ assessable: true, stale: false });
+  });
 });

@@ -3011,7 +3011,7 @@ components:
 
     CvScoreDto:
       type: object
-      required: [ candidateId, scorePercent, summary, strengths, potentialImprovements ]
+      required: [ candidateId, scorePercent, summary, strengths, potentialImprovements, stale ]
       properties:
         candidateId: { type: string }
         scorePercent: { type: integer }
@@ -3022,10 +3022,28 @@ components:
         potentialImprovements:
           type: array
           items: { type: string }
+        scoredAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the review was written. Null for scores written before this was recorded.
+        model:
+          type: string
+          nullable: true
+          description: The model that wrote the review.
+        promptVersion:
+          type: string
+          nullable: true
+          description: The version of the review prompt, e.g. 2026-10-cv-review-v2.
+        stale:
+          type: boolean
+          description: >
+            True when the score was made from another version of the CV than the one stored now, or
+            from an unknown version (every score written before the CV version was recorded).
 
     CandidateDTO:
       type: object
-      required: [ id, name, birthYear ]
+      required: [ id, name, birthYear, assessable, stale ]
       properties:
         id: { type: string }
         name: { type: string }
@@ -3042,6 +3060,19 @@ components:
             The scoring's own summary of the CV. Lives in the same row as the score, and is returned
             with it for the same reason: the list page used to fetch it one candidate at a time.
         birthYear: { type: integer }
+        assessable:
+          type: boolean
+          description: >
+            False for a CV with no project, no work experience and no key qualification with text.
+            Such a CV is not scored (scoring it answers 422 CV_NOT_ASSESSABLE), and score is null.
+        scoredAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the score was written; null when unscored or scored before this was recorded.
+        stale:
+          type: boolean
+          description: True when the score was made from another version of the CV, or from an unknown one.
 
     CvScoringRunResponse:
       type: object

@@ -3,6 +3,11 @@ export type CvScoreListRow = {
   name: string;
   scorePercent: number;
   summary: string;
+  /** False for a CV with nothing in it to review. Missing means assessable. */
+  assessable?: boolean;
+  /** True when the score was not made from the CV as it is now. */
+  stale?: boolean;
+  scoredAt?: string | null;
 };
 
 export function normalizeScorePercent(value: unknown): number {

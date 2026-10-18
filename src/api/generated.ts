@@ -3871,6 +3871,18 @@ export interface components {
             summary: string;
             strengths: string[];
             potentialImprovements: string[];
+            /**
+             * Format: date-time
+             * @description When the review was written. Null for scores written before this was recorded.
+             */
+            scoredAt?: string | null;
+            /** @description The model that wrote the review. */
+            model?: string | null;
+            /** @description The version of the review prompt, e.g. 2026-10-cv-review-v2. */
+            promptVersion?: string | null;
+            /** @description True when the score was made from another version of the CV than the one stored now, or from an unknown version (every score written before the CV version was recorded).
+             *      */
+            stale: boolean;
         };
         CandidateDTO: {
             id: string;
@@ -3882,6 +3894,16 @@ export interface components {
              *      */
             summary?: string | null;
             birthYear: number;
+            /** @description False for a CV with no project, no work experience and no key qualification with text. Such a CV is not scored (scoring it answers 422 CV_NOT_ASSESSABLE), and score is null.
+             *      */
+            assessable: boolean;
+            /**
+             * Format: date-time
+             * @description When the score was written; null when unscored or scored before this was recorded.
+             */
+            scoredAt?: string | null;
+            /** @description True when the score was made from another version of the CV, or from an unknown one. */
+            stale: boolean;
         };
         CvScoringRunResponse: {
             processedCount: number;

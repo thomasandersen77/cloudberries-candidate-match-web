@@ -22,6 +22,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Chip,
+  Tooltip,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
@@ -97,7 +99,8 @@ const CvScoreListPage: React.FC = () => {
   const runScoreForAllMissing = async () => {
     try {
       setRunning(true);
-      const missing = rows.filter((r) => (r.scorePercent ?? 0) === 0).map((r) => ({ id: r.id, name: r.name }));
+      // Only CVs with something to review: the others are refused without a model call anyway.
+      const missing = assessableRows.filter((r) => (r.scorePercent ?? 0) === 0).map((r) => ({ id: r.id, name: r.name }));
       let processed = 0;
       for (const m of missing) {
         try {
@@ -131,15 +134,25 @@ const CvScoreListPage: React.FC = () => {
     void runScoreForAllMissing();
   };
 
-  const sortedRows = useMemo(() => sortCvScoreRows(rows), [rows]);
+  /**
+   * The CVs there is something to review in. Managers, the administration account and external
+   * accounts with an empty Flowcase skeleton are left out: ten of them had a score between 72 and
+   * 79 for nothing, most of it a review of somebody else's CV. They are counted under the
+   * statistics, so nobody wonders where they went.
+   */
+  const assessableRows = useMemo(() => rows.filter((r) => r.assessable !== false), [rows]);
+  const excludedCount = rows.length - assessableRows.length;
+
+  const sortedRows = useMemo(() => sortCvScoreRows(assessableRows), [assessableRows]);
 
   const stats = useMemo(() => {
-    const scored = rows.filter((r) => r.scorePercent > 0);
+    const scored = assessableRows.filter((r) => r.scorePercent > 0);
     const n = scored.length;
-    if (n === 0) return { total: rows.length, scored: 0, avg: 0 };
+    const stale = scored.filter((r) => r.stale).length;
+    if (n === 0) return { total: assessableRows.length, scored: 0, avg: 0, stale };
     const sum = scored.reduce((acc, r) => acc + r.scorePercent, 0);
-    return { total: rows.length, scored: n, avg: Math.round(sum / n) };
-  }, [rows]);
+    return { total: assessableRows.length, scored: n, avg: Math.round(sum / n), stale };
+  }, [assessableRows]);
 
   // The page is a table of 118 rows and a column of prose, so it takes the width it is given.
   // Default Container is lg, and the summaries wrapped to four lines in it while the window had
@@ -182,7 +195,7 @@ const CvScoreListPage: React.FC = () => {
       >
         <Box>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Analysert
+            Vurderbare
           </Typography>
           <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25 }}>
             {stats.total}
@@ -199,6 +212,20 @@ const CvScoreListPage: React.FC = () => {
             </Typography>
           </Stack>
         </Box>
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Utdatert
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25 }}>
+            {stats.stale}
+          </Typography>
+        </Box>
+        {excludedCount > 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ flexBasis: '100%' }}>
+            {excludedCount} uten CV-innhold vises ikke: ingen prosjekter, arbeidserfaring eller
+            nøkkelkvalifikasjoner i Flowcase (ledere, administrasjon og eksterne).
+          </Typography>
+        )}
       </Paper>
 
       {running && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
@@ -233,7 +260,14 @@ const CvScoreListPage: React.FC = () => {
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
-                    <CvScoreBadge score={r.scorePercent} size="md" />
+                    <Stack spacing={0.5} alignItems="center">
+                      <CvScoreBadge score={r.scorePercent} size="md" />
+                      {r.stale && r.scorePercent > 0 && (
+                        <Tooltip title="Skåren er laget fra en annen versjon av CV-en, eller fra en ukjent versjon.">
+                          <Chip label="Utdatert" size="small" color="warning" variant="outlined" />
+                        </Tooltip>
+                      )}
+                    </Stack>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>

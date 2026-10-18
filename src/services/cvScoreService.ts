@@ -28,6 +28,9 @@ export async function loadCvScoreListRows(
     name: candidate.name,
     scorePercent: normalizeScorePercent(candidate.score ?? 0),
     summary: candidate.summary ?? '',
+    assessable: candidate.assessable ?? true,
+    stale: candidate.stale ?? false,
+    scoredAt: candidate.scoredAt ?? null,
   })));
 
   onProgress?.(rows);

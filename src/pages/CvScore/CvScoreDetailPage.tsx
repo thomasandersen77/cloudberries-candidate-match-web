@@ -11,6 +11,7 @@ import {
   Alert,
   Box,
 } from '@mui/material';
+import { formatScoredAt, scoringErrorMessage } from './cvScoreDetailText';
 import { alpha, useTheme } from '@mui/material/styles';
 import { getCvScore, recalculateScoreForCandidate } from '../../services/cvScoreService';
 import type { CvScoreDto } from '../../types/api';
@@ -40,17 +41,7 @@ const CvScoreDetailPage: React.FC = () => {
     if (candidateId)
       getCvScore(candidateId).then((dto) => {
         setScore(dto);
-        type MaybeIso = Partial<Record<'evaluatedAt' | 'scoredAt' | 'updatedAt', string>>;
-        const withIso = dto as unknown as MaybeIso;
-        const iso = withIso.evaluatedAt ?? withIso.scoredAt ?? withIso.updatedAt ?? null;
-        if (typeof iso === 'string') {
-          try {
-            const d = new Date(iso);
-            if (!isNaN(d.getTime())) setLastEvaluatedAt(d.toLocaleString());
-          } catch {
-            /* empty */
-          }
-        }
+        setLastEvaluatedAt(formatScoredAt(dto));
       });
   }, [candidateId]);
 
@@ -85,11 +76,9 @@ const CvScoreDetailPage: React.FC = () => {
                   </Typography>
                 </Stack>
               </Box>
-              {lastEvaluatedAt && (
-                <Typography variant="body2" color="text.secondary">
-                  Sist scoret: {lastEvaluatedAt}
-                </Typography>
-              )}
+              <Typography variant="body2" color="text.secondary">
+                {lastEvaluatedAt ? `Sist scoret: ${lastEvaluatedAt}` : 'Tidspunkt for scoring er ikke registrert'}
+              </Typography>
             </Stack>
             {candidateId && (
               <Stack spacing={1} alignItems={{ xs: 'flex-start', md: 'flex-end' }}>
@@ -104,20 +93,10 @@ const CvScoreDetailPage: React.FC = () => {
                     setRunning(true);
                     const updated = await recalculateScoreForCandidate(candidateId, { useHighestQualityModel: highQuality });
                     setScore(updated);
-                    type MaybeIso = Partial<Record<'evaluatedAt' | 'scoredAt' | 'updatedAt', string>>;
-                    const withIso = updated as unknown as MaybeIso;
-                    const iso = withIso.evaluatedAt ?? withIso.scoredAt ?? withIso.updatedAt ?? null;
-                    if (typeof iso === 'string') {
-                      try {
-                        const d = new Date(iso);
-                        if (!isNaN(d.getTime())) setLastEvaluatedAt(d.toLocaleString());
-                      } catch {
-                        /* empty */
-                      }
-                    }
+                    setLastEvaluatedAt(formatScoredAt(updated));
                     setSnack({ open: true, message: 'Scoring fullført', severity: 'success' });
-                  } catch {
-                    setSnack({ open: true, message: 'Scoring feilet', severity: 'error' });
+                  } catch (e) {
+                    setSnack({ open: true, message: scoringErrorMessage(e), severity: 'error' });
                   } finally {
                     setRunning(false);
                   }
@@ -128,6 +107,12 @@ const CvScoreDetailPage: React.FC = () => {
               </Stack>
             )}
           </Paper>
+          {score.stale && score.scorePercent > 0 && (
+            <Alert severity="warning">
+              Skåren er ikke laget fra CV-en slik den er nå: CV-en er endret siden, eller skåren er fra
+              før vi registrerte hvilken versjon den leste. Score på nytt for en oppdatert vurdering.
+            </Alert>
+          )}
 
           <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3 } }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 1.5 }}>
