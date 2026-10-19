@@ -26,7 +26,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import HighQualityToggle from '../HighQualityToggle';
 import { CoverageChips } from './RequestCoverage';
-import { describeCoverage, type RequirementCoverage } from './coverageText';
+import { describeCoverage, describeFullMatch, type RequirementCoverage } from './coverageText';
 import {
   getProjectMatchResults,
   getProjectMatchStatus,
@@ -382,7 +382,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
           await new Promise((r) => setTimeout(r, 1500));
           const results = await getProjectMatchResults(requestId);
           if (results?.matches?.length) {
-            setState((prev) => ({ ...prev, results, phase: 'COMPLETED', preview: null }));
+            setState((prev) => ({ ...prev, results, phase: 'COMPLETED' }));
             return;
           }
         }
@@ -390,11 +390,12 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
         return;
       }
       const results = outcome as ProjectMatchResults;
+      // The candidates stay. Clearing them left an empty «Kandidater» under a card that said six
+      // people covered every must, and no way back to the list short of closing the card.
       setState((prev) => ({
         ...prev,
         results,
         phase: 'COMPLETED',
-        preview: null,
       }));
     } catch (error) {
       if (mountedRef.current) {
@@ -444,6 +445,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
         {coverage ? (
           <Stack spacing={0.75}>
             <Typography variant="body2" color="text.secondary">{describeCoverage(coverage)}</Typography>
+            {describeFullMatch(coverage) && <Typography variant="body2">{describeFullMatch(coverage)}</Typography>}
             <CoverageChips coverage={coverage} />
             {otherRequirements.length > 0 && (
               <Typography variant="caption" color="text.secondary">

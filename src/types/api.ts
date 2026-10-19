@@ -44,6 +44,13 @@ export type EmbeddingRunMissingResponse =
 export type EmbeddingUserCvRunResponse =
   paths['/embeddings/run']['post']['responses'][200]['content']['application/json'];
 export type EmbeddingProviderInfo = components['schemas']['EmbeddingProviderInfo'];
+export type EmbeddingFreshness = components['schemas']['EmbeddingFreshness'];
+export type EmbeddingFreshnessRow = components['schemas']['EmbeddingFreshnessRow'];
+export type EmbeddingState = components['schemas']['EmbeddingState'];
+export type EmbeddingRebuildResult = components['schemas']['EmbeddingRebuildResult'];
+export type ChunkRebuildResult = components['schemas']['ChunkRebuildResult'];
+/** Who a rebuild reaches first when it stops on the quota or on its limit. */
+export type RebuildOrder = 'DATABASE' | 'REVERSE' | 'OLDEST_FIRST';
 
 export type CandidateDTO = components['schemas']['CandidateDTO'];
 export type CvScoreDto = components['schemas']['CvScoreDto'];

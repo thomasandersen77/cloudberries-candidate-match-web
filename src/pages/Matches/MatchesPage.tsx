@@ -22,7 +22,7 @@ import { useLocation } from 'react-router-dom';
 import RequestMatchPanel from '../../components/matches/RequestMatchPanel';
 import PageIntro from '../../components/PageIntro';
 import { CoverageChips } from '../../components/matches/RequestCoverage';
-import { describeAiStatus, describeCoverage } from '../../components/matches/coverageText';
+import { describeAiStatus, describeCoverage, describeFullMatch } from '../../components/matches/coverageText';
 
 /**
  * How a coverage status is drawn. The words come from the server, this only picks the paint.
@@ -164,6 +164,9 @@ const RequestCard: React.FC<RequestCardProps> = ({ pr, isOpen, onToggle }) => {
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
             {describeCoverage(pr.coverage)}
           </Typography>
+          {describeFullMatch(pr.coverage) && (
+            <Typography variant="body2" sx={{ mb: 0.75 }}>{describeFullMatch(pr.coverage)}</Typography>
+          )}
           <CoverageChips coverage={pr.coverage} mustOnly />
         </Box>
       )}

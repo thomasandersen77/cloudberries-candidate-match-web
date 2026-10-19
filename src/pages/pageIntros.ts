@@ -150,7 +150,7 @@ export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
     steps: [
       'Uten embeddinger virker søk på navngitte ferdigheter fortsatt. Det er den semantiske halvdelen som faller bort.',
       'De lages av Googles gemini-embedding-001 på gratisnivået: ingen regning, men 1000 kall i døgnet per modell.',
-      '«Rebuild» tar bare dem som mangler. «Force rebuild» tar alle om igjen, og bruker kvoten deretter.',
+      'Vanlig bygging tar bare dem som mangler eller er utdatert. «Force rebuild» tar alle om igjen, og bruker kvoten deretter.',
     ],
   },
 

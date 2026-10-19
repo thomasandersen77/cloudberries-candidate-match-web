@@ -170,6 +170,30 @@ describe('RequestMatchPanel', () => {
     expect(screen.getByText('2 AI-vurdert')).toBeInTheDocument();
   });
 
+  /**
+   * After a run the candidate list was cleared: «Kandidater» stood empty under a card that said six
+   * people covered every must, with no way back to the list short of closing the card.
+   */
+  it('keeps the candidates on the page after an AI run', async () => {
+    const api = await import('../../api/matchingApi');
+    const user = userEvent.setup();
+    renderPanel();
+    await screen.findByText(/3 av 3 valgt/);
+    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching \(3\)$/i }));
+    await waitFor(() => expect(api.runProjectMatching).toHaveBeenCalled());
+    expect(await screen.findByText(/score 8\.3/)).toBeInTheDocument();
+
+    expect(screen.getByText(/3 av 3 valgt/)).toBeInTheDocument();
+    expect(screen.getByText('Kari')).toBeInTheDocument();
+    expect(screen.getByText('Nina')).toBeInTheDocument();
+  });
+
+  it('says by name who covers every must', async () => {
+    renderPanel({ coverage: { ...coverage, fullMatchNames: ['Kari'] } });
+
+    expect(await screen.findByText('Dekker alle må-krav: Kari')).toBeInTheDocument();
+  });
+
   it('expands consultant details with accordion — only one open at a time', async () => {
     const user = userEvent.setup();
     renderPanel();

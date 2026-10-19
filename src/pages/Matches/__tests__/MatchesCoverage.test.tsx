@@ -90,6 +90,24 @@ describe('dekning på et forespørselskort', () => {
     expect(screen.getByText('Dekker 2 av 3 teknologikrav · 1 krav sjekkes ikke mot ferdigheter')).toBeInTheDocument();
   });
 
+  /** The card said how many; finding the one person meant opening it. Now it says who, closed. */
+  it('sier hvem som dekker alle må-krav uten at kortet åpnes, og hvor mange til', async () => {
+    renderWith({
+      coverageStatus: 'GREEN',
+      coverageLabel: '6 dekker alle må-krav',
+      coverage: { ...coverage, fullMatchCount: 6, fullMatchNames: ['Ayhan Ileri', 'Geir Normann Hansen', 'Joachim Lous', 'Shervin Asgari', 'Thomas Andersen', 'Thomas Andersen Sopra'] },
+    });
+
+    expect(await screen.findByText('Dekker alle må-krav: Ayhan Ileri, Geir Normann Hansen, Joachim Lous, Shervin Asgari og 2 til')).toBeInTheDocument();
+  });
+
+  it('sier ingenting om navn når ingen dekker alle må-krav', async () => {
+    renderWith({});
+
+    await screen.findByText('Kotlin 16');
+    expect(screen.queryByText(/Dekker alle må-krav:/)).not.toBeInTheDocument();
+  });
+
   it('sier om AI-en har vurdert noen, med dato, og ellers at den ikke har', async () => {
     renderWith({ aiMatchCount: 3, aiLastUpdated: '2026-09-10T21:42:22+02:00' });
     expect(await screen.findByText(/^3 AI-vurdert /)).toBeInTheDocument();

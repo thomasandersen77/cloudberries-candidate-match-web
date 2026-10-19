@@ -2798,6 +2798,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/consultants/embeddings/freshness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Per consultant, whether the stored vectors were made from the CV as it is now
+         * @description Compares the hash stored with each whole-CV vector and each CV's chunks to the hash of the text a rebuild would embed now. No provider call. Missing first, then stale, then current.
+         */
+        get: operations["getEmbeddingFreshness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/consultants/embeddings/rebuild": {
         parameters: {
             query?: never;
@@ -2815,6 +2835,9 @@ export interface paths {
                     force?: boolean;
                     /** @description Stop after this many CVs */
                     limit?: number;
+                    /** @description Who goes first, which decides who is reached when the run stops on the quota or on `limit`. DATABASE is the order of the first sync; OLDEST_FIRST takes missing vectors first, then the oldest.
+                     *      */
+                    order?: "DATABASE" | "REVERSE" | "OLDEST_FIRST";
                 };
                 header?: never;
                 path?: never;
@@ -3626,6 +3649,9 @@ export interface components {
             covered: number;
             /** @description Active consultants holding a skill for every requirement in the basis. */
             fullMatchCount: number;
+            /** @description The names behind fullMatchCount, alphabetical, so the list can say who covers every requirement in the basis without the card being opened.
+             *      */
+            fullMatchNames?: string[];
             /** @description MUST when the request has must technology requirements, SHOULD when it only has shoulds, null when neither. */
             fullMatchBasis?: components["schemas"]["RequirementPriority"] | null;
             /** @description Musts first, otherwise in the request's own order. */
@@ -4060,6 +4086,41 @@ export interface components {
             reason?: string | null;
             decidedBy?: string | null;
         };
+        /**
+         * @description MISSING: no vector for this CV under the current model. STALE: a vector made from other text than the CV gives now. CURRENT: made from exactly that text. NOTHING_TO_EMBED: the CV gives no chunks.
+         *
+         * @enum {string}
+         */
+        EmbeddingState: "MISSING" | "STALE" | "CURRENT" | "NOTHING_TO_EMBED";
+        EmbeddingFreshnessPart: {
+            state: components["schemas"]["EmbeddingState"];
+            /** Format: date-time */
+            embeddedAt?: string | null;
+            /** @description Stored chunks; set for the chunk part only. */
+            chunks?: number | null;
+        };
+        EmbeddingFreshnessCounts: {
+            missing: number;
+            stale: number;
+            current: number;
+            nothingToEmbed: number;
+        };
+        EmbeddingFreshnessRow: {
+            userId: string;
+            name: string;
+            cvId: string;
+            wholeCv: components["schemas"]["EmbeddingFreshnessPart"];
+            chunks: components["schemas"]["EmbeddingFreshnessPart"];
+        };
+        EmbeddingFreshness: {
+            provider: string;
+            model: string;
+            /** @description Active consultants with something in the CV; the ones a rebuild reaches. */
+            eligible: number;
+            wholeCv: components["schemas"]["EmbeddingFreshnessCounts"];
+            chunks: components["schemas"]["EmbeddingFreshnessCounts"];
+            consultants: components["schemas"]["EmbeddingFreshnessRow"][];
+        };
         EmbeddingRebuildResult: {
             processed: number;
             created: number;
@@ -4228,6 +4289,9 @@ export interface operations {
                 force?: boolean;
                 /** @description Cap the number of consultants processed, for a partial run. */
                 limit?: number;
+                /** @description Who goes first, which decides who is reached when the run stops on the quota or on `limit`. DATABASE is the order of the first sync; OLDEST_FIRST takes missing vectors first, then the oldest.
+                 *      */
+                order?: "DATABASE" | "REVERSE" | "OLDEST_FIRST";
             };
             header?: never;
             path?: never;
@@ -4325,6 +4389,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CvScoreDto"];
+                };
+            };
+            default: components["responses"]["ErrorResponse"];
+        };
+    };
+    getEmbeddingFreshness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Counts and one row per consultant a rebuild reaches */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbeddingFreshness"];
                 };
             };
             default: components["responses"]["ErrorResponse"];

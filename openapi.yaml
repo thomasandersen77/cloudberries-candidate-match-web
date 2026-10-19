@@ -390,6 +390,16 @@ paths:
           schema:
             type: integer
           description: Cap the number of consultants processed, for a partial run.
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [ DATABASE, REVERSE, OLDEST_FIRST ]
+            default: DATABASE
+          description: >
+            Who goes first, which decides who is reached when the run stops on the quota or on
+            `limit`. DATABASE is the order of the first sync; OLDEST_FIRST takes missing vectors
+            first, then the oldest.
       responses:
         '200':
           description: Chunk rebuild summary
@@ -1661,6 +1671,23 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /consultants/embeddings/freshness:
+    get:
+      tags: [ Embeddings ]
+      summary: Per consultant, whether the stored vectors were made from the CV as it is now
+      description: >-
+        Compares the hash stored with each whole-CV vector and each CV's chunks to the hash of the
+        text a rebuild would embed now. No provider call. Missing first, then stale, then current.
+      operationId: getEmbeddingFreshness
+      responses:
+        '200':
+          description: Counts and one row per consultant a rebuild reaches
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmbeddingFreshness' }
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /consultants/embeddings/rebuild:
     post:
       tags: [ Embeddings ]
@@ -1674,6 +1701,16 @@ paths:
           name: limit
           schema: { type: integer }
           description: Stop after this many CVs
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [ DATABASE, REVERSE, OLDEST_FIRST ]
+            default: DATABASE
+          description: >
+            Who goes first, which decides who is reached when the run stops on the quota or on
+            `limit`. DATABASE is the order of the first sync; OLDEST_FIRST takes missing vectors
+            first, then the oldest.
       responses:
         '200':
           description: What the run did
@@ -2697,6 +2734,12 @@ components:
         technologyRequirements: { type: integer, description: Consultant requirements that named a technology. }
         covered: { type: integer, description: "Of those, how many at least one active consultant holds." }
         fullMatchCount: { type: integer, description: Active consultants holding a skill for every requirement in the basis. }
+        fullMatchNames:
+          type: array
+          items: { type: string }
+          description: >
+            The names behind fullMatchCount, alphabetical, so the list can say who covers every
+            requirement in the basis without the card being opened.
         fullMatchBasis:
           allOf: [ { $ref: '#/components/schemas/RequirementPriority' } ]
           nullable: true
@@ -3291,6 +3334,54 @@ components:
         offerable: { type: boolean }
         reason: { type: string, nullable: true, description: Stored so the decision can be reviewed, and shown when a run refuses the person }
         decidedBy: { type: string, nullable: true }
+
+    EmbeddingState:
+      type: string
+      enum: [ MISSING, STALE, CURRENT, NOTHING_TO_EMBED ]
+      description: >
+        MISSING: no vector for this CV under the current model. STALE: a vector made from other
+        text than the CV gives now. CURRENT: made from exactly that text. NOTHING_TO_EMBED: the CV
+        gives no chunks.
+
+    EmbeddingFreshnessPart:
+      type: object
+      required: [ state ]
+      properties:
+        state: { $ref: '#/components/schemas/EmbeddingState' }
+        embeddedAt: { type: string, format: date-time, nullable: true }
+        chunks: { type: integer, nullable: true, description: Stored chunks; set for the chunk part only. }
+
+    EmbeddingFreshnessCounts:
+      type: object
+      required: [ missing, stale, current, nothingToEmbed ]
+      properties:
+        missing: { type: integer }
+        stale: { type: integer }
+        current: { type: integer }
+        nothingToEmbed: { type: integer }
+
+    EmbeddingFreshnessRow:
+      type: object
+      required: [ userId, name, cvId, wholeCv, chunks ]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        cvId: { type: string }
+        wholeCv: { $ref: '#/components/schemas/EmbeddingFreshnessPart' }
+        chunks: { $ref: '#/components/schemas/EmbeddingFreshnessPart' }
+
+    EmbeddingFreshness:
+      type: object
+      required: [ provider, model, eligible, wholeCv, chunks, consultants ]
+      properties:
+        provider: { type: string }
+        model: { type: string }
+        eligible: { type: integer, description: Active consultants with something in the CV; the ones a rebuild reaches. }
+        wholeCv: { $ref: '#/components/schemas/EmbeddingFreshnessCounts' }
+        chunks: { $ref: '#/components/schemas/EmbeddingFreshnessCounts' }
+        consultants:
+          type: array
+          items: { $ref: '#/components/schemas/EmbeddingFreshnessRow' }
 
     EmbeddingRebuildResult:
       type: object

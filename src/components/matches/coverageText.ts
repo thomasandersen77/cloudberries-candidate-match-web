@@ -19,6 +19,23 @@ export function describeCoverage(coverage: RequirementCoverage): string {
   return `Dekker ${coverage.covered} av ${coverage.technologyRequirements} teknologikrav${otherPart}`;
 }
 
+/** How many names the line shows before it says how many more there are. */
+const FULL_MATCH_NAMES_SHOWN = 4;
+
+/**
+ * Who covers every must, by name: "Dekker alle må-krav: Ayhan Ileri". The card said only how many,
+ * so finding the one person meant opening it and reading down a list ordered by something else.
+ * Null when nobody does, or when the request named no technology.
+ */
+export function describeFullMatch(coverage: RequirementCoverage): string | null {
+  const names = coverage.fullMatchNames ?? [];
+  if (names.length === 0 || !coverage.fullMatchBasis) return null;
+  const kind = coverage.fullMatchBasis === 'MUST' ? 'må-krav' : 'bør-krav';
+  const shown = names.slice(0, FULL_MATCH_NAMES_SHOWN).join(', ');
+  const rest = names.length - FULL_MATCH_NAMES_SHOWN;
+  return `Dekker alle ${kind}: ${shown}${rest > 0 ? ` og ${rest} til` : ''}`;
+}
+
 /**
  * The tooltip behind one requirement chip.
  *
