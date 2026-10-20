@@ -47,11 +47,14 @@ import {
   phaseLabel,
   type FrontendMatchPhase,
 } from '../../utils/matchStatusAdapter';
-import { formatMatchScoreSuffix, formatPercentScore } from '../../utils/matchUtils';
+import { formatMatchScoreSuffix, formatPercentScore, formatQualityLabel } from '../../utils/matchUtils';
 import { getScoreColor } from '../../utils/scoreUtils';
 
 const LIMIT_OPTIONS = [5, 10, 15] as const;
-const CV_WEIGHT_OPTIONS = [20, 30, 50, 60, 80] as const;
+// Decided 2026-10-20: quality tells the best apart, it does not replace the right experience.
+// The backend's PresentedRanking uses the same percentage for the shortlist and the order.
+const CV_WEIGHT_OPTIONS = [0, 10, 20, 30] as const;
+const DEFAULT_CV_WEIGHT_PERCENT = 20;
 const DETAIL_PREVIEW_LENGTH = 140;
 /** How many of the requirements that cannot be checked against skills are spelled out before "+N". */
 const OTHER_REQUIREMENTS_SHOWN = 4;
@@ -74,6 +77,12 @@ type ExpandableConsultantRowProps = {
   scoreLabel: string;
   /** CV quality 0-100. A weak CV is not worth submitting however well the skills match. */
   qualityScore?: number | null;
+  /** After the score: what CV quality did to the place, e.g. « · CV 66 → 8,0». AI rows only. */
+  qualityLabel?: string | null;
+  /** Why the place differs from the match alone, in the backend's words. AI rows only. */
+  qualityNote?: string | null;
+  /** Somebody with a lower match is placed above on CV quality: a CV for a leader or seller to work on. */
+  passedOnQuality?: boolean;
   detail?: string | null;
   skills?: string[];
   userId?: string | null;
@@ -89,6 +98,9 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
   name,
   scoreLabel,
   qualityScore,
+  qualityLabel,
+  qualityNote,
+  passedOnQuality,
   detail,
   skills,
   userId,
@@ -132,6 +144,16 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
             <Typography variant="body2">
               <b>{name}</b>
               {scoreLabel}
+              {qualityLabel}
+              {passedOnQuality && (
+                <Chip
+                  label="Passert på CV-kvalitet"
+                  size="small"
+                  color="warning"
+                  variant="outlined"
+                  sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
+                />
+              )}
               {typeof qualityScore === 'number' && (
                 <Box
                   component="span"
@@ -158,8 +180,17 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
               {userId && (
                 <MuiLink component={RouterLink} to={`/cv/${userId}`} underline="hover">Se CV</MuiLink>
               )}
+              {userId && qualityNote && (
+                <MuiLink component={RouterLink} to={`/cv-score/${userId}`} underline="hover">Se CV-score</MuiLink>
+              )}
             </Stack>
           </Stack>
+          {/* Said in words, from the numbers, so a leader sees whose CV to work on and why. */}
+          {qualityNote && (
+            <Typography variant="caption" color={passedOnQuality ? 'warning.main' : 'text.secondary'} sx={{ display: 'block', mt: 0.5 }}>
+              {qualityNote}
+            </Typography>
+          )}
           {/* Closed, the first line only: for a preview row that is what they lack, for an AI row the start of the reasoning. */}
           {hasDetail && !isExpanded && (
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
@@ -233,7 +264,7 @@ export type RequestMatchPanelProps = {
 const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, coverage }) => {
   const mountedRef = useRef(true);
   const [limit, setLimit] = useState<number>(10);
-  const [cvWeightPercent, setCvWeightPercent] = useState<number>(30);
+  const [cvWeightPercent, setCvWeightPercent] = useState<number>(DEFAULT_CV_WEIGHT_PERCENT);
   const [highQuality, setHighQuality] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
@@ -627,9 +658,9 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               )}
             </Stack>
             <Stack spacing={0.75}>
+              {/* The backend's order: the match weighed against CV quality (PresentedRanking). Sorting
+                  here again by the match alone would undo that and hide why somebody is where they are. */}
               {aiMatches
-                .slice()
-                .sort((a: MatchCandidateDto, b: MatchCandidateDto) => (b.score ?? 0) - (a.score ?? 0))
                 .slice(0, limit)
                 .map((s: MatchCandidateDto) => {
                   const rowKey = `ai-${s.userId ?? s.name}`;
@@ -639,6 +670,9 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                       rowKey={rowKey}
                       name={s.name}
                       scoreLabel={formatMatchScoreSuffix(s.score)}
+                      qualityLabel={formatQualityLabel(s)}
+                      qualityNote={s.qualityNote}
+                      passedOnQuality={Boolean(s.passedOnQuality)}
                       detail={s.justification}
                       skills={s.skills}
                       userId={s.userId}

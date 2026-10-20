@@ -188,6 +188,51 @@ describe('RequestMatchPanel', () => {
     expect(screen.getByText('Nina')).toBeInTheDocument();
   });
 
+  /** Decided 2026-10-20: 20 percent by default, and the choices are 0, 10, 20 and 30. */
+  it('sends the default CV-quality weight of 20 and offers 0, 10, 20 and 30', async () => {
+    const api = await import('../../api/matchingApi');
+    const user = userEvent.setup();
+    renderPanel();
+    await screen.findByText(/3 av 3 valgt/);
+    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching \(3\)$/i }));
+    await waitFor(() => expect(api.runProjectMatching).toHaveBeenCalled());
+
+    expect(vi.mocked(api.runProjectMatching).mock.calls[0][1]).toMatchObject({ cvWeightPercent: 20 });
+    await user.click(screen.getByRole('button', { name: /innstillinger/i }));
+    expect(['0%', '10%', '20%', '30%'].map((w) => screen.getByRole('button', { name: w }))).toHaveLength(4);
+  });
+
+  /**
+   * The order is the backend's, the match weighed against CV quality, and when quality moved
+   * somebody the row says so with a link to the CV score, so a leader sees whose CV to work on.
+   */
+  it('keeps the backend order and says when CV quality moved somebody', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.runProjectMatching).mockResolvedValueOnce({
+      projectRequestId: 1,
+      matches: [
+        { userId: 'u1', name: 'Thomas Andersen Sopra', cvId: 'c1', score: 7.1, scorePercent: 71, presentedScore: 7.6, presentedScorePercent: 76, cvQualityScore: 88, rankByMatch: 2,
+          qualityNote: 'Ligger over Joachim Lous fordi CV-kvaliteten er 88 mot 66. Kravmatchen er 7,1 mot 8,3.', passedOnQuality: false, justification: 'Solid.' },
+        { userId: 'u2', name: 'Joachim Lous', cvId: 'c2', score: 8.3, scorePercent: 83, presentedScore: 7.4, presentedScorePercent: 74, cvQualityScore: 66, rankByMatch: 1,
+          qualityNote: 'Ligger under Thomas Andersen Sopra fordi CV-kvaliteten er 66 mot 88. Kravmatchen er 8,3 mot 7,1.', passedOnQuality: true, justification: 'Sterk.' },
+      ],
+      lastUpdated: '2026-10-20T12:00:00Z',
+    } as never);
+    const user = userEvent.setup();
+    renderPanel();
+    await screen.findByText(/3 av 3 valgt/);
+    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching \(3\)$/i }));
+    await screen.findByText('2 AI-vurdert');
+
+    const names = screen.getAllByText(/Thomas Andersen Sopra|Joachim Lous/, { selector: 'b' }).map((el) => el.textContent);
+    expect(names).toEqual(['Thomas Andersen Sopra', 'Joachim Lous']);
+    expect(screen.getByText(/CV 66 → 7,4/)).toBeInTheDocument();
+    expect(screen.getByText('Passert på CV-kvalitet')).toBeInTheDocument();
+    expect(screen.getByText(/Ligger under Thomas Andersen Sopra fordi CV-kvaliteten er 66 mot 88/)).toBeInTheDocument();
+    const links = screen.getAllByRole('link', { name: 'Se CV-score' });
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/cv-score/u1', '/cv-score/u2']);
+  });
+
   it('says by name who covers every must', async () => {
     renderPanel({ coverage: { ...coverage, fullMatchNames: ['Kari'] } });
 

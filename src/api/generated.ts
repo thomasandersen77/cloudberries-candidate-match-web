@@ -3764,6 +3764,21 @@ export interface components {
             skills?: string[];
             email?: string | null;
             requirements?: components["schemas"]["RequirementScoreDto"][];
+            /** @description cv_score.score_percent as it was when the run was made; null when no score was current then. */
+            cvQualityScore?: number | null;
+            /**
+             * Format: double
+             * @description The match weighed against CV quality with the run's weight, 0.0 to 10.0: (1 − w) × score + w × cvQualityScore/10, or the match alone without a quality. The list is in this order; `score` is the model's requirement match, untouched.
+             *
+             */
+            presentedScore?: number;
+            presentedScorePercent?: number;
+            /** @description 1-based place by the match alone, so a reader can see what quality moved. */
+            rankByMatch?: number | null;
+            /** @description Why the place differs from the match alone, in words, made in code from the numbers. Null when it does not. */
+            qualityNote?: string | null;
+            /** @description True when somebody with a lower match is placed above this one because of CV quality. */
+            passedOnQuality?: boolean;
         };
         TriggerMatchingResponse: {
             /** Format: int64 */
@@ -4216,6 +4231,8 @@ export interface components {
             matches: components["schemas"]["MatchTop10ConsultantDto"][];
             /** Format: date-time */
             lastUpdated?: string | null;
+            /** @description The CV-quality weight the run was made with (0, 10, 20 or 30); null for runs from before it was kept. */
+            cvWeightPercent?: number | null;
         };
         MatchesHealthResponse: {
             /** @enum {string} */

@@ -35,3 +35,18 @@ export function formatPercentScore(score: number | null | undefined): string {
   if (typeof score !== 'number' || Number.isNaN(score)) return '–';
   return `${Math.round(score * 100)} %`;
 }
+
+/**
+ * What CV quality did to an AI row's place, after the score: " · CV 66 → 8,0". Empty when the
+ * run gave no presented score (a backend from before it, or no weight), or when quality was not
+ * weighed (no current CV score: the row says so in its note instead).
+ */
+export function formatQualityLabel(match: {
+  score?: number | null;
+  presentedScore?: number | null;
+  cvQualityScore?: number | null;
+}): string {
+  if (typeof match.presentedScore !== 'number' || typeof match.cvQualityScore !== 'number') return '';
+  if (typeof match.score === 'number' && match.presentedScore === match.score) return ` · CV ${match.cvQualityScore}`;
+  return ` · CV ${match.cvQualityScore} → ${match.presentedScore.toFixed(1).replace('.', ',')}`;
+}

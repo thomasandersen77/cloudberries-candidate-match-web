@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatMatchScore, formatMatchScoreSuffix, formatPercentScore } from './matchUtils';
+import { formatMatchScore, formatMatchScoreSuffix, formatPercentScore, formatQualityLabel } from './matchUtils';
 
 describe('formatMatchScore', () => {
   it('preserves one decimal place for OpenAPI 0–10 scores', () => {
@@ -34,5 +34,17 @@ describe('formatPercentScore', () => {
   it('returns dash when the signal is missing', () => {
     expect(formatPercentScore(undefined)).toBe('–');
     expect(formatPercentScore(null)).toBe('–');
+  });
+});
+
+describe('formatQualityLabel', () => {
+  it('shows the quality and the presented score it led to', () => {
+    expect(formatQualityLabel({ score: 8.3, presentedScore: 8.0, cvQualityScore: 66 })).toBe(' · CV 66 → 8,0');
+    expect(formatQualityLabel({ score: 7.1, presentedScore: 7.1, cvQualityScore: 71 })).toBe(' · CV 71');
+  });
+
+  it('is empty without a presented score or a quality', () => {
+    expect(formatQualityLabel({ score: 8.3 })).toBe('');
+    expect(formatQualityLabel({ score: 8.3, presentedScore: 8.3, cvQualityScore: null })).toBe('');
   });
 });
