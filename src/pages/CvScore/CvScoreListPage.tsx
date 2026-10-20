@@ -39,6 +39,7 @@ import { sortCvScoreRows } from '../../utils/cvScoreSort';
 const MIN_TABLE_HEIGHT = 320;
 import CvScoreBadge from '../../components/CvScoreBadge';
 import HighQualityToggle from '../../components/HighQualityToggle';
+import { reviewRulesLabel } from './cvScoreDetailText';
 import PageIntro from '../../components/PageIntro';
 
 const CvScoreListPage: React.FC = () => {
@@ -262,6 +263,7 @@ const CvScoreListPage: React.FC = () => {
                   <TableCell align="center">
                     <Stack spacing={0.5} alignItems="center">
                       <CvScoreBadge score={r.scorePercent} size="md" />
+                      {reviewRulesLabel(r.rulesStatus) && <Chip size="small" variant="outlined" label={reviewRulesLabel(r.rulesStatus)} />}
                       {r.stale && r.scorePercent > 0 && (
                         <Tooltip title="Skåren er laget fra en annen versjon av CV-en, eller fra en ukjent versjon.">
                           <Chip label="Utdatert" size="small" color="warning" variant="outlined" />

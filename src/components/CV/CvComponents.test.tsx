@@ -210,6 +210,21 @@ describe('ProjectExperienceTable', () => {
     expect(screen.getByText('+2 flere')).toBeInTheDocument();
   });
 
+  /** An ongoing project has no end date; sorted as text it came after every finished one. */
+  it('puts ongoing projects first, the latest started on top', () => {
+    const projectExperience: ProjectExperienceDto[] = [
+      { customer: 'Ferdig kunde', description: 'Avsluttet', fromYearMonth: '2025-12', toYearMonth: '2026-03' },
+      { customer: 'Statkraft AS', description: 'WWC-HM', fromYearMonth: '2025-12', toYearMonth: null },
+      { customer: 'Eldre kunde', description: 'Gammelt', fromYearMonth: '2014-05', toYearMonth: '2014-08' },
+      { customer: 'Laup AS', description: 'AI-plattform', fromYearMonth: '2026-02', toYearMonth: undefined }
+    ];
+
+    render(<ProjectExperienceTable projectExperience={projectExperience} />);
+
+    const customers = screen.getAllByRole('row').slice(1).map((row) => row.querySelector('td')?.textContent);
+    expect(customers).toEqual(['Laup AS', 'Statkraft AS', 'Ferdig kunde', 'Eldre kunde']);
+  });
+
   it('renders empty state when no project experience', () => {
     render(<ProjectExperienceTable projectExperience={[]} />);
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatScoredAt, scoringErrorMessage } from '../cvScoreDetailText';
+import { reviewRulesLabel, formatScoredAt, scoringErrorMessage } from '../cvScoreDetailText';
 
 describe('cvScoreDetailText', () => {
   it('says when and by which model a score was written', () => {
@@ -21,4 +21,11 @@ describe('cvScoreDetailText', () => {
     expect(scoringErrorMessage(refused)).toMatch(/Vivi Elton/);
     expect(scoringErrorMessage(new Error('network'))).toBe('Scoring feilet');
   });
+});
+
+it('keeps changed rules apart from compatible prompts and unknown provenance', () => {
+  expect(reviewRulesLabel('OUTDATED')).toBe('Eldre vurderingsregler');
+  expect(reviewRulesLabel('EQUIVALENT')).toBe('Eldre prompt, samme vurderingsregler');
+  expect(reviewRulesLabel('UNKNOWN')).toBe('Ukjente vurderingsregler');
+  expect(reviewRulesLabel('CURRENT')).toBeNull();
 });

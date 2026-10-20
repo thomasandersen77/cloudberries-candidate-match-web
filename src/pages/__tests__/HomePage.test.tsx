@@ -138,7 +138,7 @@ describe('HomePage', () => {
 
     const link = screen.getByRole('link', { name: /Superbruker/ });
     expect(link).toHaveAttribute('href', '/superbruker');
-    expect(link).toHaveTextContent('Ferdigheter, Embeddings, Søk');
+    expect(link).toHaveTextContent('Ferdigheter, Embeddings, Søk, CV-scoregrunnlag');
   });
 
   /**

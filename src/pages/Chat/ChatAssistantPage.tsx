@@ -566,6 +566,9 @@ const MessageBubble: React.FC<{
 
         <Box sx={{
           maxWidth: isMobile ? '90%' : '85%',
+          // A flex item is never narrower than its content unless told so, and min-width beats
+          // max-width: a table with one long line per cell carried the bubble out of the window.
+          minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
           alignItems: isQuestion ? 'flex-end' : 'flex-start'
@@ -579,7 +582,9 @@ const MessageBubble: React.FC<{
               borderRadius: 2,
               borderTopRightRadius: isQuestion ? 0.5 : 2,
               borderTopLeftRadius: isQuestion ? 2 : 0.5,
-              wordBreak: 'break-word'
+              wordBreak: 'break-word',
+              minWidth: 0,
+              maxWidth: '100%'
             }}
           >
             {message.loading ? (
@@ -608,11 +613,13 @@ const MessageBubble: React.FC<{
                 // A table is wider than a chat bubble more often than not, so it scrolls inside
                 // its own box rather than pushing the conversation sideways.
                 '& .md-table-wrap': { overflowX: 'auto', margin: '0.5em 0' },
-                // max-content so the table keeps its natural width and the wrapper scrolls.
-                // Without it the columns are squeezed to fit the bubble instead, and the bubble's
-                // own break-word then splits the words inside them: a Status column rendered as
-                // "OPE N" and a Krav column as "Kra v".
-                '& table': { borderCollapse: 'collapse', fontSize: '0.85rem', width: 'max-content', maxWidth: 'none' },
+                // The table's own width, with long cells wrapping at spaces. It was max-content,
+                // which kept every cell on one line: a «Hovedvurdering» of two sentences made the
+                // table, and the bubble with it, wider than the window. Words are not split (the
+                // cells below turn the bubble's break-word off; that was how a Status column
+                // rendered as "OPE N"), so a column is never narrower than its longest word, and
+                // a table that still does not fit scrolls in its wrapper.
+                '& table': { borderCollapse: 'collapse', fontSize: '0.85rem' },
                 '& th, & td': {
                   border: '1px solid',
                   borderColor: 'divider',

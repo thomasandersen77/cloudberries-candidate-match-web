@@ -8,6 +8,7 @@ import ConsultantDetailPage from '../pages/Consultants/ConsultantDetailPage';
 import CvViewPage from '../pages/CV/CvViewPage';
 import CvScoreListPage from '../pages/CvScore/CvScoreListPage';
 import CvScoreDetailPage from '../pages/CvScore/CvScoreDetailPage';
+import CvScoreBasisPage from '../pages/CvScoreBasis/CvScoreBasisPage';
 import MatchesPage from '../pages/Matches/MatchesPage';
 import SkillsOverviewPage from '../pages/Skills/SkillsOverviewPage2';
 import EmbeddingsPage from '../pages/Embeddings/EmbeddingsPage';
@@ -32,6 +33,7 @@ const routes: RouteObject[] = [
       { path: '/cv/:userId', element: <CvViewPage /> },
       { path: '/cv-score', element: <CvScoreListPage /> },
       { path: '/cv-score/:candidateId', element: <CvScoreDetailPage /> },
+      { path: '/cv-score-grunnlag', element: <CvScoreBasisPage /> },
       { path: '/matches', element: <MatchesPage /> },
       { path: '/embeddings', element: <EmbeddingsPage /> },
       { path: '/skills', element: <SkillsOverviewPage /> },

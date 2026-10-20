@@ -1,3 +1,5 @@
+import type { CvScoreDto } from '../types/api';
+
 export type CvScoreListRow = {
   id: string;
   name: string;
@@ -8,6 +10,7 @@ export type CvScoreListRow = {
   /** True when the score was not made from the CV as it is now. */
   stale?: boolean;
   scoredAt?: string | null;
+  rulesStatus?: CvScoreDto['rulesStatus'];
 };
 
 export function normalizeScorePercent(value: unknown): number {

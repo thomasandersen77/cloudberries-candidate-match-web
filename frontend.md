@@ -51,7 +51,7 @@ UI
 Implementation (already applied)
 - `src/pages/Analytics/StatsPage.tsx` renders two tables
 - `src/services/analyticsService.ts` calls backend endpoints
-- `src/App.tsx` adds a route for `/stats`
+- `src/routes/router.tsx` adds a route for `/stats`
 - `src/components/Header.tsx` and `src/pages/HomePage.tsx` include links
 
 ## 3) OpenAPI and types

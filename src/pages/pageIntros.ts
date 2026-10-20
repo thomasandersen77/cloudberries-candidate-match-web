@@ -33,6 +33,7 @@ export type PageIntroKey =
   | 'embeddings'
   | 'search'
   | 'semanticSearch'
+  | 'cvScoreBasis'
   // The page «Start her» points at. It was the only one of the eleven without help.
   | 'chat';
 
@@ -124,11 +125,22 @@ export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
   superuser: {
     intro:
       'Verktøyene som ligger under selve arbeidsflaten: ferdighetstabellen, embeddingene det ' +
-      'semantiske søket leser fra, og søk uten assistenten.',
+      'semantiske søket leser fra, søk uten assistenten, og grunnlaget for hver CV-score.',
     steps: [
       'Ingenting her er nødvendig for vanlig bruk. Assistenten og konsulentlisten svarer på det samme, med mer kontekst.',
-      'Embeddings er den eneste siden som endrer noe. De to andre leser bare.',
+      'Embeddings er den eneste siden som endrer noe. De andre leser bare.',
       'Sidene viser grunnlaget slik det faktisk ligger. Ser et svar rart ut, er det her du finner ut hvorfor.',
+    ],
+  },
+
+  cvScoreBasis: {
+    intro:
+      'Hva en CV-score bygger på: modellens skår og begrunnelse per kriterium, hvor mange poeng ' +
+      'hvert kriterium trakk fra totalen, og tellinger fra CV-en som er gjort uten modell.',
+    steps: [
+      'Trykk på en konsulent for å åpne grunnlaget under raden, og igjen for å lukke. Trykk på Score eller Dato for å sortere; trykk igjen for motsatt retning.',
+      'Siden leser lagrede vurderinger og kaller ikke modellen. Eldre scorer kan mangle kriterier og merknader og vises som «Uten kriterier».',
+      'Merknadene er skrevet til den som vedlikeholder prompten: hvor standarden var uklar, og hvilke skår som lå på grensen.',
     ],
   },
 

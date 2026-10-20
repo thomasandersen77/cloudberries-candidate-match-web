@@ -31,6 +31,7 @@ export async function loadCvScoreListRows(
     assessable: candidate.assessable ?? true,
     stale: candidate.stale ?? false,
     scoredAt: candidate.scoredAt ?? null,
+    rulesStatus: candidate.rulesStatus,
   })));
 
   onProgress?.(rows);

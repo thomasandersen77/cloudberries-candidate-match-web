@@ -2598,6 +2598,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/cv-score/basis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stored CV scores, newest first, with whether their basis was stored
+         * @description For the page that shows what a CV score rests on. Only consultants who have not left. The application has no login: this is kept apart from /cv-score, not protected.
+         *
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description One row per stored score */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CvScoreBasisRow"][];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/cv-score/{candidateId}/basis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What one CV score rests on
+         * @description The model's score and justification per criterion with the points each took off the total, the model's technical notes to whoever maintains the review prompt, and counts of the CV made in code without a model: of the CV the review read, and of the CV as it is now. Not part of the CV score the pages show.
+         *
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    candidateId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The basis of the score */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CvScoreBasis"];
+                    };
+                };
+                /** @description The consultant has no stored score */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/anthropic/usage": {
         parameters: {
             query?: never;
@@ -3892,6 +3983,9 @@ export interface components {
             forSupplier: number;
         };
         CvScoreDto: {
+            /** @description The prompt version used for new reviews. */
+            currentPromptVersion?: string;
+            rulesStatus?: components["schemas"]["CvReviewRulesStatus"] | null;
             candidateId: string;
             scorePercent: number;
             summary: string;
@@ -3904,13 +3998,121 @@ export interface components {
             scoredAt?: string | null;
             /** @description The model that wrote the review. */
             model?: string | null;
-            /** @description The version of the review prompt, e.g. 2026-10-cv-review-v2. */
+            /** @description The version of the review prompt, e.g. 2026-10-cv-review-v5. */
             promptVersion?: string | null;
             /** @description True when the score was made from another version of the CV than the one stored now, or from an unknown version (every score written before the CV version was recorded).
              *      */
             stale: boolean;
         };
+        /**
+         * @description Independent of CV freshness. EQUIVALENT is an older prompt with the same scoring rules; UNKNOWN is missing or unrecognised provenance.
+         * @enum {string}
+         */
+        CvReviewRulesStatus: "CURRENT" | "EQUIVALENT" | "OUTDATED" | "UNKNOWN";
+        CvScoreBasisRow: {
+            /** @description The prompt version used for new reviews. */
+            currentPromptVersion?: string;
+            rulesStatus?: components["schemas"]["CvReviewRulesStatus"] | null;
+            candidateId: string;
+            name: string;
+            scorePercent: number;
+            /** Format: date-time */
+            scoredAt?: string | null;
+            model?: string | null;
+            promptVersion?: string | null;
+            stale: boolean;
+            /** @description Whether the criteria were stored with the score; false for scores from before they were kept. */
+            hasBreakdown: boolean;
+        };
+        CvScoreBasis: {
+            /** @description The prompt version used for new reviews. */
+            currentPromptVersion?: string;
+            rulesStatus?: components["schemas"]["CvReviewRulesStatus"] | null;
+            candidateId: string;
+            name: string;
+            scorePercent: number;
+            /** Format: date-time */
+            scoredAt?: string | null;
+            model?: string | null;
+            promptVersion?: string | null;
+            /** @description The CV has changed since the review, or the review's CV is unknown. */
+            stale: boolean;
+            /** @description Per criterion in prompt order. Empty for scores stored before the criteria were kept. */
+            criteria: components["schemas"]["CriterionDeduction"][];
+            /** @description The model's technical notes to whoever maintains the prompt. Empty before prompt version 5. */
+            calibrationNotes: string[];
+            /** @description Counts of the CV the review read. Null for scores stored before they were kept. */
+            metrics?: components["schemas"]["CvMetrics"] | null;
+            /** @description Counts of the CV as it is now. */
+            currentMetrics?: components["schemas"]["CvMetrics"] | null;
+        };
+        CriterionDeduction: {
+            /** @description projectDescriptions, roleDescriptions, technologyCoverage, resultsAndValue, profileAndStructure or seniorityAndContribution. */
+            criterion: string;
+            weight: number;
+            score: number;
+            /** @description (100 − score) × weight ÷ the sum of the weights, to one decimal. Together they are what the total lost. */
+            pointsLost: number;
+            justification?: string | null;
+        };
+        /** @description What can be counted in a CV against the gold-CV standard, in code and without a model. It does not enter the score. The first-person, method, team and measurable-value flags are text patterns that point at a project, not proof.
+         *      */
+        CvMetrics: {
+            version: number;
+            /**
+             * Format: date
+             * @description Date used for the ten-year project window; unknown in older counts.
+             */
+            countedOn?: string | null;
+            /** @description Fingerprint of the CV counted; unknown in older counts. */
+            cvHash?: string | null;
+            profileWords: number;
+            /** @description Lines starting with «•» in the profile, the key qualification bullets. */
+            keyPoints: number;
+            projects: components["schemas"]["ProjectMetrics"][];
+            recent: components["schemas"]["ProjectSummary"];
+        };
+        ProjectMetrics: {
+            customer: string;
+            /** @example 2025-12 */
+            from?: string | null;
+            /** @example 2026-03 */
+            to?: string | null;
+            ongoing: boolean;
+            /** @description Ongoing, or ended within the last ten years. */
+            recent: boolean;
+            descriptionWords: number;
+            roles: number;
+            rolesWithText: number;
+            roleWords: number;
+            skills: number;
+            firstPerson: boolean;
+            mentionsMethod: boolean;
+            mentionsTeam: boolean;
+            measurableValue: boolean;
+        };
+        /** @description Counts over the recent projects; each is a number of projects. */
+        ProjectSummary: {
+            projects: number;
+            emptyDescription: number;
+            /** @description Under 60 words but not empty. */
+            shortDescription: number;
+            /** @description 90–120 words. */
+            goldRangeDescription: number;
+            /** @description Over 150 words. */
+            longDescription: number;
+            withoutRoleText: number;
+            firstPerson: number;
+            withMethod: number;
+            withTeam: number;
+            withMeasurableValue: number;
+            withoutSkills: number;
+        };
         CandidateDTO: {
+            /** @description The prompt version used for new reviews. */
+            currentPromptVersion?: string;
+            rulesStatus?: components["schemas"]["CvReviewRulesStatus"] | null;
+            promptVersion?: string | null;
             id: string;
             name: string;
             /** @description The CV score as a percentage, or null for a candidate nobody has scored yet. Returned here so the list can be drawn without asking per candidate.

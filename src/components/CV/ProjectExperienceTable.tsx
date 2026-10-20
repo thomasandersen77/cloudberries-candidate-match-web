@@ -18,6 +18,7 @@ import {
 import { alpha, useTheme } from '@mui/material/styles';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import type { ProjectExperienceDto } from '../../types/api';
+import { compareYearMonthPeriodDesc } from '../../utils/sort';
 
 interface ProjectExperienceTableProps {
   projectExperience: ProjectExperienceDto[];
@@ -33,18 +34,9 @@ const formatYearMonth = (yearMonth: string | null | undefined): string => {
 };
 
 const sortProjectExperience = (projects: ProjectExperienceDto[]): ProjectExperienceDto[] => {
-  return projects.slice().sort((a, b) => {
-    const aTo = a.toYearMonth || '';
-    const bTo = b.toYearMonth || '';
-
-    if (aTo !== bTo) {
-      return bTo.localeCompare(aTo);
-    }
-
-    const aFrom = a.fromYearMonth || '';
-    const bFrom = b.fromYearMonth || '';
-    return bFrom.localeCompare(aFrom);
-  });
+  return projects.slice().sort((a, b) =>
+    compareYearMonthPeriodDesc(a.toYearMonth, b.toYearMonth, a.fromYearMonth, b.fromYearMonth)
+  );
 };
 
 const ProjectRow: React.FC<{ project: ProjectExperienceDto }> = ({ project }) => {

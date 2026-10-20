@@ -8,8 +8,10 @@ of the frontend.
 ## What this is
 
 React 18, Vite, TypeScript, MUI. It talks to the backend's `/api` through the Vite dev proxy
-(`.env.development`, `VITE_BACKEND_TARGET`, port 8081 locally). Routes are in `src/App.tsx`; a page
-with no route there is dead code, not a work in progress.
+(`.env.development`, `VITE_BACKEND_TARGET`, port 8081 locally). Routes are in
+`src/routes/router.tsx`, which `src/main.tsx` passes to `RouterProvider`; a page with no route
+there is dead code. `src/routes/__tests__/router.test.ts` checks that every module the dashboard
+and the superuser page link to has a route.
 
 ## Commands
 
@@ -50,3 +52,17 @@ field the server never sent (`createdAt`) stayed in the code for months without 
 
 Run `npx tsc -b`, `npm test` and `npm run test:e2e` after a change to a page, and say which ran.
 Playwright needs the dev server; `reuseExistingServer` picks up one already on 5174.
+
+## CV-score basis and rule versions
+
+`/cv-score-grunnlag` is linked from Superbruker. It reads the two `/admin/cv-score/.../basis`
+endpoints and never starts scoring. Details and errors belong to the selected candidate id;
+late requests must not overwrite the current selection. Historical counts stay visible beside
+current counts when the CV, counting rules or counting date differs. `rulesStatus` comes from the
+backend (CURRENT, EQUIVALENT, OUTDATED, UNKNOWN) and is separate from CV freshness (`stale`).
+The browser must not derive rule compatibility from prompt version strings. API types are generated.
+
+The CV-score basis opens in a table row directly below the selected consultant on every screen
+size. The name button toggles it and exposes `aria-expanded`/`aria-controls`. Sorting is local:
+score descending by default, newest review for ties; Score/Date headers toggle direction. Missing
+or invalid dates stay last. Sorting must preserve the open consultant and start no new API call.

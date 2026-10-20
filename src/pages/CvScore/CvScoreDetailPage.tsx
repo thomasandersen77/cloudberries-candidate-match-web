@@ -11,7 +11,7 @@ import {
   Alert,
   Box,
 } from '@mui/material';
-import { formatScoredAt, scoringErrorMessage } from './cvScoreDetailText';
+import { reviewRulesLabel, formatScoredAt, scoringErrorMessage } from './cvScoreDetailText';
 import { alpha, useTheme } from '@mui/material/styles';
 import { getCvScore, recalculateScoreForCandidate } from '../../services/cvScoreService';
 import type { CvScoreDto } from '../../types/api';
@@ -37,19 +37,56 @@ const CvScoreDetailPage: React.FC = () => {
   const orangeTint =
     theme.palette.mode === 'light' ? alpha(theme.palette.primary.main, 0.09) : alpha(theme.palette.primary.main, 0.16);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  // Bumped by «Hent på nytt», so a retry is a plain re-run of the effect, with no scoring.
+  const [loadAttempt, setLoadAttempt] = useState(0);
+
+  // The answer belongs to the candidate the page is on. The effect took whatever answer came
+  // last, so opened from A to B, a slow A overwrote B; and it had no catch, so a failed load left
+  // the heading and nothing else.
   useEffect(() => {
-    if (candidateId)
-      getCvScore(candidateId).then((dto) => {
+    if (!candidateId) return;
+    let current = true;
+    setScore(null);
+    setLastEvaluatedAt(null);
+    setLoadError(null);
+    setLoading(true);
+    getCvScore(candidateId)
+      .then((dto) => {
+        if (!current) return;
         setScore(dto);
         setLastEvaluatedAt(formatScoredAt(dto));
+      })
+      .catch(() => {
+        if (current) setLoadError('Kunne ikke hente CV-scoren.');
+      })
+      .finally(() => {
+        if (current) setLoading(false);
       });
-  }, [candidateId]);
+    return () => {
+      current = false;
+    };
+  }, [candidateId, loadAttempt]);
 
   return (
     <Container sx={{ py: { xs: 2, md: 4 } }}>
       <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 3 }}>
         CV-score
       </Typography>
+      {loading && <CircularProgress size={24} />}
+      {loadError && (
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={() => setLoadAttempt((n) => n + 1)}>
+              Hent på nytt
+            </Button>
+          }
+        >
+          {loadError}
+        </Alert>
+      )}
       {score && (
         <Stack spacing={3}>
           <Paper
@@ -92,6 +129,8 @@ const CvScoreDetailPage: React.FC = () => {
                   try {
                     setRunning(true);
                     const updated = await recalculateScoreForCandidate(candidateId, { useHighestQualityModel: highQuality });
+                    // A rescore takes most of a minute; the page may be on someone else by then.
+                    if (updated.candidateId !== candidateId) return;
                     setScore(updated);
                     setLastEvaluatedAt(formatScoredAt(updated));
                     setSnack({ open: true, message: 'Scoring fullført', severity: 'success' });
@@ -107,6 +146,13 @@ const CvScoreDetailPage: React.FC = () => {
               </Stack>
             )}
           </Paper>
+          {score.promptVersion && <Typography variant="body2" color="text.secondary">
+            Vurdert med {score.promptVersion} · Gjeldende prompt: {score.currentPromptVersion ?? 'ukjent'}
+          </Typography>}
+          {reviewRulesLabel(score.rulesStatus) && <Alert severity={score.rulesStatus === 'OUTDATED' ? 'warning' : 'info'}>
+            {reviewRulesLabel(score.rulesStatus)}.
+            {score.rulesStatus === 'OUTDATED' && ' Velg «Score på nytt» for en vurdering etter dagens regler.'}
+          </Alert>}
           {score.stale && score.scorePercent > 0 && (
             <Alert severity="warning">
               Skåren er ikke laget fra CV-en slik den er nå: CV-en er endret siden, eller skåren er fra

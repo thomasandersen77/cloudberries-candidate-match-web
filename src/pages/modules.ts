@@ -44,4 +44,5 @@ export const SUPERUSER_MODULES: ModuleLink[] = [
   { to: '/skills', title: 'Ferdigheter', desc: 'Oversikt over ferdigheter og tilknyttede konsulenter' },
   { to: '/embeddings', title: 'Embeddings', desc: 'Kjør embedding-oppgaver for semantisk søk' },
   { to: '/search', title: 'Søk', desc: 'Søk i konsulenter og kompetanse, uten assistenten' },
+  { to: '/cv-score-grunnlag', title: 'CV-scoregrunnlag', desc: 'Hva en CV-score bygger på: kriterier, trekk, modellens merknader og tellinger' },
 ];

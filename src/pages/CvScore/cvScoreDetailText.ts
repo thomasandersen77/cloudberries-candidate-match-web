@@ -17,3 +17,13 @@ export function scoringErrorMessage(error: unknown): string {
   const message = (error as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
   return typeof message === 'string' && message.trim() ? message : 'Scoring feilet';
 }
+
+/** The server decides rule compatibility; the browser does not infer it from version names. */
+export function reviewRulesLabel(status: CvScoreDto['rulesStatus']): string | null {
+  switch (status) {
+    case 'OUTDATED': return 'Eldre vurderingsregler';
+    case 'EQUIVALENT': return 'Eldre prompt, samme vurderingsregler';
+    case 'UNKNOWN': return 'Ukjente vurderingsregler';
+    default: return null;
+  }
+}

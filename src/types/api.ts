@@ -54,6 +54,14 @@ export type RebuildOrder = 'DATABASE' | 'REVERSE' | 'OLDEST_FIRST';
 
 export type CandidateDTO = components['schemas']['CandidateDTO'];
 export type CvScoreDto = components['schemas']['CvScoreDto'];
+export type CvReviewRulesStatus = components['schemas']['CvReviewRulesStatus'];
+// What a CV score rests on, for the superuser page. Not part of the score the CV-score pages read.
+export type CvScoreBasis = components['schemas']['CvScoreBasis'];
+export type CvScoreBasisRow = components['schemas']['CvScoreBasisRow'];
+export type CriterionDeduction = components['schemas']['CriterionDeduction'];
+export type CvMetrics = components['schemas']['CvMetrics'];
+export type ProjectMetrics = components['schemas']['ProjectMetrics'];
+export type ProjectSummary = components['schemas']['ProjectSummary'];
 export type CvScoringRunResponse = components['schemas']['CvScoringRunResponse'];
 export type CvScoreAiProvider = 'ANTHROPIC' | 'OPENAI' | 'GOOGLE_GEMINI';
 
