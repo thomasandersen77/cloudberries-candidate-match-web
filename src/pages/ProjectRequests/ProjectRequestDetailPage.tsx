@@ -39,6 +39,8 @@ const ProjectRequestDetailPage: React.FC = () => {
     })();
   }, [id]);
 
+  const status = (dto as unknown as { status?: string } | null)?.status;
+
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Kundeforspørsel</Typography>
@@ -51,7 +53,7 @@ const ProjectRequestDetailPage: React.FC = () => {
             <Typography variant="body2"><strong>Kunde:</strong> {dto.customerName ?? '-'}</Typography>
             <Typography variant="body2"><strong>Tittel:</strong> {dto.title ?? '-'}</Typography>
             <Typography variant="body2"><strong>Filnavn:</strong> {dto.originalFilename ?? '-'}</Typography>
-            <Typography variant="body2"><strong>Status:</strong> {(dto as unknown as { status?: string }).status ?? '-'}</Typography>
+            <Typography variant="body2"><strong>Status:</strong> {status ?? '-'}</Typography>
             <Typography variant="body2"><strong>Opplastet:</strong> {dto.uploadedAt ? new Date(dto.uploadedAt).toLocaleString('no-NO') : '-'}</Typography>
             <Typography variant="body2"><strong>Svarfrist:</strong> {dto.deadlineDate ? new Date(dto.deadlineDate).toLocaleDateString('no-NO') : '-'}</Typography>
             <Box sx={{ flex: 1 }} />
@@ -70,11 +72,14 @@ const ProjectRequestDetailPage: React.FC = () => {
                 setActionsLoading(false);
               }
             }}>Analyser (AI)</Button>
-            <Button size="small" color="error" variant="outlined" disabled={actionsLoading || !dto.id} onClick={async () => {
+            <Button size="small" color="error" variant="outlined" disabled={actionsLoading || !dto.id || status === 'CLOSED'} onClick={async () => {
               if (!dto?.id) return;
               setActionsLoading(true);
               try {
-                await closeProjectRequest(dto.id);
+                // The answer is the request as the server now has it. It was dropped, so the page
+                // kept saying OPEN and offered to close it again.
+                const closed = await closeProjectRequest(dto.id);
+                setDto(closed as ProjectRequestResponseDto);
                 setError(null);
               } catch {
                 setError('Kunne ikke lukke forespørselen.');

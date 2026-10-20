@@ -48,6 +48,12 @@ field the server never sent (`createdAt`) stayed in the code for months without 
 - Folded content uses `Collapse` with `unmountOnExit`, `aria-expanded` on the button and
   `aria-controls` pointing at the region's `id`. Focus stays on the button after opening.
 
+The consultant and CV detail pages load one person through `GET /consultants/{userId}/with-cv`
+(`getConsultantWithCv`), which also answers for somebody who has left; the lists do not, and
+looking the id up in a list said «Konsulent ikke funnet» for a CV the backend has. The semantic
+search table keeps the backend's order (by similarity) and shows similarity and CV quality as two
+columns; sorting it by quality hid which signal put a row where it was.
+
 ## Verifying
 
 Run `npx tsc -b`, `npm test` and `npm run test:e2e` after a change to a page, and say which ran.

@@ -26,7 +26,7 @@ import { getSkillsDisplay } from '../../utils/skillUtils';
 
 const DELAYED_SPINNER_MS = 500;
 
-import { compareByQualityThenName, getActiveQualityScore } from '../../utils/scoreUtils';
+import { getActiveQualityScore } from '../../utils/scoreUtils';
 import PageIntro from '../../components/PageIntro';
 
 const ResultsTable: React.FC<{
@@ -40,12 +40,18 @@ const ResultsTable: React.FC<{
         <TableRow>
           <TableCell>Navn</TableCell>
           <TableCell>Ferdigheter</TableCell>
+          <TableCell align="center">Likhet</TableCell>
           <TableCell align="center">CV-kvalitet</TableCell>
           <TableCell align="right">Handlinger</TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
-        {items.slice().sort(compareByQualityThenName).map((c) => {
+        {/*
+          In the backend's order, which is by similarity. The rows were sorted again by CV
+          quality, so a well-written but less relevant CV came out above the best hit, and the
+          two signals could not be told apart. They are two columns now.
+        */}
+        {items.map((c) => {
           const quality = getActiveQualityScore(c);
           const { displaySkills, remainingCount } = getSkillsDisplay(c, 3);
           return (
@@ -60,6 +66,13 @@ const ResultsTable: React.FC<{
                     <Chip label={`+${remainingCount}`} size="small" variant="outlined" />
                   )}
                 </Box>
+              </TableCell>
+              <TableCell align="center">
+                {typeof c.semanticScore === 'number' ? (
+                  <Typography variant="body2">{c.semanticScore.toFixed(2)}</Typography>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">-</Typography>
+                )}
               </TableCell>
               <TableCell align="center">
                 {quality !== null ? (

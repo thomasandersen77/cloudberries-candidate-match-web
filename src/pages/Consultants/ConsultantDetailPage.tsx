@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Container, Typography, Paper, Button, Stack, Alert, Divider, Skeleton } from '@mui/material';
-import { listConsultantsWithCv, syncSingleConsultant } from '../../services/consultantsService';
+import { getConsultantWithCv, syncSingleConsultant } from '../../services/consultantsService';
 import type { ConsultantWithCvDto, ConsultantCvDto } from '../../types/api';
 import CvSummary from '../../components/CV/CvSummary';
 import SkillsOverview from '../../components/CV/SkillsOverview';
@@ -25,10 +25,16 @@ const ConsultantDetailPage: React.FC = () => {
       if (!userId) return;
       setLoading(true);
       try {
-        const consultants = await listConsultantsWithCv(false);
-        const foundConsultant = consultants.find((c) => c.userId === userId);
+        // By id, not by searching the whole corpus in the browser: the lists leave out people who
+        // have left, so a historical link said «Konsulent ikke funnet» for a CV the backend has.
+        const foundConsultant = await getConsultantWithCv(userId, false);
 
-        if (!foundConsultant) {
+        setConsultant(foundConsultant);
+
+        const activeCV = foundConsultant.cvs?.find((cv) => cv.active) || foundConsultant.cvs?.[0];
+        setActiveCv(activeCV || null);
+      } catch (error) {
+        if ((error as { response?: { status?: number } })?.response?.status === 404) {
           setNotification({
             type: 'error',
             title: 'Konsulent ikke funnet',
@@ -36,12 +42,6 @@ const ConsultantDetailPage: React.FC = () => {
           });
           return;
         }
-
-        setConsultant(foundConsultant);
-
-        const activeCV = foundConsultant.cvs?.find((cv) => cv.active) || foundConsultant.cvs?.[0];
-        setActiveCv(activeCV || null);
-      } catch (error) {
         console.error('Failed to load consultant:', error);
         setNotification({
           type: 'error',
@@ -65,8 +65,7 @@ const ConsultantDetailPage: React.FC = () => {
       const result = await syncSingleConsultant(consultant.userId, consultant.cvId);
       setNotification(singleSyncNotification(result));
 
-      const consultants = await listConsultantsWithCv(false);
-      const updatedConsultant = consultants.find((c) => c.userId === userId);
+      const updatedConsultant = await getConsultantWithCv(consultant.userId, false);
       if (updatedConsultant) {
         setConsultant(updatedConsultant);
         const activeCV = updatedConsultant.cvs?.find((cv) => cv.active) || updatedConsultant.cvs?.[0];

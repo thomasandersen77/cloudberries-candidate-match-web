@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Typography, Paper, Box, Stack, Chip, Alert, Button } from '@mui/material';
-import { listConsultantsWithCv, syncSingleConsultant } from '../../services/consultantsService';
+import { getConsultantWithCv, syncSingleConsultant } from '../../services/consultantsService';
 import type { ConsultantWithCvDto, ConsultantCvDto } from '../../types/api';
 import CvSummary from '../../components/CV/CvSummary';
 import SkillsSection from '../../components/CV/SkillsSection';
@@ -26,17 +26,9 @@ const CvViewPage: React.FC = () => {
       if (!userId) return;
       setLoading(true);
       try {
-        const consultants = await listConsultantsWithCv(false); // Get all CVs, not just active
-        const foundConsultant = consultants.find(c => c.userId === userId);
-        
-        if (!foundConsultant) {
-          setNotification({
-            type: 'error',
-            title: 'Konsulent ikke funnet',
-            message: `Kunne ikke finne konsulent med ID: ${userId}`
-          });
-          return;
-        }
+        // By id, not by searching the whole corpus in the browser: the lists leave out people who
+        // have left, so a historical link said «Konsulent ikke funnet» for a CV the backend has.
+        const foundConsultant = await getConsultantWithCv(userId, false);
 
         setConsultant(foundConsultant);
         
@@ -45,6 +37,14 @@ const CvViewPage: React.FC = () => {
         setActiveCv(activeCV || null);
         
       } catch (error) {
+        if ((error as { response?: { status?: number } })?.response?.status === 404) {
+          setNotification({
+            type: 'error',
+            title: 'Konsulent ikke funnet',
+            message: `Kunne ikke finne konsulent med ID: ${userId}`,
+          });
+          return;
+        }
         console.error('Failed to load consultant CV:', error);
         setNotification({
           type: 'error',
@@ -69,8 +69,7 @@ const CvViewPage: React.FC = () => {
       setNotification(singleSyncNotification(result));
       
       // Refresh consultant data
-      const consultants = await listConsultantsWithCv(false);
-      const updatedConsultant = consultants.find(c => c.userId === userId);
+      const updatedConsultant = await getConsultantWithCv(consultant.userId, false);
       if (updatedConsultant) {
         setConsultant(updatedConsultant);
         const activeCV = updatedConsultant.cvs?.find(cv => cv.active) || updatedConsultant.cvs?.[0];

@@ -153,6 +153,17 @@ export async function listConsultantsWithCvPaged(params: {
     return data;
 }
 
+/**
+ * One consultant with CV data, by id. Unlike the lists this answers for somebody who has left,
+ * so a historical link still opens; a 404 means the id is unknown.
+ */
+export async function getConsultantWithCv(userId: string, onlyActiveCv = false): Promise<ConsultantWithCvDto> {
+    const { data } = await apiClient.get<ConsultantWithCvDto>(`consultants/${encodeURIComponent(userId)}/with-cv`, {
+        params: { onlyActiveCv }
+    });
+    return data;
+}
+
 export async function listConsultantCvs(userId: string): Promise<ConsultantCvDto[]> {
     const { data } = await apiClient.get<ConsultantCvDto[]>(`consultants/${encodeURIComponent(userId)}/cvs`);
     return data;
