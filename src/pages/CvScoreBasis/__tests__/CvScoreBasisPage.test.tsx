@@ -34,6 +34,11 @@ const rafael: CvScoreBasis = { ...gullik, candidateId: 'r1', name: 'Rafael Sanch
 vi.mock('../../../services/adminService', () => ({
   listCvScoreBases: vi.fn(() => Promise.resolve(rows)),
   getCvScoreBasis: vi.fn((id: string) => Promise.resolve(id === 'g1' ? gullik : rafael)),
+  getCvReviewPrompt: vi.fn(() => Promise.resolve({
+    promptId: 'cv_review', promptVersion: '2026-10-cv-review-v5',
+    systemInstructions: '# CV-vurdering\n\nGull-CV-standarden …', userTemplate: 'Kandidatnavn: <kandidatnavn>',
+    criteriaWeights: { projectDescriptions: 2.5, roleDescriptions: 2.5 },
+  })),
 }));
 
 import CvScoreBasisPage from '../CvScoreBasisPage';
@@ -201,5 +206,17 @@ describe('CvScoreBasisPage', () => {
     expect(await screen.findByText(/lagret før kriteriene ble tatt vare på/)).toBeInTheDocument();
     expect(screen.getByText(/Ingen merknader/)).toBeInTheDocument();
     expect(screen.getByText(/Fra CV-en slik den er nå/)).toBeInTheDocument();
+  });
+
+  /** The rule a deduction came from is readable next to the deduction, with its version. */
+  it('shows the review prompt with its version on request', async () => {
+    renderPage();
+
+    const toggle = await screen.findByRole('button', { name: 'Vis prompten' });
+    expect(screen.getByText(/2026-10-cv-review-v5/)).toBeInTheDocument();
+    fireEvent.click(toggle);
+
+    expect(screen.getByText(/Gull-CV-standarden/)).toBeInTheDocument();
+    expect(screen.getByText(/Prosjektbeskrivelser 2\.5/)).toBeInTheDocument();
   });
 });

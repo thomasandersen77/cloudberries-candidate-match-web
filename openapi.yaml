@@ -1595,6 +1595,24 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /admin/cv-score/prompt:
+    get:
+      tags: [ Admin ]
+      summary: The CV review prompt as it is sent, with its version and the criteria weights
+      description: >
+        Read only. The prompt is tied to the answer schema and to the weights in code, and every
+        stored score carries the version it was made with; a change is a new version in the
+        repository, not an edit here.
+      responses:
+        '200':
+          description: The prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvReviewPrompt'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /admin/cv-score/{candidateId}/basis:
     get:
       tags: [ Admin ]
@@ -3150,7 +3168,7 @@ components:
         promptVersion:
           type: string
           nullable: true
-          description: The version of the review prompt, e.g. 2026-10-cv-review-v5.
+          description: The version of the review prompt, e.g. 2026-10-cv-review-v5. Every score is made on the same model tier (DEFAULT), so scores are comparable.
         stale:
           type: boolean
           description: >
@@ -3161,6 +3179,19 @@ components:
       type: string
       enum: [ CURRENT, EQUIVALENT, OUTDATED, UNKNOWN ]
       description: Independent of CV freshness. EQUIVALENT is an older prompt with the same scoring rules; UNKNOWN is missing or unrecognised provenance.
+
+    CvReviewPrompt:
+      type: object
+      required: [ promptId, promptVersion, systemInstructions, userTemplate, criteriaWeights ]
+      properties:
+        promptId: { type: string }
+        promptVersion: { type: string }
+        systemInstructions: { type: string, description: The shared, cached system block, as the model receives it. }
+        userTemplate: { type: string, description: The per-CV user message with placeholders for the name, the CV and the date. }
+        criteriaWeights:
+          type: object
+          additionalProperties: { type: number }
+          description: Criterion to weight; the total is computed in code from these.
 
     CvScoreBasisRow:
       type: object

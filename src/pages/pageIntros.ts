@@ -91,12 +91,12 @@ export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
 
   cvScore: {
     intro:
-      'Se AI-vurderinger av CV-kvalitet. Åpne en vurdering for å se styrker og forslag til ' +
+      'Se CV-scorer: AI-vurderinger av hvor godt hver CV følger gull-CV-standarden. Åpne en vurdering for å se styrker og forslag til ' +
       'hvordan CV-en kan forbedres.',
     steps: [
       'Åpne en rad for å lese hva vurderingen fant, og hva den foreslår å gjøre med CV-en.',
       'Kjør en ny vurdering når CV-en er oppdatert i Flowcase.',
-      'CV-kvalitet er ikke det samme som egnethet for et oppdrag. Den måler dokumentet.',
+      'CV-score er ikke det samme som egnethet for et oppdrag. Den måler dokumentet, ikke konsulenten.',
     ],
   },
 
@@ -150,7 +150,7 @@ export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
       'de beste er.',
     steps: [
       'Søk i ferdighetsnavn, eller velg blant de mest brukte, og åpne en ferdighet for å se konsulentene.',
-      'Rangeringen bygger på dokumentert varighet i CV-en, og CV-kvalitet teller med som et mindre ledd.',
+      'Rangeringen bygger på dokumentert varighet i CV-en, og CV-score teller med som et mindre ledd.',
       'En ferdighet som ikke står i noen CV finnes ikke her, uansett hvem som kan den.',
     ],
   },
@@ -171,7 +171,7 @@ export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
       'Søk i konsulentene uten assistenten: du setter kriteriene selv, og får treffene uten en ' +
       'AI-formulert forklaring.',
     steps: [
-      'Relasjonelt søk filtrerer på navn, må-krav, bør-krav, minste CV-kvalitet og aktiv CV.',
+      'Relasjonelt søk filtrerer på navn, må-krav, bør-krav, minste CV-score og aktiv CV.',
       'Semantisk søk leter på mening i stedet for på ferdighetsnavn, og krever at embeddingene er bygget.',
       'Treffene er søketreff, ikke en vurdering. Skal noen måles mot et avrop, gjøres det under Matcher.',
     ],

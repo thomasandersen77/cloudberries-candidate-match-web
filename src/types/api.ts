@@ -58,6 +58,7 @@ export type CvReviewRulesStatus = components['schemas']['CvReviewRulesStatus'];
 // What a CV score rests on, for the superuser page. Not part of the score the CV-score pages read.
 export type CvScoreBasis = components['schemas']['CvScoreBasis'];
 export type CvScoreBasisRow = components['schemas']['CvScoreBasisRow'];
+export type CvReviewPrompt = components['schemas']['CvReviewPrompt'];
 export type CriterionDeduction = components['schemas']['CriterionDeduction'];
 export type CvMetrics = components['schemas']['CvMetrics'];
 export type ProjectMetrics = components['schemas']['ProjectMetrics'];

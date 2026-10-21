@@ -2639,6 +2639,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/cv-score/prompt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The CV review prompt as it is sent, with its version and the criteria weights
+         * @description Read only. The prompt is tied to the answer schema and to the weights in code, and every stored score carries the version it was made with; a change is a new version in the repository, not an edit here.
+         *
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The prompt */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CvReviewPrompt"];
+                    };
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/cv-score/{candidateId}/basis": {
         parameters: {
             query?: never;
@@ -4013,7 +4054,7 @@ export interface components {
             scoredAt?: string | null;
             /** @description The model that wrote the review. */
             model?: string | null;
-            /** @description The version of the review prompt, e.g. 2026-10-cv-review-v5. */
+            /** @description The version of the review prompt, e.g. 2026-10-cv-review-v5. Every score is made on the same model tier (DEFAULT), so scores are comparable. */
             promptVersion?: string | null;
             /** @description True when the score was made from another version of the CV than the one stored now, or from an unknown version (every score written before the CV version was recorded).
              *      */
@@ -4024,6 +4065,18 @@ export interface components {
          * @enum {string}
          */
         CvReviewRulesStatus: "CURRENT" | "EQUIVALENT" | "OUTDATED" | "UNKNOWN";
+        CvReviewPrompt: {
+            promptId: string;
+            promptVersion: string;
+            /** @description The shared */
+            systemInstructions: string;
+            /** @description The per-CV user message with placeholders for the name */
+            userTemplate: string;
+            /** @description Criterion to weight; the total is computed in code from these. */
+            criteriaWeights: {
+                [key: string]: number;
+            };
+        };
         CvScoreBasisRow: {
             /** @description The prompt version used for new reviews. */
             currentPromptVersion?: string;

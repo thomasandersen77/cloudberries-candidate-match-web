@@ -22,8 +22,8 @@ import {
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBackIosNew';
 import PageIntro from '../../components/PageIntro';
-import { getCvScoreBasis, listCvScoreBases } from '../../services/adminService';
-import type { CvMetrics, CvScoreBasis, CvScoreBasisRow } from '../../types/api';
+import { getCvReviewPrompt, getCvScoreBasis, listCvScoreBases } from '../../services/adminService';
+import type { CvMetrics, CvReviewPrompt, CvScoreBasis, CvScoreBasisRow } from '../../types/api';
 import { reviewRulesLabel, formatScoredAt } from '../CvScore/cvScoreDetailText';
 import { criterionLabel, formatPeriod, sortScoreBases, summaryLines, totalPointsLost, type ScoreBasisSort, type ScoreBasisSortOrder } from './cvScoreBasisText';
 
@@ -117,6 +117,7 @@ const CvScoreBasisPage: React.FC = () => {
         CV-scoregrunnlag
       </Typography>
       <PageIntro page="cvScoreBasis" />
+      <PromptSection />
 
       {listError && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setListError(null)}>{listError}</Alert>}
 
@@ -355,5 +356,51 @@ const MetricsView: React.FC<{ metrics: CvMetrics; source: string }> = ({ metrics
     </Typography>
   </Paper>
 );
+
+/**
+ * The prompt the scores are made with, read only, with its version and the criteria weights.
+ * Folded away: whoever reads a deduction can open the rule it came from. Editing it here is
+ * deliberately not offered; a change is a new version in the repository, carried by every score.
+ */
+const PromptSection: React.FC = () => {
+  const [prompt, setPrompt] = useState<CvReviewPrompt | null>(null);
+  const [open, setOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    getCvReviewPrompt().then(setPrompt).catch(() => setFailed(true));
+  }, []);
+  return (
+    <Paper elevation={0} sx={{ p: 2, mb: 2 }}>
+      <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          Prompten som gir CV-score{prompt ? ` · ${prompt.promptVersion}` : ''}
+        </Typography>
+        <Button size="small" onClick={() => setOpen(o => !o)} aria-expanded={open} aria-controls="cv-review-prompt" disabled={!prompt}>
+          {open ? 'Skjul prompten' : 'Vis prompten'}
+        </Button>
+      </Stack>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+        CV-score måler hvor godt CV-en følger gull-CV-standarden, vurdert av en modell. Den sier ikke noe om
+        konsulentens kompetanse. Totalen regnes i kode fra kriterieskårene med vektene under; prompten endres
+        som en ny versjon i koden, og hver score bærer versjonen den ble laget med.
+      </Typography>
+      {failed && <Typography variant="caption" color="error.main">Kunne ikke hente prompten.</Typography>}
+      {open && prompt && (
+        <Box id="cv-review-prompt" sx={{ mt: 1.5 }}>
+          <Typography variant="caption" color="text.secondary">
+            Vekter: {Object.entries(prompt.criteriaWeights).map(([k, w]) => `${criterionLabel(k)} ${w}`).join(' · ')}
+          </Typography>
+          <Box component="pre" sx={{ whiteSpace: 'pre-wrap', fontSize: '0.8rem', lineHeight: 1.5, mt: 1, p: 1.5, bgcolor: 'action.hover', borderRadius: 1, overflowX: 'auto' }}>
+            {prompt.systemInstructions}
+          </Box>
+          <Typography variant="caption" color="text.secondary">Brukermelding per CV</Typography>
+          <Box component="pre" sx={{ whiteSpace: 'pre-wrap', fontSize: '0.8rem', lineHeight: 1.5, mt: 0.5, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+            {prompt.userTemplate}
+          </Box>
+        </Box>
+      )}
+    </Paper>
+  );
+};
 
 export default CvScoreBasisPage;

@@ -212,9 +212,9 @@ describe('RequestMatchPanel', () => {
       projectRequestId: 1,
       matches: [
         { userId: 'u1', name: 'Thomas Andersen Sopra', cvId: 'c1', score: 7.1, scorePercent: 71, presentedScore: 7.6, presentedScorePercent: 76, cvQualityScore: 88, rankByMatch: 2,
-          qualityNote: 'Ligger over Joachim Lous fordi CV-kvaliteten er 88 mot 66. Kravmatchen er 7,1 mot 8,3.', passedOnQuality: false, justification: 'Solid.' },
+          qualityNote: 'Ligger over Joachim Lous fordi CV-scoren er 88 mot 66. Kravmatchen er 7,1 mot 8,3.', passedOnQuality: false, justification: 'Solid.' },
         { userId: 'u2', name: 'Joachim Lous', cvId: 'c2', score: 8.3, scorePercent: 83, presentedScore: 7.4, presentedScorePercent: 74, cvQualityScore: 66, rankByMatch: 1,
-          qualityNote: 'Ligger under Thomas Andersen Sopra fordi CV-kvaliteten er 66 mot 88. Kravmatchen er 8,3 mot 7,1.', passedOnQuality: true, justification: 'Sterk.' },
+          qualityNote: 'Ligger under Thomas Andersen Sopra fordi CV-scoren er 66 mot 88. Kravmatchen er 8,3 mot 7,1.', passedOnQuality: true, justification: 'Sterk.' },
       ],
       lastUpdated: '2026-10-20T12:00:00Z',
     } as never);
@@ -227,8 +227,8 @@ describe('RequestMatchPanel', () => {
     const names = screen.getAllByText(/Thomas Andersen Sopra|Joachim Lous/, { selector: 'b' }).map((el) => el.textContent);
     expect(names).toEqual(['Thomas Andersen Sopra', 'Joachim Lous']);
     expect(screen.getByText(/CV 66 → 7,4/)).toBeInTheDocument();
-    expect(screen.getByText('Passert på CV-kvalitet')).toBeInTheDocument();
-    expect(screen.getByText(/Ligger under Thomas Andersen Sopra fordi CV-kvaliteten er 66 mot 88/)).toBeInTheDocument();
+    expect(screen.getByText('Passert på CV-score')).toBeInTheDocument();
+    expect(screen.getByText(/Ligger under Thomas Andersen Sopra fordi CV-scoren er 66 mot 88/)).toBeInTheDocument();
     const links = screen.getAllByRole('link', { name: 'Se CV-score' });
     expect(links.map((l) => l.getAttribute('href'))).toEqual(['/cv-score/u1', '/cv-score/u2']);
   });

@@ -16,15 +16,12 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { getCvScore, recalculateScoreForCandidate } from '../../services/cvScoreService';
 import type { CvScoreDto } from '../../types/api';
 import CvScoreBadge from '../../components/CvScoreBadge';
-import HighQualityToggle from '../../components/HighQualityToggle';
 
 const CvScoreDetailPage: React.FC = () => {
   const theme = useTheme();
   const { candidateId } = useParams();
   const [score, setScore] = useState<CvScoreDto | null>(null);
   const [running, setRunning] = useState(false);
-  // Default off every time; not persisted.
-  const [highQuality, setHighQuality] = useState(false);
   const [lastEvaluatedAt, setLastEvaluatedAt] = useState<string | null>(null);
   const [snack, setSnack] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -119,7 +116,6 @@ const CvScoreDetailPage: React.FC = () => {
             </Stack>
             {candidateId && (
               <Stack spacing={1} alignItems={{ xs: 'flex-start', md: 'flex-end' }}>
-              <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={running} />
               <Button
                 size="medium"
                 variant="contained"
@@ -128,7 +124,7 @@ const CvScoreDetailPage: React.FC = () => {
                 onClick={async () => {
                   try {
                     setRunning(true);
-                    const updated = await recalculateScoreForCandidate(candidateId, { useHighestQualityModel: highQuality });
+                    const updated = await recalculateScoreForCandidate(candidateId);
                     // A rescore takes most of a minute; the page may be on someone else by then.
                     if (updated.candidateId !== candidateId) return;
                     setScore(updated);

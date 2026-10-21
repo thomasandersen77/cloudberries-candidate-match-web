@@ -22,7 +22,6 @@ import CvScoreListPage from '../CvScoreListPage';
 import { runScoreForCandidate } from '../../../services/cvScoreService';
 
 const mockedRun = runScoreForCandidate as unknown as ReturnType<typeof vi.fn>;
-const HIGH_QUALITY_LABEL = 'Bruk høyeste kvalitet';
 
 function renderPage() {
   return render(
@@ -32,44 +31,25 @@ function renderPage() {
   );
 }
 
-describe('CvScoreListPage – høyeste kvalitet', () => {
+describe('CvScoreListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     listRows.current = [{ id: 'c1', name: 'Kandidat A', scorePercent: 0, summary: '' }];
   });
 
-  it('toggle er av som standard og scorer direkte uten flagg', async () => {
+  /** Every CV is scored on the one fixed tier, so the page offers no choice and asks nothing. */
+  it('scores on the fixed tier with no model choice and no confirmation', async () => {
     renderPage();
     expect(await screen.findByText('Kandidat A')).toBeInTheDocument();
 
-    const toggle = screen.getByRole('checkbox', { name: HIGH_QUALITY_LABEL });
-    expect(toggle).not.toBeChecked();
-
+    expect(screen.queryByRole('checkbox', { name: /høyeste kvalitet/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Kjør scoring for alle/i }));
 
-    // Ingen bekreftelsesdialog når toggle er av
+    await waitFor(() => expect(mockedRun).toHaveBeenCalled());
+    expect(mockedRun).toHaveBeenCalledWith('c1');
     expect(screen.queryByText(/betydelig mer AI-kreditt/i)).not.toBeInTheDocument();
-
-    await waitFor(() => expect(mockedRun).toHaveBeenCalled());
-    expect(mockedRun).toHaveBeenCalledWith('c1', { useHighestQualityModel: false });
   });
 
-  it('viser kostnadsbekreftelse når høyeste kvalitet er valgt, og sender flagg ved Fortsett', async () => {
-    renderPage();
-    expect(await screen.findByText('Kandidat A')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('checkbox', { name: HIGH_QUALITY_LABEL }));
-    fireEvent.click(screen.getByRole('button', { name: /Kjør scoring for alle/i }));
-
-    // Bekreftelse vist; scoring ikke startet ennå
-    expect(await screen.findByText(/betydelig mer AI-kreditt/i)).toBeInTheDocument();
-    expect(mockedRun).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole('button', { name: /Fortsett/i }));
-
-    await waitFor(() => expect(mockedRun).toHaveBeenCalled());
-    expect(mockedRun).toHaveBeenCalledWith('c1', { useHighestQualityModel: true });
-  });
 });
 
 /**
@@ -111,7 +91,7 @@ describe('CvScoreListPage – vurderbare og utdaterte', () => {
     // Wait for the whole run, not the first call: the old page sent Vivi second.
     expect(await screen.findByText(/Scoring fullført/)).toBeInTheDocument();
     expect(mockedRun).toHaveBeenCalledTimes(1);
-    expect(mockedRun).toHaveBeenCalledWith('c', { useHighestQualityModel: false });
+    expect(mockedRun).toHaveBeenCalledWith('c');
     expect(mockedRun).not.toHaveBeenCalledWith('v', expect.anything());
   });
 });

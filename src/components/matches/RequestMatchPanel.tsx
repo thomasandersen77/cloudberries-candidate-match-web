@@ -147,7 +147,7 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
               {qualityLabel}
               {passedOnQuality && (
                 <Chip
-                  label="Passert på CV-kvalitet"
+                  label="Passert på CV-score"
                   size="small"
                   color="warning"
                   variant="outlined"
@@ -157,7 +157,7 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
               {typeof qualityScore === 'number' && (
                 <Box
                   component="span"
-                  aria-label={`CV-kvalitet ${Math.round(qualityScore)} av 100`}
+                  aria-label={`CV-score ${Math.round(qualityScore)} av 100`}
                   sx={{
                     ml: 1,
                     px: 0.75,
@@ -625,12 +625,17 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               </ToggleButtonGroup>
             </Stack>
             <Stack spacing={0.25}>
-              <Typography variant="caption" color="text.secondary">CV-kvalitet teller</Typography>
+              <Typography variant="caption" color="text.secondary">CV-score teller</Typography>
               <ToggleButtonGroup size="small" exclusive value={cvWeightPercent} onChange={(_e, v) => { if (v != null) setCvWeightPercent(v); }}>
                 {CV_WEIGHT_OPTIONS.map((w) => (
                   <ToggleButton key={w} value={w} disabled={loadingRun}>{w}%</ToggleButton>
                 ))}
               </ToggleButtonGroup>
+              {/* Said here because it is the one place the number is turned into a weight. */}
+              <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 420 }}>
+                CV-score måler hvor godt CV-en følger gull-CV-standarden, vurdert av en modell. Den sier ikke noe
+                om konsulentens kompetanse. Prosenten styrer rekkefølgen og kortlisten, ikke kravmatchen.
+              </Typography>
             </Stack>
             <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={loadingRun} />
           </Stack>
@@ -658,10 +663,10 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               )}
             </Stack>
             <Stack spacing={0.75}>
-              {/* The backend's order: the match weighed against CV quality (PresentedRanking). Sorting
-                  here again by the match alone would undo that and hide why somebody is where they are. */}
+              {/* Every scored row, in the backend's order: the match weighed against CV score
+                  (PresentedRanking). Sorting here again by the match alone would undo that and hide why
+                  somebody is where they are; cutting to the limit hid reviews that were paid for. */}
               {aiMatches
-                .slice(0, limit)
                 .map((s: MatchCandidateDto) => {
                   const rowKey = `ai-${s.userId ?? s.name}`;
                   return (

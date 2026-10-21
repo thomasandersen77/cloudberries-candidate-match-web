@@ -17,11 +17,6 @@ import {
   Snackbar,
   Alert,
   Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Chip,
   Tooltip,
 } from '@mui/material';
@@ -38,7 +33,6 @@ import { sortCvScoreRows } from '../../utils/cvScoreSort';
 /** Below this the table is not worth scrolling, so the page scrolls instead. */
 const MIN_TABLE_HEIGHT = 320;
 import CvScoreBadge from '../../components/CvScoreBadge';
-import HighQualityToggle from '../../components/HighQualityToggle';
 import { reviewRulesLabel } from './cvScoreDetailText';
 import PageIntro from '../../components/PageIntro';
 
@@ -47,9 +41,6 @@ const CvScoreListPage: React.FC = () => {
   const [rows, setRows] = useState<CvScoreListRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
-  // Default off every time; not persisted.
-  const [highQuality, setHighQuality] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [snack, setSnack] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -105,7 +96,7 @@ const CvScoreListPage: React.FC = () => {
       let processed = 0;
       for (const m of missing) {
         try {
-          await runScoreForCandidate(m.id, { useHighestQualityModel: highQuality });
+          await runScoreForCandidate(m.id);
           processed += 1;
         } catch {
           /* continue */
@@ -126,12 +117,9 @@ const CvScoreListPage: React.FC = () => {
     }
   };
 
+  // Every CV is scored on the one fixed model tier, so scores stay comparable; the choice of a
+  // higher tier per click put scores on different scales (75 against 63 for the same CV).
   const handleScoreAllClick = () => {
-    // Cost guard: high-quality scoring of many CVs can be expensive.
-    if (highQuality) {
-      setConfirmOpen(true);
-      return;
-    }
     void runScoreForAllMissing();
   };
 
@@ -167,7 +155,6 @@ const CvScoreListPage: React.FC = () => {
           </Typography>
         </Box>
         <Stack spacing={1} alignItems={{ xs: 'flex-start', sm: 'flex-end' }}>
-          <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={running} />
           <Button
             size="medium"
             variant="contained"
@@ -294,26 +281,6 @@ const CvScoreListPage: React.FC = () => {
           {snack.message}
         </Alert>
       </Snackbar>
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-        <DialogTitle>Bekreft scoring med høyeste kvalitet</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Dette kan bruke betydelig mer AI-kreditt fordi mange CV-er vurderes. Vil du fortsette?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)}>Avbryt</Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              setConfirmOpen(false);
-              void runScoreForAllMissing();
-            }}
-          >
-            Fortsett
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Container>
   );
 };
