@@ -57,7 +57,9 @@ columns; sorting it by quality hid which signal put a row where it was.
 ## Matching pages
 
 `/matches` is an overview: one card per request, which opens `/matches/{id}`, the request's own
-page. The page shows the request and its coverage, «Slik fungerer matchingen» (three steps, open
+page. The page shows the request and its coverage, then «Avropet»: the request's own summary, period
+and every requirement with its details (`RequirementList`, shared with the request page; the
+consultant's before the supplier's here), then «Slik fungerer matchingen» (three steps, open
 and foldable), then `RequestMatchPanel` in `layout="page"`: the AI assessment first, the
 preselection under it with five rows until «Vis alle». The assessment is the answer; the
 preselection only chooses who is assessed, and its order predicts the model's poorly. An AI row

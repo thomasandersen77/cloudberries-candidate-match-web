@@ -1,12 +1,59 @@
 import React, { useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
-import { Alert, Box, Button, CircularProgress, Container, Paper, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Container, Link, Paper, Stack, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBackIosNew';
 import { getMatchRequest } from '../../services/matchesRequestsService';
-import type { MatchesListItemDto } from '../../types/api';
+import { getProjectRequestById } from '../../services/projectRequestsService';
+import type { MatchesListItemDto, ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
 import RequestMatchPanel from '../../components/matches/RequestMatchPanel';
 import HowMatchingWorks from '../../components/matches/HowMatchingWorks';
+import RequirementList from '../../components/matches/RequirementList';
 import { RequestCard } from './MatchesPage';
+
+const formatDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString('no-NO') : null);
+
+/**
+ * What the request asks for, in its own words: the summary, the period, and every requirement
+ * with its priority and elaboration.
+ *
+ * The card above shows the technology requirements as chips with a count, which is coverage,
+ * not the request. The must-haves the model scores against were only on the request's own page,
+ * so judging an assessment meant reading it on another tab; here they sit between the card and
+ * the assessment they explain.
+ */
+const RequestRequirements: React.FC<{ request: ProjectRequestResponseDto }> = ({ request }) => {
+  const period = [formatDate(request.startDate), formatDate(request.endDate)].filter(Boolean);
+  // The consultant's first: they are what the assessment under this is about. The supplier's
+  // (submission format, deadlines) stay, marked, after them.
+  const consultantFirst = (rows: ProjectRequirementDto[] | undefined) =>
+    [...(rows ?? [])].sort((a, b) => Number(a.appliesTo === 'SUPPLIER') - Number(b.appliesTo === 'SUPPLIER'));
+  const musts = consultantFirst(request.mustRequirements);
+  const shoulds = consultantFirst(request.shouldRequirements);
+  return (
+    <Paper sx={{ p: 2 }}>
+      <Stack direction="row" alignItems="baseline" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
+        <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>Avropet</Typography>
+        {request.id != null && (
+          <Link component={RouterLink} to={`/project-requests/${request.id}`} variant="body2" sx={{ fontWeight: 600 }}>
+            Åpne avropet
+          </Link>
+        )}
+      </Stack>
+      {period.length > 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Periode {period.join(' – ')}
+        </Typography>
+      )}
+      {request.summary && (
+        <Typography variant="body2" sx={{ whiteSpace: 'pre-line', mb: 1.5 }}>{request.summary}</Typography>
+      )}
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems="stretch">
+        <RequirementList title="Må-krav" tone="warning" rows={musts} />
+        <RequirementList title="Bør-krav" tone="info" rows={shoulds} />
+      </Stack>
+    </Paper>
+  );
+};
 
 /**
  * One request, on its own page: the request and its coverage, how the matching works, the
@@ -20,14 +67,20 @@ const RequestMatchPage: React.FC = () => {
   const { id } = useParams();
   const requestId = Number(id);
   const [item, setItem] = useState<MatchesListItemDto | null | undefined>(undefined);
+  const [request, setRequest] = useState<ProjectRequestResponseDto | null>(null);
 
   useEffect(() => {
     if (!Number.isFinite(requestId)) return;
     let current = true;
     setItem(undefined);
+    setRequest(null);
     getMatchRequest(requestId)
       .then((found) => { if (current) setItem(found); })
       .catch(() => { if (current) setItem(null); });
+    // The requirements come from the request itself; the list row carries only the coverage.
+    getProjectRequestById(requestId)
+      .then((found) => { if (current) setRequest(found); })
+      .catch(() => { if (current) setRequest(null); });
     return () => { current = false; };
   }, [requestId]);
 
@@ -46,6 +99,7 @@ const RequestMatchPage: React.FC = () => {
 
       <Stack spacing={2}>
         {item && <RequestCard pr={item} fullCoverage />}
+        {request && <RequestRequirements request={request} />}
         <HowMatchingWorks />
         {Number.isFinite(requestId) && (
           <Paper sx={{ p: 2 }}>
