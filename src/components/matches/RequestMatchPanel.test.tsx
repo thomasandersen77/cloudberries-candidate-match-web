@@ -64,7 +64,7 @@ describe('RequestMatchPanel', () => {
   it('loads the free preview by itself, and never runs the AI by itself', async () => {
     const api = await import('../../api/matchingApi');
     renderPanel();
-    await waitFor(() => expect(api.previewProjectMatches).toHaveBeenCalledWith(1, { limit: 10 }));
+    await waitFor(() => expect(api.previewProjectMatches).toHaveBeenCalledWith(1, { limit: 20 }));
     expect(api.getProjectMatchStatus).toHaveBeenCalled();
     expect(api.runProjectMatching).not.toHaveBeenCalled();
   });
@@ -95,7 +95,7 @@ describe('RequestMatchPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Innstillinger' }));
 
     expect(screen.getByRole('checkbox', { name: /Bruk høyeste kvalitet/i })).not.toBeChecked();
-    expect(screen.getByText('Antall kandidater')).toBeInTheDocument();
+    expect(screen.getByText('Hvor mange vurderes')).toBeInTheDocument();
   });
 
   it('sends only the ticked candidates to the AI', async () => {
@@ -231,6 +231,33 @@ describe('RequestMatchPanel', () => {
     expect(screen.getByText(/Ligger under Thomas Andersen Sopra fordi CV-scoren er 66 mot 88/)).toBeInTheDocument();
     const links = screen.getAllByRole('link', { name: 'Se CV-score' });
     expect(links.map((l) => l.getAttribute('href'))).toEqual(['/cv-score/u1', '/cv-score/u2']);
+  });
+
+  /**
+   * The preselection's order predicts the model's poorly (the model's second on 9011 was its
+   * fifteenth), so twenty go to the model by default, all ticked, while the list shows five
+   * until asked.
+   */
+  it('asks for twenty, ticks them all, and shows five until asked', async () => {
+    const api = await import('../../api/matchingApi');
+    const eight = Array.from({ length: 8 }, (_, i) => ({
+      userId: `p${i + 1}`, name: `Person ${i + 1}`, combinedScore: 0.9 - i * 0.05, reason: '', mustCovered: 1, mustTotal: 2, matchedRequirements: ['Kotlin'], missingRequirements: ['Kafka'],
+    }));
+    vi.mocked(api.previewProjectMatches).mockResolvedValueOnce({ projectRequestId: 1, semanticSearchReady: true, candidates: eight } as never);
+    const user = userEvent.setup();
+    renderPanel();
+
+    expect(await screen.findByText(/8 av 8 valgt/)).toBeInTheDocument();
+    expect(vi.mocked(api.previewProjectMatches).mock.calls[0][1]).toMatchObject({ limit: 20 });
+    expect(screen.getByText('Person 5')).toBeInTheDocument();
+    expect(screen.queryByText('Person 6')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Vis alle 8' }));
+    expect(screen.getByText('Person 8')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching \(8\)$/i }));
+    await waitFor(() => expect(api.runProjectMatching).toHaveBeenCalled());
+    expect(vi.mocked(api.runProjectMatching).mock.calls[0][1]).toMatchObject({ consultantUserIds: eight.map((p) => p.userId) });
   });
 
   it('says by name who covers every must', async () => {

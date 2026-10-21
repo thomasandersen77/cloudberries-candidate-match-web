@@ -50,7 +50,12 @@ import {
 import { formatMatchScoreSuffix, formatPercentScore, formatQualityLabel } from '../../utils/matchUtils';
 import { getScoreColor } from '../../utils/scoreUtils';
 
-const LIMIT_OPTIONS = [5, 10, 15] as const;
+// How many the preselection hands to the model. Its order predicts the model's poorly (on 9011
+// the model's second was fifteenth in the preselection), so the cut is wide: 20 by default, at
+// about three cents a candidate. The preview shows the first five and opens on request.
+const LIMIT_OPTIONS = [10, 20, 30] as const;
+const DEFAULT_LIMIT = 20;
+const PREVIEW_ROWS_CLOSED = 5;
 // Decided 2026-10-20: quality tells the best apart, it does not replace the right experience.
 // The backend's PresentedRanking uses the same percentage for the shortlist and the order.
 const CV_WEIGHT_OPTIONS = [0, 10, 20, 30] as const;
@@ -263,7 +268,8 @@ export type RequestMatchPanelProps = {
  */
 const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, coverage }) => {
   const mountedRef = useRef(true);
-  const [limit, setLimit] = useState<number>(10);
+  const [limit, setLimit] = useState<number>(DEFAULT_LIMIT);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [cvWeightPercent, setCvWeightPercent] = useState<number>(DEFAULT_CV_WEIGHT_PERCENT);
   const [highQuality, setHighQuality] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -523,7 +529,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               {state.preview?.semanticSearchUsed === false && ' Semantisk søk ble ikke brukt.'}
             </Typography>
             <Stack spacing={0.75}>
-              {previewCandidates.map((c) => {
+              {(previewOpen ? previewCandidates : previewCandidates.slice(0, PREVIEW_ROWS_CLOSED)).map((c) => {
                 const rowKey = `preview-${c.userId ?? c.name}`;
                 const mustTotal = c.mustTotal ?? 0;
                 const missing = c.missingRequirements ?? [];
@@ -553,6 +559,11 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                 );
               })}
             </Stack>
+            {previewCandidates.length > PREVIEW_ROWS_CLOSED && (
+              <Button size="small" variant="text" onClick={() => setPreviewOpen((o) => !o)} aria-expanded={previewOpen} sx={{ mt: 0.5, textTransform: 'none' }}>
+                {previewOpen ? 'Vis færre' : `Vis alle ${previewCandidates.length}`}
+              </Button>
+            )}
           </Box>
         )}
 
@@ -611,13 +622,13 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
           )}
         </Stack>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-          Ett modellkall per valgt kandidat, og ingenting før du trykker. Uten avkryssing sender backend de 15 best rangerte.
+          Ett modellkall per valgt kandidat, og ingenting før du trykker. Uten avkryssing sender backend de 20 best rangerte.
         </Typography>
 
         <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
           <Stack id={`match-settings-${requestId}`} direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
             <Stack spacing={0.25}>
-              <Typography variant="caption" color="text.secondary">Antall kandidater</Typography>
+              <Typography variant="caption" color="text.secondary">Hvor mange vurderes</Typography>
               <ToggleButtonGroup size="small" exclusive value={limit} onChange={(_e, v) => { if (v != null) setLimit(v); }}>
                 {LIMIT_OPTIONS.map((n) => (
                   <ToggleButton key={n} value={n} disabled={loadingRun || loadingPreview}>{n}</ToggleButton>
