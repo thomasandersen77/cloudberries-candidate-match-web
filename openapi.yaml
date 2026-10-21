@@ -2815,6 +2815,13 @@ components:
         technologyRequirements: { type: integer, description: Consultant requirements that named a technology. }
         covered: { type: integer, description: "Of those, how many at least one active consultant holds." }
         fullMatchCount: { type: integer, description: Active consultants holding a skill for every requirement in the basis. }
+        nearMissCount:
+          type: integer
+          default: 0
+          description: >-
+            Active consultants holding a skill for every requirement in the basis but one. Zero when
+            the basis has fewer than two requirements. Counted in the status: one full match with
+            three or more of these is green, three or more alone is yellow.
         fullMatchNames:
           type: array
           items: { type: string }

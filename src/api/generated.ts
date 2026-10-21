@@ -3790,6 +3790,11 @@ export interface components {
             covered: number;
             /** @description Active consultants holding a skill for every requirement in the basis. */
             fullMatchCount: number;
+            /**
+             * @description Active consultants holding a skill for every requirement in the basis but one. Zero when the basis has fewer than two requirements. Counted in the status: one full match with three or more of these is green, three or more alone is yellow.
+             * @default 0
+             */
+            nearMissCount: number;
             /** @description The names behind fullMatchCount, alphabetical, so the list can say who covers every requirement in the basis without the card being opened.
              *      */
             fullMatchNames?: string[];
