@@ -37,7 +37,7 @@ describe('MatchesPage', () => {
       </MemoryRouter>
     );
     expect(await screen.findByText(/Matcher/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sortering: nyeste først/i)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /Sortering/ })).toHaveTextContent('Nyeste først');
     expect(screen.getByRole('button', { name: '10' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '20' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '50' })).toBeInTheDocument();

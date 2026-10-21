@@ -622,7 +622,16 @@ export interface paths {
                 query?: {
                     page?: number;
                     size?: number;
+                    /** @description `field,dir`. Database fields: `date`, `deadline`, `customer`, `id`. Computed:
+                     *     `ai` (when the model last assessed the request; desc puts the assessed first, newest
+                     *     assessment on top) and `coverage` (the traffic light, then how many cover every must;
+                     *     desc puts high coverage first).
+                     *      */
                     sort?: string;
+                    /** @description Only requests the model has (true) or has not (false) assessed. */
+                    assessed?: boolean;
+                    /** @description Only requests with one of these coverage statuses. */
+                    coverage?: components["schemas"]["CoverageStatus"][];
                 };
                 header?: never;
                 path?: never;
@@ -2739,7 +2748,7 @@ export interface paths {
         };
         /**
          * Anthropic token counts and an estimated cost since the process started
-         * @description Read from the process's own meters, so it resets on restart. The cost is an estimate at a fixed price per million tokens, not an invoice.
+         * @description Read from the process's own meters, so it resets on restart. The cost is an estimate at Sonnet 5 list price per million tokens (2.00 in, 10.00 out, cache write 2.50, cache read 0.20), not an invoice; batches are billed at half and are not in the meters.
          *
          */
         get: {

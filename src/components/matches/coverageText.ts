@@ -51,10 +51,10 @@ export function describeRequirement(item: RequirementCoverageItem): string {
   return `${kind}: ${item.name}. ${item.consultants} aktive konsulenter har ${skills} på CV-en${projectPart}.`;
 }
 
-/** "3 AI-vurdert 10.9.2026", or that nobody has been. */
+/** "3 AI-vurdert – 10.9.2026", or that nobody has been. */
 export function describeAiStatus(count: number | null | undefined, at: string | null | undefined): string {
   if (!count) return 'Ikke AI-vurdert';
-  const when = at ? ` ${new Date(at).toLocaleDateString('no-NO')}` : '';
+  const when = at ? ` – ${new Date(at).toLocaleDateString('no-NO')}` : '';
   return `${count} AI-vurdert${when}`;
 }
 

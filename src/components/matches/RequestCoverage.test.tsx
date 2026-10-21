@@ -43,7 +43,7 @@ describe('describeRequirement', () => {
 
 describe('describeAiStatus', () => {
   it('is one word with a date, or that nobody has been assessed', () => {
-    expect(describeAiStatus(3, '2026-09-10T21:42:22+02:00')).toMatch(/^3 AI-vurdert \d{1,2}\.\d{1,2}\.2026$/);
+    expect(describeAiStatus(3, '2026-09-10T21:42:22+02:00')).toMatch(/^3 AI-vurdert – \d{1,2}\.\d{1,2}\.2026$/);
     expect(describeAiStatus(null, null)).toBe('Ikke AI-vurdert');
     expect(describeAiStatus(0, null)).toBe('Ikke AI-vurdert');
   });

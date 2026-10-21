@@ -64,6 +64,15 @@ preselection only chooses who is assessed, and its order predicts the model's po
 opens on the score per requirement, must-haves first. The old `?requestId=` link redirects to the
 page.
 
+A list card carries two framed statuses of one size at its right: the coverage in the status
+colour the server chose, and the AI status, green with count and date when the model has been
+run, orange «Ikke AI-vurdert» when not. Every other card is tinted.
+
+The list is ordered and filtered by the server: a select for the order (`date`, `ai`, `coverage`,
+each both ways) and chips for the filters (`assessed`, one of two or none; `coverage`, the lights
+added up). Any change starts again from the first page; the count under the select says how many
+are left.
+
 ## Verifying
 
 Run `npx tsc -b`, `npm test` and `npm run test:e2e` after a change to a page, and say which ran.

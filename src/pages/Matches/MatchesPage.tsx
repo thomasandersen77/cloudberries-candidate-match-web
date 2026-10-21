@@ -5,12 +5,20 @@ import {
   Chip,
   CircularProgress,
   Container,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Typography,
+  alpha,
 } from '@mui/material';
+import type { SvgIconComponent } from '@mui/icons-material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
+import HourglassEmptyOutlinedIcon from '@mui/icons-material/HourglassEmptyOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
@@ -32,12 +40,54 @@ import { describeAiStatus, describeCoverage, describeFullMatch } from '../../com
  *
  * Colour is a thin left edge and a chip, not a wash over the whole card.
  */
-const COVERAGE_STYLE: Record<CoverageStatus, { edge: string; chip: 'success' | 'warning' | 'error' | 'default'; Icon: typeof CheckCircleOutlineIcon }> = {
-  GREEN: { edge: 'success.main', chip: 'success', Icon: CheckCircleOutlineIcon },
-  YELLOW: { edge: 'warning.main', chip: 'warning', Icon: ReportProblemOutlinedIcon },
-  RED: { edge: 'error.main', chip: 'error', Icon: ErrorOutlineIcon },
-  NEUTRAL: { edge: 'divider', chip: 'default', Icon: HelpOutlineIcon },
+const COVERAGE_STYLE: Record<CoverageStatus, { edge: string; tone: StatusTone; Icon: SvgIconComponent }> = {
+  GREEN: { edge: 'success.main', tone: 'success', Icon: CheckCircleOutlineIcon },
+  YELLOW: { edge: 'warning.main', tone: 'warning', Icon: ReportProblemOutlinedIcon },
+  RED: { edge: 'error.main', tone: 'error', Icon: ErrorOutlineIcon },
+  NEUTRAL: { edge: 'divider', tone: 'neutral', Icon: HelpOutlineIcon },
 };
+
+type StatusTone = 'success' | 'warning' | 'error' | 'neutral';
+
+type StatusBoxProps = {
+  tone: StatusTone;
+  Icon: SvgIconComponent;
+  label: string;
+};
+
+/**
+ * One status in a frame: a thin border and a tint in its colour, the words in the same colour.
+ *
+ * The coverage and the AI status are drawn with this alike, the same size and face, so the eye
+ * reads them as two answers to two questions and compares them. The AI status used to be a grey
+ * caption under a coverage chip, and whether the model had been run was the one thing the list
+ * did not show at a glance.
+ */
+const StatusBox: React.FC<StatusBoxProps> = ({ tone, Icon, label }) => (
+  <Box
+    sx={(theme) => {
+      const main = tone === 'neutral' ? theme.palette.text.secondary : theme.palette[tone].main;
+      return {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.75,
+        px: 1.25,
+        py: 0.625,
+        borderRadius: 2,
+        border: `1.5px solid ${alpha(main, tone === 'neutral' ? 0.5 : 0.7)}`,
+        backgroundColor: alpha(main, theme.palette.mode === 'dark' ? 0.12 : 0.06),
+        color: main,
+        fontWeight: 700,
+        fontSize: '0.875rem',
+        lineHeight: 1.3,
+        whiteSpace: 'nowrap',
+      };
+    }}
+  >
+    <Icon sx={{ fontSize: 17, flexShrink: 0 }} />
+    <span>{label}</span>
+  </Box>
+);
 
 type RequestCardProps = {
   pr: MatchesListItemDto;
@@ -45,6 +95,8 @@ type RequestCardProps = {
   onOpen?: () => void;
   /** Every requirement with its count, not only the musts the list card shows. */
   fullCoverage?: boolean;
+  /** Every other card on the list is tinted, so a long list reads as rows rather than one wall. */
+  muted?: boolean;
 };
 
 /**
@@ -55,7 +107,7 @@ type RequestCardProps = {
  * nearly the same thing on another page, and a "N søketreff" count that read like N suitable
  * candidates.
  */
-export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCoverage = false }) => {
+export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCoverage = false, muted = false }) => {
   const id = pr.id;
   const style = COVERAGE_STYLE[pr.coverageStatus] ?? COVERAGE_STYLE.NEUTRAL;
   const documentTitle = pr.title || `Forespørsel #${id}`;
@@ -66,13 +118,21 @@ export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCovera
 
   return (
     <Paper
-      sx={{
+      sx={(theme) => ({
         p: { xs: 1.5, sm: 2 },
         borderLeft: 3,
         borderLeftColor: style.edge,
         borderTopLeftRadius: 0,
         borderBottomLeftRadius: 0,
-      }}
+        backgroundColor: muted
+          ? (theme.palette.mode === 'dark' ? alpha('#fff', 0.035) : alpha(theme.palette.text.primary, 0.03))
+          : undefined,
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+        ...(onOpen && {
+          '&:hover': { transform: 'translateY(-1px)' },
+          '&:hover .open-arrow': { color: 'primary.main' },
+        }),
+      })}
     >
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
@@ -126,29 +186,29 @@ export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCovera
           )}
         </Box>
 
-        <Stack spacing={0.75} alignItems={{ xs: 'flex-start', sm: 'flex-end' }} sx={{ flexShrink: 0 }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Chip
-              size="small"
-              variant="outlined"
-              color={style.chip}
-              icon={<style.Icon sx={{ fontSize: 16 }} />}
-              label={pr.coverageLabel}
+        {/*
+          Two answers in two frames of one size: does the corpus cover it, and has the model been
+          run. Green and orange for the AI because the reader asked for a verdict, not a count.
+        */}
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
+          <Stack spacing={0.75} sx={{ minWidth: { sm: 236 } }}>
+            <StatusBox tone={style.tone} Icon={style.Icon} label={pr.coverageLabel} />
+            <StatusBox
+              tone={pr.aiMatchCount ? 'success' : 'warning'}
+              Icon={pr.aiMatchCount ? AutoAwesomeOutlinedIcon : HourglassEmptyOutlinedIcon}
+              label={describeAiStatus(pr.aiMatchCount, pr.aiLastUpdated)}
             />
-            {onOpen && (
-              <IconButton
-                size="small"
-                aria-label="Åpne"
-                onClick={(e) => { e.stopPropagation(); onOpen(); }}
-              >
-                <ChevronRightIcon />
-              </IconButton>
-            )}
           </Stack>
-          {/* One word on the AI, with its date: the only number here that means somebody was assessed. */}
-          <Typography variant="caption" color={pr.aiMatchCount ? 'text.primary' : 'text.secondary'}>
-            {describeAiStatus(pr.aiMatchCount, pr.aiLastUpdated)}
-          </Typography>
+          {onOpen && (
+            <IconButton
+              size="small"
+              aria-label="Åpne"
+              className="open-arrow"
+              onClick={(e) => { e.stopPropagation(); onOpen(); }}
+            >
+              <ChevronRightIcon />
+            </IconButton>
+          )}
         </Stack>
       </Stack>
 
@@ -172,6 +232,40 @@ export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCovera
   );
 };
 
+/** The orders the list offers: the words a reader picks, and the `sort` the server takes. */
+const SORT_OPTIONS = [
+  { value: 'date,desc', label: 'Nyeste først' },
+  { value: 'date,asc', label: 'Eldste først' },
+  { value: 'ai,desc', label: 'AI-vurdert først' },
+  { value: 'ai,asc', label: 'Ikke AI-vurdert først' },
+  { value: 'coverage,desc', label: 'Høy dekning først' },
+  { value: 'coverage,asc', label: 'Lav dekning først' },
+] as const;
+
+type SortValue = (typeof SORT_OPTIONS)[number]['value'];
+
+/** The coverage lights a reader can keep, in the words of the sort above. Grey has no chip; it shows when nothing is kept out. */
+const COVERAGE_FILTERS: { status: CoverageStatus; label: string }[] = [
+  { status: 'GREEN', label: 'Høy dekning' },
+  { status: 'YELLOW', label: 'Middels dekning' },
+  { status: 'RED', label: 'Lav dekning' },
+];
+
+type FilterChipProps = { label: string; active: boolean; onClick: () => void };
+
+/** A filter that is on or off, drawn filled when on. */
+const FilterChip: React.FC<FilterChipProps> = ({ label, active, onClick }) => (
+  <Chip
+    label={label}
+    clickable
+    onClick={onClick}
+    variant={active ? 'filled' : 'outlined'}
+    color={active ? 'primary' : 'default'}
+    aria-pressed={active}
+    sx={{ fontWeight: active ? 600 : 500 }}
+  />
+);
+
 const MatchesPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -182,22 +276,30 @@ const MatchesPage: React.FC = () => {
   const [page, setPage] = useState<PagedMatchesListDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [pageSize, setPageSize] = useState<number>(20);
+  const [sort, setSort] = useState<SortValue>('date,desc');
+  const [assessed, setAssessed] = useState<boolean | null>(null);
+  const [coverage, setCoverage] = useState<CoverageStatus[]>([]);
+  const filtering = assessed !== null || coverage.length > 0;
 
   const loadPage = async (pageIndex: number) => {
     setLoading(true);
     try {
-      const p = await listMatchRequests({ page: pageIndex, size: pageSize, sort: 'date,desc' });
+      const p = await listMatchRequests({ page: pageIndex, size: pageSize, sort, assessed, coverage });
       setPage(p);
     } finally {
       setLoading(false);
     }
   };
 
+  // Any change to the order or the filters starts over from the first page.
   useEffect(() => {
     if (requestId) return;
     loadPage(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageSize, requestId]);
+  }, [pageSize, requestId, sort, assessed, coverage]);
+
+  const toggleCoverage = (status: CoverageStatus) =>
+    setCoverage((current) => (current.includes(status) ? current.filter((s) => s !== status) : [...current, status]));
 
   const rows = useMemo(() => page?.content ?? [], [page]);
 
@@ -222,14 +324,50 @@ const MatchesPage: React.FC = () => {
         </Typography>
       )}
 
+      {/*
+        Filters as chips, the order as a select. A filter on the AI is one of two states or none,
+        so its two chips exclude each other; the coverage lights add up.
+      */}
       {!requestId && (
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between" sx={{ mb: 1 }}>
-          <Typography variant="caption">Sortering: nyeste først</Typography>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="caption">Størrelse</Typography>
-            <Button size="small" variant={pageSize === 10 ? 'contained' : 'outlined'} onClick={() => setPageSize(10)}>10</Button>
-            <Button size="small" variant={pageSize === 20 ? 'contained' : 'outlined'} onClick={() => setPageSize(20)}>20</Button>
-            <Button size="small" variant={pageSize === 50 ? 'contained' : 'outlined'} onClick={() => setPageSize(50)}>50</Button>
+        <Stack spacing={1.25} sx={{ mb: 1.5 }}>
+          <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" alignItems="center">
+            <FilterChip label="AI-vurdert" active={assessed === true} onClick={() => setAssessed(assessed === true ? null : true)} />
+            <FilterChip label="Ikke AI-vurdert" active={assessed === false} onClick={() => setAssessed(assessed === false ? null : false)} />
+            <Box sx={{ width: 1, borderLeft: 1, borderColor: 'divider', alignSelf: 'stretch', mx: 0.5 }} />
+            {COVERAGE_FILTERS.map((f) => (
+              <FilterChip key={f.status} label={f.label} active={coverage.includes(f.status)} onClick={() => toggleCoverage(f.status)} />
+            ))}
+            {filtering && (
+              <Button size="small" onClick={() => { setAssessed(null); setCoverage([]); }} sx={{ textTransform: 'none' }}>
+                Nullstill
+              </Button>
+            )}
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} justifyContent="space-between">
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <FormControl size="small" sx={{ minWidth: 210 }}>
+                <InputLabel id="matches-sort-label">Sortering</InputLabel>
+                <Select
+                  labelId="matches-sort-label"
+                  label="Sortering"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as SortValue)}
+                >
+                  {SORT_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                </Select>
+              </FormControl>
+              {page && !loading && (
+                <Typography variant="caption" color="text.secondary">
+                  {page.totalElements} {page.totalElements === 1 ? 'avrop' : 'avrop'}{filtering ? ' med disse filtrene' : ''}
+                </Typography>
+              )}
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="caption">Størrelse</Typography>
+              <Button size="small" variant={pageSize === 10 ? 'contained' : 'outlined'} onClick={() => setPageSize(10)}>10</Button>
+              <Button size="small" variant={pageSize === 20 ? 'contained' : 'outlined'} onClick={() => setPageSize(20)}>20</Button>
+              <Button size="small" variant={pageSize === 50 ? 'contained' : 'outlined'} onClick={() => setPageSize(50)}>50</Button>
+            </Stack>
           </Stack>
         </Stack>
       )}
@@ -243,16 +381,17 @@ const MatchesPage: React.FC = () => {
 
       {!requestId && !loading && rows.length === 0 && (
         <Paper sx={{ p: 2 }}>
-          <Typography variant="body1">Ingen prosjektforespørsler funnet.</Typography>
+          <Typography variant="body1">{filtering ? 'Ingen avrop passer filtrene.' : 'Ingen prosjektforespørsler funnet.'}</Typography>
         </Paper>
       )}
 
       {!requestId && (
         <Stack spacing={1}>
-          {rows.map((pr) => (
+          {rows.map((pr, i) => (
             <RequestCard
               key={pr.id}
               pr={pr}
+              muted={i % 2 === 1}
               onOpen={() => navigate(`/matches/${pr.id}`)}
             />
           ))}

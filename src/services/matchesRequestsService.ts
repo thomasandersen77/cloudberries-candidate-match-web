@@ -1,6 +1,7 @@
 import apiClient, { aiScoringClient } from './apiClient';
 import { isAxiosError } from 'axios';
 import type {
+  CoverageStatus,
   MatchesListItemDto,
   PagedMatchesListDto,
   MatchCandidateDto,
@@ -25,10 +26,28 @@ export async function getMatchRequest(id: number): Promise<MatchesListItemDto | 
   }
 }
 
-export async function listMatchRequests(params: { page?: number; size?: number; sort?: string } = {}): Promise<PagedMatchesListDto> {
-  const { page = 0, size = 20, sort = 'uploadedAt,desc' } = params;
+export type MatchesListQuery = {
+  page?: number;
+  size?: number;
+  /** `field,dir`: date, deadline, customer, id, or the computed ai and coverage. */
+  sort?: string;
+  /** Only assessed (true) or unassessed (false) requests; null or undefined for both. */
+  assessed?: boolean | null;
+  /** Only these coverage statuses; empty for all. */
+  coverage?: CoverageStatus[];
+};
+
+export async function listMatchRequests(params: MatchesListQuery = {}): Promise<PagedMatchesListDto> {
+  const { page = 0, size = 20, sort = 'uploadedAt,desc', assessed, coverage } = params;
   const { data } = await apiClient.get<PagedMatchesListDto>('matches/requests-paged', {
-    params: { page, size, sort },
+    params: {
+      page,
+      size,
+      sort,
+      ...(assessed != null && { assessed }),
+      // One comma-separated value: Spring binds it to a set, where axios's `coverage[]=` would not.
+      ...(coverage && coverage.length > 0 && { coverage: coverage.join(',') }),
+    },
   });
   return data;
 }

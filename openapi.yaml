@@ -461,7 +461,24 @@ paths:
           schema: { type: integer, default: 20 }
         - in: query
           name: sort
+          description: |
+            `field,dir`. Database fields: `date`, `deadline`, `customer`, `id`. Computed:
+            `ai` (when the model last assessed the request; desc puts the assessed first, newest
+            assessment on top) and `coverage` (the traffic light, then how many cover every must;
+            desc puts high coverage first).
           schema: { type: string, default: "uploadedAt,desc" }
+        - in: query
+          name: assessed
+          description: Only requests the model has (true) or has not (false) assessed.
+          schema: { type: boolean }
+        - in: query
+          name: coverage
+          description: Only requests with one of these coverage statuses.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: '#/components/schemas/CoverageStatus' }
       responses:
         '200':
           description: Paged project requests with coverage
