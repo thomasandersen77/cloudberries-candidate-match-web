@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import MatchesPage from '../MatchesPage';
 import { listMatchRequests } from '../../../services/matchesRequestsService';
 
@@ -61,7 +61,14 @@ const renderWith = (over: Record<string, unknown>) => {
     hasNext: false,
     hasPrevious: false,
   } as never);
-  return render(<MemoryRouter><MatchesPage /></MemoryRouter>);
+  return render(
+    <MemoryRouter initialEntries={['/matches']}>
+      <Routes>
+        <Route path="/matches" element={<MatchesPage />} />
+        <Route path="/matches/:id" element={<div data-testid="request-page" />} />
+      </Routes>
+    </MemoryRouter>
+  );
 };
 
 describe('dekning på et forespørselskort', () => {
@@ -113,16 +120,15 @@ describe('dekning på et forespørselskort', () => {
     expect(await screen.findByText(/^3 AI-vurdert /)).toBeInTheDocument();
   });
 
-  it('har én handling: utvid, som viser panelet og tar chipsene med seg dit', async () => {
+  it('har én handling: åpne, som går til avropets egen side', async () => {
     renderWith({});
     await screen.findByText('Kotlin 16');
     expect(screen.queryByText('Åpne forespørselen')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Utvid' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Utvid' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Åpne' }));
 
-    expect(await screen.findByTestId('panel')).toBeInTheDocument();
-    expect(screen.queryByText('Kotlin 16')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Lukk' })).toHaveAttribute('aria-expanded', 'true');
+    expect(await screen.findByTestId('request-page')).toBeInTheDocument();
   });
 
   /** Customer first, role next, document heading after: what you scan a list for. */

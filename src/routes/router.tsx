@@ -10,6 +10,7 @@ import CvScoreListPage from '../pages/CvScore/CvScoreListPage';
 import CvScoreDetailPage from '../pages/CvScore/CvScoreDetailPage';
 import CvScoreBasisPage from '../pages/CvScoreBasis/CvScoreBasisPage';
 import MatchesPage from '../pages/Matches/MatchesPage';
+import RequestMatchPage from '../pages/Matches/RequestMatchPage';
 import SkillsOverviewPage from '../pages/Skills/SkillsOverviewPage2';
 import EmbeddingsPage from '../pages/Embeddings/EmbeddingsPage';
 import ChatPage from '../pages/Chat/ChatPage';
@@ -35,6 +36,7 @@ const routes: RouteObject[] = [
       { path: '/cv-score/:candidateId', element: <CvScoreDetailPage /> },
       { path: '/cv-score-grunnlag', element: <CvScoreBasisPage /> },
       { path: '/matches', element: <MatchesPage /> },
+      { path: '/matches/:id', element: <RequestMatchPage /> },
       { path: '/embeddings', element: <EmbeddingsPage /> },
       { path: '/skills', element: <SkillsOverviewPage /> },
       { path: '/chat', element: <ChatPage /> },

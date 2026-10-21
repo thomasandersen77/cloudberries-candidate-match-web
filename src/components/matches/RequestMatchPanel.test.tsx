@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import RequestMatchPanel from './RequestMatchPanel';
@@ -258,6 +258,40 @@ describe('RequestMatchPanel', () => {
     await user.click(screen.getByRole('button', { name: /^Kjør AI-matching \(8\)$/i }));
     await waitFor(() => expect(api.runProjectMatching).toHaveBeenCalled());
     expect(vi.mocked(api.runProjectMatching).mock.calls[0][1]).toMatchObject({ consultantUserIds: eight.map((p) => p.userId) });
+  });
+
+  /** On its own page the assessment is the answer: it comes first, and the requirements are in the header. */
+  it('in page layout puts the AI assessment before the candidates and leaves the requirements out', async () => {
+    renderPanel({ layout: 'page' });
+    await screen.findByText(/3 av 3 valgt/);
+
+    expect(screen.queryByRole('link', { name: 'Se hele avropet' })).not.toBeInTheDocument();
+    const ai = screen.getByRole('heading', { name: 'AI-vurdering' });
+    const candidates = screen.getByRole('heading', { name: 'Kandidater' });
+    expect(ai.compareDocumentPosition(candidates) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  /** The total alone says nothing about which requirement is weak; the row opens on the scores behind it. */
+  it('shows the score per requirement when an AI row is opened, must-haves first', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.runProjectMatching).mockResolvedValueOnce({
+      projectRequestId: 1,
+      matches: [{
+        userId: 'u1', name: 'Thomas Andersen Sopra', cvId: 'c1', score: 7.4, scorePercent: 74, justification: 'Solid.',
+        requirements: [{ name: 'ID-porten', isMustHave: false, score: 2.0 }, { name: 'Kafka', isMustHave: true, score: 1.0 }, { name: 'Kotlin', isMustHave: true, score: 9.0 }],
+      }],
+      lastUpdated: '2026-10-21T12:00:00Z',
+    } as never);
+    const user = userEvent.setup();
+    renderPanel();
+    await screen.findByText(/3 av 3 valgt/);
+    await user.click(screen.getByRole('button', { name: /^Kjør AI-matching \(3\)$/i }));
+    await screen.findByText('1 AI-vurdert');
+
+    await user.click(screen.getByRole('button', { name: 'Vis detaljer for Thomas Andersen Sopra' }));
+
+    const chips = within(screen.getByLabelText('Skår per krav')).getAllByText(/\d\.\d$/).map((el) => el.textContent);
+    expect(chips).toEqual(['Kafka 1.0', 'Kotlin 9.0', 'ID-porten 2.0']);
   });
 
   it('says by name who covers every must', async () => {

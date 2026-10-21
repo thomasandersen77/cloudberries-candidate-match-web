@@ -54,6 +54,16 @@ looking the id up in a list said «Konsulent ikke funnet» for a CV the backend 
 search table keeps the backend's order (by similarity) and shows similarity and CV quality as two
 columns; sorting it by quality hid which signal put a row where it was.
 
+## Matching pages
+
+`/matches` is an overview: one card per request, which opens `/matches/{id}`, the request's own
+page. The page shows the request and its coverage, «Slik fungerer matchingen» (three steps, open
+and foldable), then `RequestMatchPanel` in `layout="page"`: the AI assessment first, the
+preselection under it with five rows until «Vis alle». The assessment is the answer; the
+preselection only chooses who is assessed, and its order predicts the model's poorly. An AI row
+opens on the score per requirement, must-haves first. The old `?requestId=` link redirects to the
+page.
+
 ## Verifying
 
 Run `npx tsc -b`, `npm test` and `npm run test:e2e` after a change to a page, and say which ran.

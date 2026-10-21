@@ -73,8 +73,8 @@ export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
       'vurdere, og sammenlign resultatene fra AI-matching.',
     steps: [
       'Hvert kort viser kravene med hvor mange konsulenter som har hver ferdighet, og hvor mange som dekker alle må-kravene. Rødt krav er flaskehalsen.',
-      'Åpne et kort: kandidatene kommer opp av seg selv, med hvilke må-krav hver av dem dekker og mangler. Kryss av dem du vil ha vurdert.',
-      'AI-vurderingen nederst starter først når du trykker, koster ett modellkall per valgt kandidat, og gir en begrunnelse per person.',
+      'Åpne et kort for avropets egen side. Der står AI-vurderingen øverst med skår per krav og begrunnelse, og forutvalget under, som bare velger hvem som vurderes.',
+      'AI-vurderingen starter først når du trykker, tjue kandidater som standard, omtrent tre øre per person.',
     ],
   },
 

@@ -10,16 +10,14 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { getMatchRequest, listMatchRequests } from '../../services/matchesRequestsService';
+import { listMatchRequests } from '../../services/matchesRequestsService';
 import type { CoverageStatus, MatchesListItemDto, PagedMatchesListDto } from '../../types/api';
-import { useLocation } from 'react-router-dom';
-import RequestMatchPanel from '../../components/matches/RequestMatchPanel';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import PageIntro from '../../components/PageIntro';
 import { CoverageChips } from '../../components/matches/RequestCoverage';
 import { describeAiStatus, describeCoverage, describeFullMatch } from '../../components/matches/coverageText';
@@ -43,9 +41,10 @@ const COVERAGE_STYLE: Record<CoverageStatus, { edge: string; chip: 'success' | '
 
 type RequestCardProps = {
   pr: MatchesListItemDto;
-  isOpen: boolean;
-  /** Absent when the card stands alone on its own page and cannot be closed. */
-  onToggle?: () => void;
+  /** Opens the request page. Absent on that page itself, where the card is the header. */
+  onOpen?: () => void;
+  /** Every requirement with its count, not only the musts the list card shows. */
+  fullCoverage?: boolean;
 };
 
 /**
@@ -56,7 +55,7 @@ type RequestCardProps = {
  * nearly the same thing on another page, and a "N søketreff" count that read like N suitable
  * candidates.
  */
-const RequestCard: React.FC<RequestCardProps> = ({ pr, isOpen, onToggle }) => {
+export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCoverage = false }) => {
   const id = pr.id;
   const style = COVERAGE_STYLE[pr.coverageStatus] ?? COVERAGE_STYLE.NEUTRAL;
   const documentTitle = pr.title || `Forespørsel #${id}`;
@@ -80,8 +79,8 @@ const RequestCard: React.FC<RequestCardProps> = ({ pr, isOpen, onToggle }) => {
         spacing={1.5}
         alignItems={{ sm: 'flex-start' }}
         justifyContent="space-between"
-        onClick={onToggle}
-        sx={{ cursor: onToggle ? 'pointer' : 'default' }}
+        onClick={onOpen}
+        sx={{ cursor: onOpen ? 'pointer' : 'default' }}
       >
         <Box sx={{ flex: 1, minWidth: 0 }}>
           {/*
@@ -98,7 +97,7 @@ const RequestCard: React.FC<RequestCardProps> = ({ pr, isOpen, onToggle }) => {
             </Typography>
           )}
           {/*
-            Two lines and no more, with the whole thing on hover and in the open card.
+            Two lines and no more, with the whole thing on hover and on the request page.
             "Konsulentoppdrag: modernisering av fagsystem for kjøretøydata" is a heading worth
             showing; four lines of it pushes the rest off the screen.
           */}
@@ -107,7 +106,7 @@ const RequestCard: React.FC<RequestCardProps> = ({ pr, isOpen, onToggle }) => {
             color="text.secondary"
             title={documentTitle}
             sx={
-              isOpen
+              fullCoverage
                 ? { mt: 0.25 }
                 : {
                     mt: 0.25,
@@ -136,14 +135,13 @@ const RequestCard: React.FC<RequestCardProps> = ({ pr, isOpen, onToggle }) => {
               icon={<style.Icon sx={{ fontSize: 16 }} />}
               label={pr.coverageLabel}
             />
-            {onToggle && (
+            {onOpen && (
               <IconButton
                 size="small"
-                aria-label={isOpen ? 'Lukk' : 'Utvid'}
-                aria-expanded={isOpen}
-                onClick={(e) => { e.stopPropagation(); onToggle(); }}
+                aria-label="Åpne"
+                onClick={(e) => { e.stopPropagation(); onOpen(); }}
               >
-                {isOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                <ChevronRightIcon />
               </IconButton>
             )}
           </Stack>
@@ -159,7 +157,7 @@ const RequestCard: React.FC<RequestCardProps> = ({ pr, isOpen, onToggle }) => {
         The red chip is the bottleneck; that is what a reader scanning the list is looking for, and
         the old card hid it behind a green "God søkedekning".
       */}
-      {pr.coverage && !isOpen && (
+      {pr.coverage && (
         <Box sx={{ mt: 1.25 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
             {describeCoverage(pr.coverage)}
@@ -167,13 +165,7 @@ const RequestCard: React.FC<RequestCardProps> = ({ pr, isOpen, onToggle }) => {
           {describeFullMatch(pr.coverage) && (
             <Typography variant="body2" sx={{ mb: 0.75 }}>{describeFullMatch(pr.coverage)}</Typography>
           )}
-          <CoverageChips coverage={pr.coverage} mustOnly />
-        </Box>
-      )}
-
-      {isOpen && (
-        <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-          <RequestMatchPanel requestId={id} coverage={pr.coverage} />
+          <CoverageChips coverage={pr.coverage} mustOnly={!fullCoverage} />
         </Box>
       )}
     </Paper>
@@ -182,14 +174,13 @@ const RequestCard: React.FC<RequestCardProps> = ({ pr, isOpen, onToggle }) => {
 
 const MatchesPage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const requestIdParam = params.get('requestId');
   const requestId = requestIdParam ? Number(requestIdParam) : null;
 
   const [page, setPage] = useState<PagedMatchesListDto | null>(null);
-  const [single, setSingle] = useState<MatchesListItemDto | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [pageSize, setPageSize] = useState<number>(20);
 
   const loadPage = async (pageIndex: number) => {
@@ -208,45 +199,15 @@ const MatchesPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageSize, requestId]);
 
-  // The single-request page shows the same card as the list, open, so the requirements and their
-  // counts are there too; it used to show the panel under a bare "Kundeforespørsel #12".
-  useEffect(() => {
-    if (!requestId) return;
-    let cancelled = false;
-    setSingle(undefined);
-    getMatchRequest(requestId)
-      .then((item) => { if (!cancelled) setSingle(item); })
-      .catch(() => { if (!cancelled) setSingle(null); });
-    return () => { cancelled = true; };
-  }, [requestId]);
-
-  useEffect(() => {
-    setExpanded({});
-  }, [page?.currentPage]);
-
   const rows = useMemo(() => page?.content ?? [], [page]);
-
-  const toggleExpand = (id: number) => {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
 
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Matcher</Typography>
       <PageIntro page="matches" />
 
-      {requestId && single === undefined && (
-        <Box sx={{ p: 4, textAlign: 'center' }}>
-          <CircularProgress />
-        </Box>
-      )}
-      {requestId && single && <RequestCard pr={single} isOpen />}
-      {requestId && single === null && (
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1.5 }}>Kundeforespørsel #{requestId}</Typography>
-          <RequestMatchPanel requestId={requestId} />
-        </Paper>
-      )}
+      {/* The old deep link; the request has its own page now. */}
+      {requestId && <Navigate to={`/matches/${requestId}`} replace />}
 
       {/*
         Stands outside the page help, because it qualifies the numbers the cards show. The help can
@@ -257,7 +218,7 @@ const MatchesPage: React.FC = () => {
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5, maxWidth: 760 }}>
           Tallet på hvert krav er hvor mange aktive konsulenter som har den ferdigheten på CV-en, og
           merket er hvor mange som har noe for hvert må-krav. Det sier hvem som finnes, ikke hvem
-          som passer. Vurderingen gjør du i kortet.
+          som passer. Vurderingen gjør du på avropets side; åpne kortet.
         </Typography>
       )}
 
@@ -292,8 +253,7 @@ const MatchesPage: React.FC = () => {
             <RequestCard
               key={pr.id}
               pr={pr}
-              isOpen={Boolean(expanded[pr.id])}
-              onToggle={() => toggleExpand(pr.id)}
+              onOpen={() => navigate(`/matches/${pr.id}`)}
             />
           ))}
         </Stack>

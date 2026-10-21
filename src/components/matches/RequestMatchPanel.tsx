@@ -39,6 +39,7 @@ import type {
   ProjectMatchPreviewResponse,
   ProjectMatchResults,
   ProjectMatchStatusResponse,
+  RequirementScoreDto,
 } from '../../types/api';
 import { getEmbeddingInfo } from '../../services/consultantsService';
 import {
@@ -88,6 +89,8 @@ type ExpandableConsultantRowProps = {
   qualityNote?: string | null;
   /** Somebody with a lower match is placed above on CV quality: a CV for a leader or seller to work on. */
   passedOnQuality?: boolean;
+  /** The model's score per requirement, must-haves first; the context the one-line summary lacks. */
+  requirements?: RequirementScoreDto[];
   detail?: string | null;
   skills?: string[];
   userId?: string | null;
@@ -106,6 +109,7 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
   qualityLabel,
   qualityNote,
   passedOnQuality,
+  requirements,
   detail,
   skills,
   userId,
@@ -117,7 +121,8 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
   const isExpanded = expandedKey === rowKey;
   const hasDetail = Boolean(detail?.trim());
   const hasSkills = (skills?.length ?? 0) > 0;
-  const canExpand = hasDetail || hasSkills;
+  const hasRequirements = (requirements?.length ?? 0) > 0;
+  const canExpand = hasDetail || hasSkills || hasRequirements;
 
   return (
     <Paper sx={{ p: 1 }}>
@@ -146,7 +151,8 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
         )}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ sm: 'center' }}>
-            <Typography variant="body2">
+            {/* A div, not a p: the «Passert» chip is a div, and a div inside a p is invalid HTML. */}
+            <Typography variant="body2" component="div">
               <b>{name}</b>
               {scoreLabel}
               {qualityLabel}
@@ -209,8 +215,24 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
                   {detail}
                 </Typography>
               )}
+              {hasRequirements && (
+                <Box sx={{ mt: hasDetail ? 1 : 0 }}>
+                  <Typography variant="caption" color="text.secondary">Skår per krav, må-krav først</Typography>
+                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.25 }} aria-label="Skår per krav">
+                    {[...requirements!].sort((a, b) => Number(b.isMustHave) - Number(a.isMustHave)).map((r) => (
+                      <Chip
+                        key={r.name}
+                        size="small"
+                        variant={r.isMustHave ? 'filled' : 'outlined'}
+                        color={r.score >= 8 ? 'success' : r.score >= 5 ? 'default' : 'error'}
+                        label={`${r.name} ${r.score.toFixed(1)}`}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+              )}
               {hasSkills && (
-                <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: hasDetail ? 1 : 0 }}>
+                <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: hasDetail || hasRequirements ? 1 : 0 }}>
                   {skills!.map((skill) => (
                     <Chip key={skill} label={skill} size="small" variant="outlined" />
                   ))}
@@ -257,6 +279,12 @@ export type RequestMatchPanelProps = {
   requestId: number;
   /** The request's requirement coverage, from the list; absent when the page could not load it. */
   coverage?: RequirementCoverage | null;
+  /**
+   * `card`: requirements, candidates, AI, as on the list page's card. `page`: the AI assessment
+   * first and the candidates under it; the request page shows the requirements in its header,
+   * and the assessment is the answer, so it comes before the estimate that chose who to assess.
+   */
+  layout?: 'card' | 'page';
 };
 
 /**
@@ -266,7 +294,7 @@ export type RequestMatchPanelProps = {
  * mattered (who covers what) nowhere. The preview is free, so it loads by itself; the settings
  * sit behind one button; and the only paid action, the AI run, is last with its one sentence.
  */
-const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, coverage }) => {
+const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, coverage, layout = 'card' }) => {
   const mountedRef = useRef(true);
   const [limit, setLimit] = useState<number>(DEFAULT_LIMIT);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -472,235 +500,252 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
   const previewCandidates = state.preview?.candidates ?? [];
   const otherRequirements = coverage?.otherRequirements ?? [];
 
+  const requirementsSection = (
+    <>
+          {/* 1. What the customer asks for, and who in the corpus has it. */}
+          <Box>
+            <SectionTitle>Krav</SectionTitle>
+            {coverage ? (
+              <Stack spacing={0.75}>
+                <Typography variant="body2" color="text.secondary">{describeCoverage(coverage)}</Typography>
+                {describeFullMatch(coverage) && <Typography variant="body2">{describeFullMatch(coverage)}</Typography>}
+                <CoverageChips coverage={coverage} />
+                {otherRequirements.length > 0 && (
+                  <Typography variant="caption" color="text.secondary">
+                    Sjekkes ikke mot ferdigheter: {otherRequirements.slice(0, OTHER_REQUIREMENTS_SHOWN).join('; ')}
+                    {otherRequirements.length > OTHER_REQUIREMENTS_SHOWN && ` … og ${otherRequirements.length - OTHER_REQUIREMENTS_SHOWN} til`}
+                  </Typography>
+                )}
+              </Stack>
+            ) : (
+              <Typography variant="body2" color="text.secondary">Kravene står i avropet.</Typography>
+            )}
+            <MuiLink component={RouterLink} to={`/project-requests/${requestId}`} underline="hover" variant="body2" sx={{ display: 'inline-block', mt: 0.75 }}>
+              Se hele avropet
+            </MuiLink>
+          </Box>
+    </>
+  );
+
+  const candidatesSection = (
+    <>
+          {/* 2. Who could be offered. Free, so already here; the operator picks who goes to the AI. */}
+          <Box>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'baseline' }} justifyContent="space-between" sx={{ mb: 0.5 }}>
+              <SectionTitle>Kandidater</SectionTitle>
+              {previewCandidates.length > 0 && (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography variant="caption" color="text.secondary">
+                    {selectedCount} av {previewUserIds.length} valgt
+                  </Typography>
+                  <Button size="small" variant="text" disabled={loadingRun} onClick={() => toggleAllCandidates(!allPreviewSelected)}>
+                    {allPreviewSelected ? 'Fjern alle' : 'Velg alle'}
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
+
+            {loadingPreview && (
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 1 }}>
+                <CircularProgress size={16} />
+                <Typography variant="body2">Henter kandidater…</Typography>
+              </Stack>
+            )}
+
+            {!loadingPreview && previewCandidates.length > 0 && (
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Sortert etter et grovt anslag uten AI. Hver rad sier hvilke må-krav personen dekker og mangler; kryss av dem du vil ha vurdert.
+                  {state.preview?.semanticSearchUsed === false && ' Semantisk søk ble ikke brukt.'}
+                </Typography>
+                <Stack spacing={0.75}>
+                  {(previewOpen ? previewCandidates : previewCandidates.slice(0, PREVIEW_ROWS_CLOSED)).map((c) => {
+                    const rowKey = `preview-${c.userId ?? c.name}`;
+                    const mustTotal = c.mustTotal ?? 0;
+                    const missing = c.missingRequirements ?? [];
+                    const detail = [
+                      missing.length > 0 ? `Mangler: ${missing.join(', ')}` : (mustTotal > 0 ? 'Har noe for hvert teknologikrav.' : null),
+                      c.reason,
+                    ].filter(Boolean).join('\n');
+                    return (
+                      <ExpandableConsultantRow
+                        key={rowKey}
+                        rowKey={rowKey}
+                        name={c.name ?? 'Ukjent'}
+                        scoreLabel={
+                          mustTotal > 0
+                            ? ` • dekker ${c.mustCovered ?? 0} av ${mustTotal} må-krav`
+                            : (typeof c.combinedScore === 'number' ? ` • rang ${formatPercentScore(c.combinedScore)}` : '')
+                        }
+                        qualityScore={typeof c.cvQualityScore === 'number' ? c.cvQualityScore * 100 : null}
+                        detail={detail}
+                        skills={c.matchedRequirements}
+                        userId={c.userId}
+                        expandedKey={expandedRowKey}
+                        onToggle={toggleExpandedRow}
+                        selected={c.userId ? selectedUserIds.includes(c.userId) : false}
+                        onSelectedChange={c.userId ? (checked) => toggleCandidate(c.userId!, checked) : undefined}
+                      />
+                    );
+                  })}
+                </Stack>
+                {previewCandidates.length > PREVIEW_ROWS_CLOSED && (
+                  <Button size="small" variant="text" onClick={() => setPreviewOpen((o) => !o)} aria-expanded={previewOpen} sx={{ mt: 0.5, textTransform: 'none' }}>
+                    {previewOpen ? 'Vis færre' : `Vis alle ${previewCandidates.length}`}
+                  </Button>
+                )}
+              </Box>
+            )}
+
+            {!loadingPreview && state.preview && previewCandidates.length === 0 && (
+              <Typography variant="body2" color="text.secondary">Ingen kandidater å vise for denne forespørselen.</Typography>
+            )}
+
+            {!state.previewAvailable && !state.preview && !loadingPreview && (
+              <Alert severity="info" sx={{ py: 0.5 }}>
+                Forhåndsvisning er ikke tilgjengelig fra backend. «Kjør AI-matching» lar backend velge kandidatene.
+              </Alert>
+            )}
+          </Box>
+    </>
+  );
+
+  const aiSection = (
+    <>
+          {/* 3. The paid step, last, with what it costs in one sentence and its settings behind a button. */}
+          <Box>
+            <SectionTitle>AI-vurdering</SectionTitle>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+              <Button
+                size="small"
+                variant="contained"
+                disabled={loadingRun || loadingPreview || (Boolean(state.preview) && selectedCount === 0)}
+                onClick={() => requestRun('run')}
+              >
+                {loadingRun
+                  ? 'Kjører…'
+                  : selectedCount > 0
+                    ? `Kjør AI-matching (${selectedCount})`
+                    : 'Kjør AI-matching'}
+              </Button>
+              {hasAiResults && (
+                <Button size="small" variant="outlined" color="secondary" disabled={loadingRun} onClick={() => requestRun('rerun')}>
+                  Kjør på nytt
+                </Button>
+              )}
+              <Button size="small" variant="text" disabled={loadingInitial} onClick={() => void refreshPersisted()}>
+                Oppdater status
+              </Button>
+              <Button
+                size="small"
+                variant="text"
+                aria-expanded={settingsOpen}
+                aria-controls={`match-settings-${requestId}`}
+                onClick={() => setSettingsOpen((v) => !v)}
+              >
+                {settingsOpen ? 'Skjul innstillinger' : 'Innstillinger'}
+              </Button>
+              <Chip
+                size="small"
+                label={hasAiResults || state.phase === 'RUNNING' || state.phase === 'FAILED' ? phaseLabel(state.phase) : 'Ikke kjørt'}
+                color={state.phase === 'COMPLETED' ? 'success' : state.phase === 'FAILED' ? 'error' : 'default'}
+                variant="outlined"
+              />
+              {state.semanticReady === false && (
+                <Chip size="small" color="warning" variant="outlined" label="Semantisk søk mangler embeddings" />
+              )}
+            </Stack>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              Ett modellkall per valgt kandidat, og ingenting før du trykker. Uten avkryssing sender backend de 20 best rangerte.
+            </Typography>
+
+            <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
+              <Stack id={`match-settings-${requestId}`} direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
+                <Stack spacing={0.25}>
+                  <Typography variant="caption" color="text.secondary">Hvor mange vurderes</Typography>
+                  <ToggleButtonGroup size="small" exclusive value={limit} onChange={(_e, v) => { if (v != null) setLimit(v); }}>
+                    {LIMIT_OPTIONS.map((n) => (
+                      <ToggleButton key={n} value={n} disabled={loadingRun || loadingPreview}>{n}</ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                </Stack>
+                <Stack spacing={0.25}>
+                  <Typography variant="caption" color="text.secondary">CV-score teller</Typography>
+                  <ToggleButtonGroup size="small" exclusive value={cvWeightPercent} onChange={(_e, v) => { if (v != null) setCvWeightPercent(v); }}>
+                    {CV_WEIGHT_OPTIONS.map((w) => (
+                      <ToggleButton key={w} value={w} disabled={loadingRun}>{w}%</ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                  {/* Said here because it is the one place the number is turned into a weight. */}
+                  <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 420 }}>
+                    CV-score måler hvor godt CV-en følger gull-CV-standarden, vurdert av en modell. Den sier ikke noe
+                    om konsulentens kompetanse. Prosenten styrer rekkefølgen og kortlisten, ikke kravmatchen.
+                  </Typography>
+                </Stack>
+                <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={loadingRun} />
+              </Stack>
+            </Collapse>
+
+            {state.phase === 'RUNNING' && loadingRun && (
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
+                <CircularProgress size={16} />
+                <Typography variant="body2">
+                  {selectedCount > 0
+                    ? `Kjører AI-vurdering på ${selectedCount} valgte kandidater…`
+                    : 'Kjører AI-vurdering på de best rangerte kandidatene…'}
+                </Typography>
+              </Stack>
+            )}
+
+            {hasAiResults && (
+              <Box sx={{ mt: 1.5 }}>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                  <Chip label={`${aiMatches.length} AI-vurdert`} size="small" color="primary" variant="outlined" />
+                  {state.results?.lastUpdated && (
+                    <Typography variant="caption" color="text.secondary">
+                      Sist oppdatert: {new Date(state.results.lastUpdated).toLocaleString('no-NO')}
+                    </Typography>
+                  )}
+                </Stack>
+                <Stack spacing={0.75}>
+                  {/* Every scored row, in the backend's order: the match weighed against CV score
+                      (PresentedRanking). Sorting here again by the match alone would undo that and hide why
+                      somebody is where they are; cutting to the limit hid reviews that were paid for. */}
+                  {aiMatches
+                    .map((s: MatchCandidateDto) => {
+                      const rowKey = `ai-${s.userId ?? s.name}`;
+                      return (
+                        <ExpandableConsultantRow
+                          key={rowKey}
+                          rowKey={rowKey}
+                          name={s.name}
+                          scoreLabel={formatMatchScoreSuffix(s.score)}
+                          qualityLabel={formatQualityLabel(s)}
+                          qualityNote={s.qualityNote}
+                          passedOnQuality={Boolean(s.passedOnQuality)}
+                          requirements={s.requirements}
+                          detail={s.justification}
+                          skills={s.skills}
+                          userId={s.userId}
+                          expandedKey={expandedRowKey}
+                          onToggle={toggleExpandedRow}
+                        />
+                      );
+                    })}
+                </Stack>
+              </Box>
+            )}
+          </Box>
+    </>
+  );
+
+  const sections = layout === 'page' ? [aiSection, candidatesSection] : [requirementsSection, candidatesSection, aiSection];
+
   return (
     <Stack spacing={2.5}>
       {state.error && <Alert severity="error">{state.error}</Alert>}
 
-      {/* 1. What the customer asks for, and who in the corpus has it. */}
-      <Box>
-        <SectionTitle>Krav</SectionTitle>
-        {coverage ? (
-          <Stack spacing={0.75}>
-            <Typography variant="body2" color="text.secondary">{describeCoverage(coverage)}</Typography>
-            {describeFullMatch(coverage) && <Typography variant="body2">{describeFullMatch(coverage)}</Typography>}
-            <CoverageChips coverage={coverage} />
-            {otherRequirements.length > 0 && (
-              <Typography variant="caption" color="text.secondary">
-                Sjekkes ikke mot ferdigheter: {otherRequirements.slice(0, OTHER_REQUIREMENTS_SHOWN).join('; ')}
-                {otherRequirements.length > OTHER_REQUIREMENTS_SHOWN && ` … og ${otherRequirements.length - OTHER_REQUIREMENTS_SHOWN} til`}
-              </Typography>
-            )}
-          </Stack>
-        ) : (
-          <Typography variant="body2" color="text.secondary">Kravene står i avropet.</Typography>
-        )}
-        <MuiLink component={RouterLink} to={`/project-requests/${requestId}`} underline="hover" variant="body2" sx={{ display: 'inline-block', mt: 0.75 }}>
-          Se hele avropet
-        </MuiLink>
-      </Box>
-
-      {/* 2. Who could be offered. Free, so already here; the operator picks who goes to the AI. */}
-      <Box>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'baseline' }} justifyContent="space-between" sx={{ mb: 0.5 }}>
-          <SectionTitle>Kandidater</SectionTitle>
-          {previewCandidates.length > 0 && (
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                {selectedCount} av {previewUserIds.length} valgt
-              </Typography>
-              <Button size="small" variant="text" disabled={loadingRun} onClick={() => toggleAllCandidates(!allPreviewSelected)}>
-                {allPreviewSelected ? 'Fjern alle' : 'Velg alle'}
-              </Button>
-            </Stack>
-          )}
-        </Stack>
-
-        {loadingPreview && (
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 1 }}>
-            <CircularProgress size={16} />
-            <Typography variant="body2">Henter kandidater…</Typography>
-          </Stack>
-        )}
-
-        {!loadingPreview && previewCandidates.length > 0 && (
-          <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-              Sortert etter et grovt anslag uten AI. Hver rad sier hvilke må-krav personen dekker og mangler; kryss av dem du vil ha vurdert.
-              {state.preview?.semanticSearchUsed === false && ' Semantisk søk ble ikke brukt.'}
-            </Typography>
-            <Stack spacing={0.75}>
-              {(previewOpen ? previewCandidates : previewCandidates.slice(0, PREVIEW_ROWS_CLOSED)).map((c) => {
-                const rowKey = `preview-${c.userId ?? c.name}`;
-                const mustTotal = c.mustTotal ?? 0;
-                const missing = c.missingRequirements ?? [];
-                const detail = [
-                  missing.length > 0 ? `Mangler: ${missing.join(', ')}` : (mustTotal > 0 ? 'Har noe for hvert teknologikrav.' : null),
-                  c.reason,
-                ].filter(Boolean).join('\n');
-                return (
-                  <ExpandableConsultantRow
-                    key={rowKey}
-                    rowKey={rowKey}
-                    name={c.name ?? 'Ukjent'}
-                    scoreLabel={
-                      mustTotal > 0
-                        ? ` • dekker ${c.mustCovered ?? 0} av ${mustTotal} må-krav`
-                        : (typeof c.combinedScore === 'number' ? ` • rang ${formatPercentScore(c.combinedScore)}` : '')
-                    }
-                    qualityScore={typeof c.cvQualityScore === 'number' ? c.cvQualityScore * 100 : null}
-                    detail={detail}
-                    skills={c.matchedRequirements}
-                    userId={c.userId}
-                    expandedKey={expandedRowKey}
-                    onToggle={toggleExpandedRow}
-                    selected={c.userId ? selectedUserIds.includes(c.userId) : false}
-                    onSelectedChange={c.userId ? (checked) => toggleCandidate(c.userId!, checked) : undefined}
-                  />
-                );
-              })}
-            </Stack>
-            {previewCandidates.length > PREVIEW_ROWS_CLOSED && (
-              <Button size="small" variant="text" onClick={() => setPreviewOpen((o) => !o)} aria-expanded={previewOpen} sx={{ mt: 0.5, textTransform: 'none' }}>
-                {previewOpen ? 'Vis færre' : `Vis alle ${previewCandidates.length}`}
-              </Button>
-            )}
-          </Box>
-        )}
-
-        {!loadingPreview && state.preview && previewCandidates.length === 0 && (
-          <Typography variant="body2" color="text.secondary">Ingen kandidater å vise for denne forespørselen.</Typography>
-        )}
-
-        {!state.previewAvailable && !state.preview && !loadingPreview && (
-          <Alert severity="info" sx={{ py: 0.5 }}>
-            Forhåndsvisning er ikke tilgjengelig fra backend. «Kjør AI-matching» lar backend velge kandidatene.
-          </Alert>
-        )}
-      </Box>
-
-      {/* 3. The paid step, last, with what it costs in one sentence and its settings behind a button. */}
-      <Box>
-        <SectionTitle>AI-vurdering</SectionTitle>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
-          <Button
-            size="small"
-            variant="contained"
-            disabled={loadingRun || loadingPreview || (Boolean(state.preview) && selectedCount === 0)}
-            onClick={() => requestRun('run')}
-          >
-            {loadingRun
-              ? 'Kjører…'
-              : selectedCount > 0
-                ? `Kjør AI-matching (${selectedCount})`
-                : 'Kjør AI-matching'}
-          </Button>
-          {hasAiResults && (
-            <Button size="small" variant="outlined" color="secondary" disabled={loadingRun} onClick={() => requestRun('rerun')}>
-              Kjør på nytt
-            </Button>
-          )}
-          <Button size="small" variant="text" disabled={loadingInitial} onClick={() => void refreshPersisted()}>
-            Oppdater status
-          </Button>
-          <Button
-            size="small"
-            variant="text"
-            aria-expanded={settingsOpen}
-            aria-controls={`match-settings-${requestId}`}
-            onClick={() => setSettingsOpen((v) => !v)}
-          >
-            {settingsOpen ? 'Skjul innstillinger' : 'Innstillinger'}
-          </Button>
-          <Chip
-            size="small"
-            label={hasAiResults || state.phase === 'RUNNING' || state.phase === 'FAILED' ? phaseLabel(state.phase) : 'Ikke kjørt'}
-            color={state.phase === 'COMPLETED' ? 'success' : state.phase === 'FAILED' ? 'error' : 'default'}
-            variant="outlined"
-          />
-          {state.semanticReady === false && (
-            <Chip size="small" color="warning" variant="outlined" label="Semantisk søk mangler embeddings" />
-          )}
-        </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-          Ett modellkall per valgt kandidat, og ingenting før du trykker. Uten avkryssing sender backend de 20 best rangerte.
-        </Typography>
-
-        <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
-          <Stack id={`match-settings-${requestId}`} direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
-            <Stack spacing={0.25}>
-              <Typography variant="caption" color="text.secondary">Hvor mange vurderes</Typography>
-              <ToggleButtonGroup size="small" exclusive value={limit} onChange={(_e, v) => { if (v != null) setLimit(v); }}>
-                {LIMIT_OPTIONS.map((n) => (
-                  <ToggleButton key={n} value={n} disabled={loadingRun || loadingPreview}>{n}</ToggleButton>
-                ))}
-              </ToggleButtonGroup>
-            </Stack>
-            <Stack spacing={0.25}>
-              <Typography variant="caption" color="text.secondary">CV-score teller</Typography>
-              <ToggleButtonGroup size="small" exclusive value={cvWeightPercent} onChange={(_e, v) => { if (v != null) setCvWeightPercent(v); }}>
-                {CV_WEIGHT_OPTIONS.map((w) => (
-                  <ToggleButton key={w} value={w} disabled={loadingRun}>{w}%</ToggleButton>
-                ))}
-              </ToggleButtonGroup>
-              {/* Said here because it is the one place the number is turned into a weight. */}
-              <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 420 }}>
-                CV-score måler hvor godt CV-en følger gull-CV-standarden, vurdert av en modell. Den sier ikke noe
-                om konsulentens kompetanse. Prosenten styrer rekkefølgen og kortlisten, ikke kravmatchen.
-              </Typography>
-            </Stack>
-            <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={loadingRun} />
-          </Stack>
-        </Collapse>
-
-        {state.phase === 'RUNNING' && loadingRun && (
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
-            <CircularProgress size={16} />
-            <Typography variant="body2">
-              {selectedCount > 0
-                ? `Kjører AI-vurdering på ${selectedCount} valgte kandidater…`
-                : 'Kjører AI-vurdering på de best rangerte kandidatene…'}
-            </Typography>
-          </Stack>
-        )}
-
-        {hasAiResults && (
-          <Box sx={{ mt: 1.5 }}>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-              <Chip label={`${aiMatches.length} AI-vurdert`} size="small" color="primary" variant="outlined" />
-              {state.results?.lastUpdated && (
-                <Typography variant="caption" color="text.secondary">
-                  Sist oppdatert: {new Date(state.results.lastUpdated).toLocaleString('no-NO')}
-                </Typography>
-              )}
-            </Stack>
-            <Stack spacing={0.75}>
-              {/* Every scored row, in the backend's order: the match weighed against CV score
-                  (PresentedRanking). Sorting here again by the match alone would undo that and hide why
-                  somebody is where they are; cutting to the limit hid reviews that were paid for. */}
-              {aiMatches
-                .map((s: MatchCandidateDto) => {
-                  const rowKey = `ai-${s.userId ?? s.name}`;
-                  return (
-                    <ExpandableConsultantRow
-                      key={rowKey}
-                      rowKey={rowKey}
-                      name={s.name}
-                      scoreLabel={formatMatchScoreSuffix(s.score)}
-                      qualityLabel={formatQualityLabel(s)}
-                      qualityNote={s.qualityNote}
-                      passedOnQuality={Boolean(s.passedOnQuality)}
-                      detail={s.justification}
-                      skills={s.skills}
-                      userId={s.userId}
-                      expandedKey={expandedRowKey}
-                      onToggle={toggleExpandedRow}
-                    />
-                  );
-                })}
-            </Stack>
-          </Box>
-        )}
-      </Box>
+      {sections.map((section, i) => <React.Fragment key={i}>{section}</React.Fragment>)}
 
       <Dialog open={confirmOpen} onClose={() => { if (!loadingRun) { setConfirmOpen(false); setPendingRun(null); } }}>
         <DialogTitle>Bekreft høyeste kvalitet</DialogTitle>
