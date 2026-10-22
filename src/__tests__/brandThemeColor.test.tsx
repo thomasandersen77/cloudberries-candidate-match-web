@@ -3,7 +3,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Header from '../components/Header';
-import { ColorModeProvider, palettes } from '../theme';
+import { ColorModeProvider } from '../theme';
+import { palettes } from '../themeTokens';
 
 vi.mock('../services/healthService', () => ({
   getHealthStatus: vi.fn().mockResolvedValue({ status: 'UP', details: {} }),

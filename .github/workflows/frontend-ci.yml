@@ -36,6 +36,17 @@ jobs:
       - name: Run linter
         run: npm run lint
 
+      # The suite never ran in CI; lint and build passing said nothing about behaviour.
+      - name: Run unit tests
+        run: npm test
+
+      # The types are generated from the checked-in contract. A hand edit to generated.ts, or a
+      # spec copied without regenerating, fails here instead of as missing data in a browser.
+      - name: Check generated API types match openapi.yaml
+        run: |
+          npm run gen:api
+          git diff --exit-code -- src/api/generated.ts
+
       - name: Validate staticwebapp.config.json (public)
         run: |
           test -f public/staticwebapp.config.json

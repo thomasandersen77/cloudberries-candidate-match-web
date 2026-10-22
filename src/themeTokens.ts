@@ -1,0 +1,450 @@
+import { alpha, createTheme, type Theme } from '@mui/material/styles';
+
+// The tokens and the theme, apart from the provider in theme.tsx: a module that exports a
+// component may export nothing else, or React Fast Refresh reloads the whole page on every edit
+// (eslint react-refresh/only-export-components). Context and hook are in colorMode.ts.
+
+export type ColorMode = 'light' | 'dark';
+export type BrandTheme = 'cloudberries' | 'soprasteria';
+
+type BrandPalette = {
+  name: string;
+  primary: string;
+  primaryHover: string;
+  accent: string;
+  success: string;
+  red: string;
+  light: {
+    text: string;
+    textSecondary: string;
+    bg: string;
+    paper: string;
+    divider: string;
+    tableHead: string;
+    border: string;
+    surfaceMuted: string;
+    /** The brand colour as foreground. On white that is the brand colour itself. */
+    primaryText: string;
+  };
+  dark: {
+    text: string;
+    textSecondary: string;
+    bg: string;
+    paper: string;
+    divider: string;
+    tableHead: string;
+    border: string;
+    surfaceMuted: string;
+    /**
+     * The brand colour as foreground on the dark ground.
+     *
+     * A brand colour is chosen against white, and on a near-black ground a dark one stops being
+     * legible: Cloudberries' #0056B3 came out at 2.9 against the background, under the 4.5 that
+     * small text needs, which is why the Superbruker link was hard to find. Filled buttons keep
+     * the brand colour — this is only for text and links.
+     */
+    primaryText: string;
+  };
+};
+
+export const palettes: Record<BrandTheme, BrandPalette> = {
+  cloudberries: {
+    name: 'Cloudberries',
+    primary: '#F26A21',
+    primaryHover: '#D85F1B',
+    accent: '#111111',
+    success: '#3AAA35',
+    red: '#E53935',
+    light: {
+      text: '#111111',
+      textSecondary: '#5F5F5F',
+      bg: '#FAFAF8',
+      paper: '#FFFFFF',
+      divider: '#ECE7E1',
+      tableHead: 'rgba(250, 250, 248, 0.98)',
+      border: '#ECE7E1',
+      surfaceMuted: '#F5F3EF',
+      primaryText: '#F26A21',
+    },
+    dark: {
+      text: '#E6E6E6',
+      textSecondary: '#B0B3B8',
+      // A card has to look raised. It was #111214 on #0B0B0C, a contrast of 1.05 — the same ratio
+      // the light mode has between its card and its ground, and that is the trap: near black the
+      // eye reads almost nothing from a ratio that is plainly visible near white. The ground went
+      // down and the surface came up, to 1.26.
+      bg: '#050506',
+      paper: '#1E2126',
+      divider: '#34373E',
+      tableHead: '#262A30',
+      border: '#34373E',
+      surfaceMuted: '#262A30',
+      // The orange reads on its own dark ground at 6.7, so it stays itself.
+      primaryText: '#F26A21',
+    },
+  },
+  soprasteria: {
+    name: 'Sopra Steria',
+    primary: '#0056B3',
+    primaryHover: '#004A99',
+    accent: '#FF6B6B',
+    success: '#00B894',
+    red: '#FF6B6B',
+    light: {
+      text: '#212529',
+      textSecondary: '#4B5563',
+      bg: '#F8F9FA',
+      paper: '#FFFFFF',
+      divider: '#DDE2E7',
+      tableHead: 'rgba(248, 249, 250, 0.98)',
+      border: '#DDE2E7',
+      surfaceMuted: '#EEF1F4',
+      primaryText: '#0056B3',
+    },
+    dark: {
+      text: '#E9EDF2',
+      textSecondary: '#AAB4C0',
+      // Same move as the other brand: 1.10 became 1.33.
+      bg: '#090D11',
+      paper: '#212933',
+      divider: '#39434F',
+      tableHead: '#2A333E',
+      border: '#39434F',
+      surfaceMuted: '#2A333E',
+      // #0056B3 is a dark blue picked against white, and on this ground it measures 2.8 — under
+      // the 4.5 small text needs, and 2.1 on a card. Lightened to 7.4 and 5.6. Filled buttons keep
+      // the brand blue, where it is the background and the white on it is fine.
+      primaryText: '#5BA3F0',
+    },
+  },
+};
+
+/**
+ * A touch screen, where a target is a thumb and not a pointer.
+ *
+ * Measured at 390 px on /matches: filter chips were 26 px high, buttons 39 to 41, the card's open
+ * arrow 34. The rule lives here rather than per page, so every page gets it, and only on a coarse
+ * pointer, so the desktop layout does not grow.
+ */
+export const COARSE_POINTER = '@media (pointer: coarse)';
+export const TOUCH_TARGET_PX = 44;
+
+export function createAppTheme(mode: ColorMode, brandTheme: BrandTheme): Theme {
+  const isDark = mode === 'dark';
+  const brand = palettes[brandTheme];
+  const t = isDark ? brand.dark : brand.light;
+
+  return createTheme({
+    palette: {
+      mode,
+      primary: { main: brand.primary, contrastText: '#FFFFFF' },
+      secondary: { main: brand.accent },
+      background: { default: t.bg, paper: t.paper },
+      text: { primary: t.text, secondary: t.textSecondary },
+      divider: t.divider,
+      success: { main: brand.success },
+      error: { main: brand.red },
+      warning: { main: '#ED6C02' },
+      info: { main: isDark ? '#65D0FF' : '#0288D1' },
+    },
+    shape: { borderRadius: 14 },
+    typography: {
+      fontFamily:
+        "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+      h3: { fontWeight: 700, letterSpacing: '-0.028em', color: t.text },
+      h4: { fontWeight: 700, letterSpacing: '-0.025em', color: t.text },
+      h5: { fontWeight: 650, letterSpacing: '-0.015em', color: t.text },
+      h6: { fontWeight: 650, color: t.text },
+      subtitle1: { fontWeight: 500, color: t.text },
+      subtitle2: { fontWeight: 600, color: t.text },
+      body1: { lineHeight: 1.62 },
+      body2: { lineHeight: 1.55 },
+      caption: { color: t.textSecondary, letterSpacing: '0.02em' },
+      button: { fontWeight: 600, letterSpacing: '0.01em' },
+    },
+    transitions: {
+      duration: { shortest: 150, shorter: 200, short: 250, standard: 300 },
+    },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          ':root': {
+            colorScheme: mode,
+          },
+          body: {
+            WebkitFontSmoothing: 'antialiased',
+            MozOsxFontSmoothing: 'grayscale',
+            backgroundImage: isDark
+              ? `radial-gradient(1200px 500px at 20% -10%, ${alpha(brand.primary, 0.14)}, transparent 65%),
+                 radial-gradient(1000px 450px at 100% 0%, ${alpha(brand.accent, 0.2)}, transparent 70%)`
+              : `radial-gradient(1200px 500px at 20% -10%, ${alpha(brand.primary, 0.1)}, transparent 65%),
+                 radial-gradient(1000px 450px at 100% 0%, ${alpha(brand.accent, 0.08)}, transparent 70%)`,
+          },
+        },
+      },
+      MuiPaper: {
+        defaultProps: { elevation: 0 },
+        styleOverrides: {
+          root: {
+            border: `1px solid ${t.border}`,
+            borderRadius: 18,
+            backgroundImage: 'none',
+            boxShadow: isDark
+              ? '0 1px 2px rgba(0,0,0,0.35), 0 16px 48px rgba(0,0,0,0.26)'
+              : '0 1px 2px rgba(17,17,17,0.04), 0 16px 46px rgba(17,17,17,0.07)',
+          },
+        },
+      },
+      MuiTableHead: {
+        styleOverrides: {
+          root: {
+            backgroundColor: t.tableHead,
+            '& .MuiTableCell-head': {
+              borderBottom: `1px solid ${t.divider}`,
+            },
+          },
+        },
+      },
+      MuiTableContainer: {
+        styleOverrides: {
+          root: {
+            borderRadius: 18,
+            border: 'none',
+            boxShadow: 'none',
+            backgroundColor: 'transparent',
+          },
+        },
+      },
+      MuiTableRow: {
+        styleOverrides: {
+          root: {
+            transition: 'background-color 0.15s ease',
+            '&:hover': {
+              backgroundColor: isDark ? alpha('#fff', 0.04) : alpha(brand.accent, 0.035),
+            },
+            '&:last-of-type td, &:last-of-type th': {
+              borderBottom: 'none',
+            },
+          },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          head: {
+            fontWeight: 600,
+            fontSize: '0.6875rem',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: t.textSecondary,
+            borderBottom: `1px solid ${t.divider}`,
+            paddingTop: 16,
+            paddingBottom: 16,
+          },
+          root: {
+            borderBottom: `1px solid ${alpha(t.divider, isDark ? 0.6 : 1)}`,
+            paddingTop: 18,
+            paddingBottom: 18,
+          },
+        },
+      },
+      MuiButton: {
+        defaultProps: {
+          color: 'primary',
+          disableElevation: true,
+        },
+        styleOverrides: {
+          root: {
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 12,
+            paddingInline: 18,
+            paddingBlock: 8,
+            transition:
+              'background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease',
+            [COARSE_POINTER]: { minHeight: TOUCH_TARGET_PX },
+          },
+          containedPrimary: {
+            boxShadow: 'none',
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              boxShadow: `0 8px 20px ${alpha(brand.primary, 0.35)}`,
+              backgroundColor: brand.primaryHover,
+            },
+          },
+          outlined: {
+            borderColor: t.border,
+            '&:hover': {
+              borderColor: alpha(brand.primary, 0.45),
+              backgroundColor: alpha(brand.primary, isDark ? 0.08 : 0.06),
+            },
+          },
+          outlinedPrimary: {
+            borderWidth: 1.5,
+            borderColor: alpha(brand.primary, 0.55),
+            '&:hover': {
+              borderColor: brand.primary,
+              backgroundColor: alpha(brand.primary, isDark ? 0.12 : 0.08),
+            },
+          },
+          text: {
+            '&:hover': {
+              backgroundColor: alpha(brand.primary, isDark ? 0.1 : 0.08),
+            },
+          },
+          /*
+            A text button is the brand colour on the ground rather than behind white, so on a dark
+            ground a dark brand colour stops being legible. Cloudberries' blue measured 2.9 against
+            the background, below the 4.5 small text needs, which is what made the Superbruker link
+            hard to find. Filled buttons are untouched: there the brand colour is the background and
+            the white on it is fine.
+          */
+          textPrimary: isDark ? { color: t.primaryText } : undefined,
+        },
+      },
+      MuiTextField: {
+        defaultProps: {
+          variant: 'outlined',
+          size: 'small',
+        },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            [COARSE_POINTER]: { minHeight: TOUCH_TARGET_PX },
+            borderRadius: 12,
+            backgroundColor: isDark ? alpha('#fff', 0.03) : alpha(brand.accent, 0.02),
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: t.border,
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: alpha(brand.primary, 0.35),
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: brand.primary,
+              borderWidth: 1.5,
+              boxShadow: `0 0 0 3px ${alpha(brand.primary, 0.18)}`,
+            },
+          },
+        },
+      },
+      MuiFormLabel: {
+        styleOverrides: {
+          root: {
+            fontWeight: 500,
+            color: t.textSecondary,
+            '&.Mui-focused': { color: brand.primary },
+          },
+        },
+      },
+      /**
+       * A tooltip paints its own dark ground in both colour modes, and its text has to come from
+       * that ground rather than from the page.
+       *
+       * Typography sets `color: text.primary` on itself, so any tooltip built out of Typography
+       * elements ignored the white the tooltip had already set on them. In dark mode text.primary
+       * is light and it looked fine by accident; in light mode it is #4B5563, dark slate grey on
+       * the tooltip's dark grey, and the health popover in the header was close to unreadable.
+       *
+       * Inherit, so the tooltip decides. An icon inside one keeps its own colour — that is an SVG
+       * fill, not this rule — which is what the UP and DOWN dots rely on.
+       */
+      MuiTooltip: {
+        styleOverrides: {
+          tooltip: {
+            '& .MuiTypography-root': { color: 'inherit' },
+          },
+        },
+      },
+      MuiChip: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            fontWeight: 500,
+            fontSize: '0.75rem',
+            height: 26,
+            borderColor: alpha(t.text, isDark ? 0.22 : 0.14),
+            '&.MuiChip-outlinedDefault': {
+              backgroundColor: isDark ? alpha('#fff', 0.04) : alpha(brand.accent, 0.03),
+            },
+          },
+          sizeSmall: {
+            height: 24,
+            fontSize: '0.6875rem',
+          },
+          // Only a chip that does something: a filter. A chip that labels a skill stays small.
+          clickable: {
+            [COARSE_POINTER]: { height: TOUCH_TARGET_PX, paddingInline: 4 },
+          },
+        },
+      },
+      MuiCheckbox: {
+        styleOverrides: {
+          root: { [COARSE_POINTER]: { padding: 12 } },
+        },
+      },
+      MuiToggleButton: {
+        styleOverrides: {
+          root: { [COARSE_POINTER]: { minHeight: TOUCH_TARGET_PX, minWidth: TOUCH_TARGET_PX } },
+        },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: {
+            marginTop: 8,
+            borderRadius: 14,
+            border: `1px solid ${t.border}`,
+            boxShadow: isDark
+              ? '0 12px 40px rgba(0,0,0,0.45)'
+              : '0 12px 40px rgba(17,17,17,0.1)',
+            paddingTop: 4,
+            paddingBottom: 4,
+            minWidth: 220,
+          },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            marginLeft: 6,
+            marginRight: 6,
+            minHeight: 44,
+            transition: 'background-color 0.15s ease',
+            '&:hover': {
+              backgroundColor: alpha(brand.primary, isDark ? 0.14 : 0.1),
+            },
+          },
+        },
+      },
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            [COARSE_POINTER]: { minWidth: TOUCH_TARGET_PX, minHeight: TOUCH_TARGET_PX },
+            color: alpha(t.text, 0.65),
+            transition: 'color 0.15s ease, background-color 0.15s ease',
+            '&:hover': {
+              color: t.text,
+              backgroundColor: alpha(brand.primary, isDark ? 0.12 : 0.08),
+            },
+          },
+        },
+      },
+      MuiLink: {
+        styleOverrides: {
+          root: {
+            color: brand.primary,
+            fontWeight: 500,
+            '&:hover': { color: brand.primaryHover },
+          },
+        },
+      },
+      MuiTablePagination: {
+        styleOverrides: {
+          root: {
+            borderTop: `1px solid ${t.divider}`,
+          },
+        },
+      },
+    },
+  });
+}

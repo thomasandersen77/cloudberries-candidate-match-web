@@ -25,7 +25,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { Link as RouterLink } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import HighQualityToggle from '../HighQualityToggle';
-import { COARSE_POINTER, TOUCH_TARGET_PX } from '../../theme';
+import { COARSE_POINTER, TOUCH_TARGET_PX } from '../../themeTokens';
 import { CoverageChips } from './RequestCoverage';
 import { describeCoverage, describeFullMatch, type RequirementCoverage } from './coverageText';
 import {

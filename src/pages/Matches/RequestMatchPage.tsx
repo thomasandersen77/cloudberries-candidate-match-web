@@ -7,7 +7,7 @@ import { getProjectRequestById } from '../../services/projectRequestsService';
 import type { MatchesListItemDto, ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
 import RequestMatchPanel from '../../components/matches/RequestMatchPanel';
 import HowMatchingWorks from '../../components/matches/HowMatchingWorks';
-import { COARSE_POINTER, TOUCH_TARGET_PX } from '../../theme';
+import { COARSE_POINTER, TOUCH_TARGET_PX } from '../../themeTokens';
 import RequirementList from '../../components/matches/RequirementList';
 import { RequestCard } from './MatchesPage';
 

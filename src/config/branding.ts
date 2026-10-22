@@ -1,4 +1,4 @@
-import type { BrandTheme } from '../theme';
+import type { BrandTheme } from '../themeTokens';
 import SopraSteriaLogo from '../assets/sopra_steria.png';
 
 export type BrandPresentation = {

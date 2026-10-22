@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { COARSE_POINTER, TOUCH_TARGET_PX, createAppTheme, palettes } from './theme';
+import { COARSE_POINTER, TOUCH_TARGET_PX, createAppTheme, palettes } from './themeTokens';
 
 /** Relative luminance per WCAG, so the assertions below are the same number a checker reports. */
 function luminance(hex: string): number {

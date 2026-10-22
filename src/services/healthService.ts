@@ -38,7 +38,7 @@ function isHardReload(): boolean {
     const nav = (performance.getEntriesByType?.('navigation') || []) as PerformanceNavigationTiming[];
     if (nav[0]) return nav[0].type === 'reload';
     // Legacy
-    const legacyType = (performance as any)?.navigation?.type;
+    const legacyType = (performance as Performance & { navigation?: { type?: number } }).navigation?.type;
     return legacyType === 1; // TYPE_RELOAD
   } catch {
     return false;
