@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createAppTheme, palettes } from './theme';
+import { COARSE_POINTER, TOUCH_TARGET_PX, createAppTheme, palettes } from './theme';
 
 /** Relative luminance per WCAG, so the assertions below are the same number a checker reports. */
 function luminance(hex: string): number {
@@ -85,5 +85,26 @@ describe('dark palette separation', () => {
   /** In light mode the brand colour is already the right foreground, and stays it. */
   it.each(brands)('%s leaves the light-mode brand colour alone', brand => {
     expect(palettes[brand].light.primaryText).toBe(palettes[brand].primary);
+  });
+});
+
+/**
+ * A touch screen gets 44 px targets on every control that acts: buttons, icon buttons, filter
+ * chips, toggles, checkboxes and inputs. Measured at 390 px they were 26 to 41. The rule is pinned
+ * here and measured in e2e/matches-phone.spec.ts; jsdom evaluates no pointer media query.
+ */
+describe('touch targets', () => {
+  it('asks for 44 px on a coarse pointer, and leaves the desktop alone', () => {
+    const o = createAppTheme('light', 'soprasteria').components!;
+    const rule = (styles: unknown) => (styles as Record<string, Record<string, unknown>>)[COARSE_POINTER];
+
+    expect(rule(o.MuiButton!.styleOverrides!.root)).toMatchObject({ minHeight: TOUCH_TARGET_PX });
+    expect(rule(o.MuiIconButton!.styleOverrides!.root)).toMatchObject({ minHeight: TOUCH_TARGET_PX, minWidth: TOUCH_TARGET_PX });
+    expect(rule(o.MuiChip!.styleOverrides!.clickable)).toMatchObject({ height: TOUCH_TARGET_PX });
+    expect(rule(o.MuiToggleButton!.styleOverrides!.root)).toMatchObject({ minHeight: TOUCH_TARGET_PX });
+    expect(rule(o.MuiOutlinedInput!.styleOverrides!.root)).toMatchObject({ minHeight: TOUCH_TARGET_PX });
+    expect(rule(o.MuiCheckbox!.styleOverrides!.root)).toMatchObject({ padding: 12 });
+    // A chip that only labels something is not a target and keeps its size.
+    expect((o.MuiChip!.styleOverrides!.root as Record<string, unknown>).height).toBe(26);
   });
 });

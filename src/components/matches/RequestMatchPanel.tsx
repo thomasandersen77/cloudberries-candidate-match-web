@@ -25,6 +25,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { Link as RouterLink } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import HighQualityToggle from '../HighQualityToggle';
+import { COARSE_POINTER, TOUCH_TARGET_PX } from '../../theme';
 import { CoverageChips } from './RequestCoverage';
 import { describeCoverage, describeFullMatch, type RequirementCoverage } from './coverageText';
 import {
@@ -186,13 +187,13 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {userId && (
-                <MuiLink component={RouterLink} to={`/consultants/${userId}`} underline="hover">Se konsulent</MuiLink>
+                <MuiLink component={RouterLink} to={`/consultants/${userId}`} underline="hover" sx={rowLinkSx}>Se konsulent</MuiLink>
               )}
               {userId && (
-                <MuiLink component={RouterLink} to={`/cv/${userId}`} underline="hover">Se CV</MuiLink>
+                <MuiLink component={RouterLink} to={`/cv/${userId}`} underline="hover" sx={rowLinkSx}>Se CV</MuiLink>
               )}
               {userId && qualityNote && (
-                <MuiLink component={RouterLink} to={`/cv-score/${userId}`} underline="hover">Se CV-score</MuiLink>
+                <MuiLink component={RouterLink} to={`/cv-score/${userId}`} underline="hover" sx={rowLinkSx}>Se CV-score</MuiLink>
               )}
             </Stack>
           </Stack>
@@ -245,6 +246,14 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
     </Paper>
   );
 };
+
+/**
+ * A row's links are actions on their own, not words in a sentence, so on a touch screen they get
+ * the theme's target height. Not set on MuiLink globally: a link inside a paragraph must not grow.
+ */
+const rowLinkSx = {
+  [COARSE_POINTER]: { display: 'inline-flex', alignItems: 'center', minHeight: TOUCH_TARGET_PX, px: 0.5 },
+} as const;
 
 /**
  * Four things that are true or false on their own: what the server says about the run, whether

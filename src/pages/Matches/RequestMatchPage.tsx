@@ -7,6 +7,7 @@ import { getProjectRequestById } from '../../services/projectRequestsService';
 import type { MatchesListItemDto, ProjectRequestResponseDto, ProjectRequirementDto } from '../../types/api';
 import RequestMatchPanel from '../../components/matches/RequestMatchPanel';
 import HowMatchingWorks from '../../components/matches/HowMatchingWorks';
+import { COARSE_POINTER, TOUCH_TARGET_PX } from '../../theme';
 import RequirementList from '../../components/matches/RequirementList';
 import { RequestCard } from './MatchesPage';
 
@@ -34,7 +35,7 @@ const RequestRequirements: React.FC<{ request: ProjectRequestResponseDto }> = ({
       <Stack direction="row" alignItems="baseline" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
         <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>Avropet</Typography>
         {request.id != null && (
-          <Link component={RouterLink} to={`/project-requests/${request.id}`} variant="body2" sx={{ fontWeight: 600 }}>
+          <Link component={RouterLink} to={`/project-requests/${request.id}`} variant="body2" sx={{ fontWeight: 600, [COARSE_POINTER]: { display: 'inline-flex', alignItems: 'center', minHeight: TOUCH_TARGET_PX } }}>
             Åpne avropet
           </Link>
         )}

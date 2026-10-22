@@ -80,7 +80,9 @@ const StatusBox: React.FC<StatusBoxProps> = ({ tone, Icon, label }) => (
         fontWeight: 700,
         fontSize: '0.875rem',
         lineHeight: 1.3,
-        whiteSpace: 'nowrap',
+        // One line where there is room; on a phone the label wraps, since «1 har treff på alle
+        // må-krav · 7 mangler ett» on one line pushed the card 60 px past a 390 px screen.
+        whiteSpace: { xs: 'normal', sm: 'nowrap' },
       };
     }}
   >
@@ -190,8 +192,8 @@ export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCovera
           Two answers in two frames of one size: does the corpus cover it, and has the model been
           run. Green and orange for the AI because the reader asked for a verdict, not a count.
         */}
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
-          <Stack spacing={0.75} sx={{ minWidth: { sm: 236 } }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0, width: { xs: '100%', sm: 'auto' } }}>
+          <Stack spacing={0.75} sx={{ minWidth: { xs: 0, sm: 236 }, flex: { xs: 1, sm: 'none' } }}>
             <StatusBox tone={style.tone} Icon={style.Icon} label={pr.coverageLabel} />
             <StatusBox
               tone={pr.aiMatchCount ? 'success' : 'warning'}
@@ -205,6 +207,8 @@ export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCovera
               aria-label="Åpne"
               className="open-arrow"
               onClick={(e) => { e.stopPropagation(); onOpen(); }}
+              // 44 px on a phone, where it is a thumb and not a pointer.
+              sx={{ width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
             >
               <ChevronRightIcon />
             </IconButton>

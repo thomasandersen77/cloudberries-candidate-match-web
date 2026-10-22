@@ -118,6 +118,16 @@ export const palettes: Record<BrandTheme, BrandPalette> = {
   },
 };
 
+/**
+ * A touch screen, where a target is a thumb and not a pointer.
+ *
+ * Measured at 390 px on /matches: filter chips were 26 px high, buttons 39 to 41, the card's open
+ * arrow 34. The rule lives here rather than per page, so every page gets it, and only on a coarse
+ * pointer, so the desktop layout does not grow.
+ */
+export const COARSE_POINTER = '@media (pointer: coarse)';
+export const TOUCH_TARGET_PX = 44;
+
 export function createAppTheme(mode: ColorMode, brandTheme: BrandTheme): Theme {
   const isDark = mode === 'dark';
   const brand = palettes[brandTheme];
@@ -250,6 +260,7 @@ export function createAppTheme(mode: ColorMode, brandTheme: BrandTheme): Theme {
             paddingBlock: 8,
             transition:
               'background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease',
+            [COARSE_POINTER]: { minHeight: TOUCH_TARGET_PX },
           },
           containedPrimary: {
             boxShadow: 'none',
@@ -298,6 +309,7 @@ export function createAppTheme(mode: ColorMode, brandTheme: BrandTheme): Theme {
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
+            [COARSE_POINTER]: { minHeight: TOUCH_TARGET_PX },
             borderRadius: 12,
             backgroundColor: isDark ? alpha('#fff', 0.03) : alpha(brand.accent, 0.02),
             '& .MuiOutlinedInput-notchedOutline': {
@@ -358,6 +370,20 @@ export function createAppTheme(mode: ColorMode, brandTheme: BrandTheme): Theme {
             height: 24,
             fontSize: '0.6875rem',
           },
+          // Only a chip that does something: a filter. A chip that labels a skill stays small.
+          clickable: {
+            [COARSE_POINTER]: { height: TOUCH_TARGET_PX, paddingInline: 4 },
+          },
+        },
+      },
+      MuiCheckbox: {
+        styleOverrides: {
+          root: { [COARSE_POINTER]: { padding: 12 } },
+        },
+      },
+      MuiToggleButton: {
+        styleOverrides: {
+          root: { [COARSE_POINTER]: { minHeight: TOUCH_TARGET_PX, minWidth: TOUCH_TARGET_PX } },
         },
       },
       MuiMenu: {
@@ -392,6 +418,7 @@ export function createAppTheme(mode: ColorMode, brandTheme: BrandTheme): Theme {
       MuiIconButton: {
         styleOverrides: {
           root: {
+            [COARSE_POINTER]: { minWidth: TOUCH_TARGET_PX, minHeight: TOUCH_TARGET_PX },
             color: alpha(t.text, 0.65),
             transition: 'color 0.15s ease, background-color 0.15s ease',
             '&:hover': {

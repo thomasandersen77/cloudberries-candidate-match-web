@@ -54,6 +54,15 @@ looking the id up in a list said «Konsulent ikke funnet» for a CV the backend 
 search table keeps the backend's order (by similarity) and shows similarity and CV quality as two
 columns; sorting it by quality hid which signal put a row where it was.
 
+## Touch and phone
+
+On a coarse pointer every control that acts is at least 44 px: the theme sets it for buttons,
+icon buttons, clickable chips, toggles, checkboxes and inputs (`COARSE_POINTER`,
+`TOUCH_TARGET_PX` in `theme.tsx`); a link that stands as an action on its own (a row's «Se
+CV») sets it where it is used, since a link inside a sentence must not grow. Nothing changes
+with a mouse. A page is checked at 390 px for sideways overflow and target size in Playwright
+(`e2e/matches-phone.spec.ts`), not by screenshot; jsdom has neither layout nor pointer queries.
+
 ## Words
 
 One word per thing, everywhere in the UI, in tests and in `aria-label`s: **avrop** (not
