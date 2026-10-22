@@ -49,6 +49,7 @@ vi.mock('../../api/matchingApi', () => ({
   getProjectMatchResults: vi.fn(),
   previewProjectMatches: vi.fn(),
   runProjectMatching: vi.fn(),
+  retryFailedMatches: vi.fn(),
 }));
 
 vi.mock('../../services/consultantsService', () => ({
@@ -437,5 +438,51 @@ describe('RequestMatchPanel', () => {
 
     expect(await screen.findByText('7 av 20 ferdige')).toBeInTheDocument();
     expect(screen.getByText('Kjører AI-matching…')).toBeInTheDocument();
+  });
+
+  /** «Vurder de N som feilet» asks again only those without a score, and the counters follow. */
+  it('offers to retry the candidates that failed, and shows the run once it is complete', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'PARTIAL', runId: 21, attempted: 20, done: 20, succeeded: 17, failed: 3, skipped: 0, requirementsChanged: false,
+    } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(storedRun as never);
+    vi.mocked(api.retryFailedMatches).mockResolvedValue(defaultRun as never);
+    renderPanel();
+
+    const retry = await screen.findByRole('button', { name: 'Vurder de 3 som feilet' });
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'COMPLETED', runId: 21, attempted: 20, done: 20, succeeded: 20, failed: 0, skipped: 0, requirementsChanged: false,
+    } as never);
+    await userEvent.click(retry);
+
+    expect(api.retryFailedMatches).toHaveBeenCalledWith(1);
+    expect(api.runProjectMatching).not.toHaveBeenCalled();
+    expect(await screen.findByText('20 av 20 vurdert')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /som feilet/ })).not.toBeInTheDocument();
+  });
+
+  /** Once the requirements have changed, the scores answer an earlier request: said, and no retry offered. */
+  it('says when the requirements have changed since the run, and offers no retry then', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'PARTIAL', runId: 21, attempted: 20, done: 20, succeeded: 17, failed: 3, skipped: 0, requirementsChanged: true,
+    } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(storedRun as never);
+    renderPanel();
+
+    expect(await screen.findByText(/Kravene er endret etter denne vurderingen/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /som feilet/ })).not.toBeInTheDocument();
+  });
+
+  it('marks a candidate whose CV has changed since the run', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({ projectRequestId: 1, status: 'COMPLETED', runId: 21, attempted: 1, done: 1, succeeded: 1 } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue({
+      ...storedRun, matches: [{ ...storedRun.matches[0], cvChanged: true }],
+    } as never);
+    renderPanel();
+
+    expect(await screen.findByText('CV endret etter vurderingen')).toBeInTheDocument();
   });
 });

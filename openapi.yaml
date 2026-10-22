@@ -1032,6 +1032,34 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /project-requests/{id}/matches/retry-failed:
+    post:
+      tags: [ Matches ]
+      summary: Ask again the candidates of the current run that have no score
+      description: |
+        Re-opens the request's current run and asks the model again about the candidates without a
+        score (failed, incomplete, or left pending), against the same frozen requirements and
+        prompt. Returns the whole run, presented. 409 MATCHING_RETRY_NOTHING_TO_RETRY,
+        MATCHING_RETRY_REQUIREMENTS_CHANGED, MATCHING_RETRY_PROMPT_CHANGED, MATCHING_RETRY_NO_RUN,
+        or MATCHING_RUN_IN_PROGRESS.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: The run's candidates, presented
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MatchCandidateDto' }
+        '409':
+          description: Nothing to retry, the basis has changed, or a run is going; the error code says which.
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /project-requests/{id}/matches/status:
     get:
       tags: [ Matches ]
@@ -2882,6 +2910,10 @@ components:
         passedOnQuality:
           type: boolean
           description: True when somebody with a lower match is placed above this one because of CV quality.
+        cvChanged:
+          type: boolean
+          nullable: true
+          description: The CV has changed since the run scored it, so the score is of an earlier version; null when not known (older runs).
 
     TriggerMatchingResponse:
       type: object
@@ -3012,6 +3044,10 @@ components:
         skipped: { type: integer }
         startedAt: { type: string, format: date-time, nullable: true }
         completedAt: { type: string, format: date-time, nullable: true }
+        requirementsChanged:
+          type: boolean
+          nullable: true
+          description: The request's consultant requirements are not the ones the run was scored against; null for runs that froze none.
 
     MatchingStatus:
       type: string

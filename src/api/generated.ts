@@ -1655,6 +1655,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/project-requests/{id}/matches/retry-failed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask again the candidates of the current run that have no score
+         * @description Re-opens the request's current run and asks the model again about the candidates without a
+         *     score (failed, incomplete, or left pending), against the same frozen requirements and
+         *     prompt. Returns the whole run, presented. 409 MATCHING_RETRY_NOTHING_TO_RETRY,
+         *     MATCHING_RETRY_REQUIREMENTS_CHANGED, MATCHING_RETRY_PROMPT_CHANGED, MATCHING_RETRY_NO_RUN,
+         *     or MATCHING_RUN_IN_PROGRESS.
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The run's candidates, presented */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchCandidateDto"][];
+                    };
+                };
+                /** @description Nothing to retry, the basis has changed, or a run is going; the error code says which. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/project-requests/{id}/matches/status": {
         parameters: {
             query?: never;
@@ -3841,6 +3895,8 @@ export interface components {
             qualityNote?: string | null;
             /** @description True when somebody with a lower match is placed above this one because of CV quality. */
             passedOnQuality?: boolean;
+            /** @description The CV has changed since the run scored it, so the score is of an earlier version; null when not known (older runs). */
+            cvChanged?: boolean | null;
         };
         TriggerMatchingResponse: {
             /** Format: int64 */
@@ -3946,6 +4002,8 @@ export interface components {
             startedAt?: string | null;
             /** Format: date-time */
             completedAt?: string | null;
+            /** @description The request's consultant requirements are not the ones the run was scored against; null for runs that froze none. */
+            requirementsChanged?: boolean | null;
         };
         /**
          * @description PARTIAL means some candidates have a score and some do not; the list shows the ones that do.

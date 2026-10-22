@@ -99,7 +99,11 @@ run, orange «Ikke AI-vurdert» when not. Every other card is tinted.
 The panel's status chip and the line under it come from `GET …/matches/status`, which reports
 the run itself: `RUNNING` with «7 av 20 ferdige», `PARTIAL` («Delvis fullført», warning colour)
 with «17 av 20 vurdert, 3 feilet», `COMPLETED`, `FAILED`, `CANCELLED`. A `409` on «Kjør
-AI-matching» means a run is already going for the request; the message names it.
+AI-matching» means a run is already going for the request; the message names it. «Vurder de N som
+feilet» (`POST …/matches/retry-failed`) shows when the run is PARTIAL or FAILED and its
+requirements are unchanged; it re-opens the same run. When the requirements have changed since the
+run (`requirementsChanged` on the status) a warning says so and no retry is offered. A row whose CV
+has changed since the run carries «CV endret etter vurderingen» (`cvChanged`).
 
 The list is ordered and filtered by the server: a select for the order (`date`, `ai`, `coverage`,
 each both ways) and chips for the filters (`assessed`, one of two or none; `coverage`, the lights

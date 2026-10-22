@@ -33,6 +33,7 @@ import {
   getProjectMatchStatus,
   previewProjectMatches,
   runProjectMatching,
+  retryFailedMatches,
 } from '../../api/matchingApi';
 import type {
   MatchCandidateDto,
@@ -91,6 +92,8 @@ type ExpandableConsultantRowProps = {
   qualityNote?: string | null;
   /** Somebody with a lower match is placed above on CV quality: a CV for a leader or seller to work on. */
   passedOnQuality?: boolean;
+  /** The CV has changed since the run scored it: the score is of an earlier version. AI rows only. */
+  cvChanged?: boolean;
   /** The model's score per requirement, must-haves first; the context the one-line summary lacks. */
   requirements?: RequirementScoreDto[];
   detail?: string | null;
@@ -111,6 +114,7 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
   qualityLabel,
   qualityNote,
   passedOnQuality,
+  cvChanged,
   requirements,
   detail,
   skills,
@@ -163,6 +167,15 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
                   label="Passert på CV-score"
                   size="small"
                   color="warning"
+                  variant="outlined"
+                  sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
+                />
+              )}
+              {cvChanged && (
+                <Chip
+                  label="CV endret etter vurderingen"
+                  size="small"
+                  color="info"
                   variant="outlined"
                   sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
                 />
@@ -549,6 +562,26 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
     }
   };
 
+  // «Vurder de N som feilet»: only those without a score, in the same run, on the same basis.
+  const executeRetry = async () => {
+    const target = requestId;
+    setLoadingRun(true);
+    setState((prev) => ({ ...prev, phase: 'RUNNING', error: null }));
+    try {
+      const results = await retryFailedMatches(target);
+      if (!stillCurrent(target)) return;
+      setState((prev) => ({ ...prev, results, phase: 'COMPLETED' }));
+      void refreshStatus();
+    } catch (error) {
+      if (stillCurrent(target)) {
+        setState((prev) => ({ ...prev, phase: prev.runStatus?.status === 'PARTIAL' ? 'PARTIAL' : 'FAILED', error: extractError(error, 'Gjenforsøket feilet.') }));
+        void refreshStatus();
+      }
+    } finally {
+      if (stillCurrent(target)) setLoadingRun(false);
+    }
+  };
+
   const requestRun = (mode: 'run' | 'rerun') => {
     if (highQuality) {
       setPendingRun(mode);
@@ -568,6 +601,10 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
   }
 
   const aiMatches = state.results?.matches ?? [];
+  // Offered only on the run's own basis: once the requirements have changed, a retry would mix two.
+  const retryable = state.runStatus && ['PARTIAL', 'FAILED'].includes(state.runStatus.status ?? '') && !state.runStatus.requirementsChanged
+    ? (state.runStatus.failed ?? 0)
+    : 0;
   const hasAiResults = aiMatches.length > 0;
   const previewCandidates = state.preview?.candidates ?? [];
   const otherRequirements = coverage?.otherRequirements ?? [];
@@ -708,6 +745,11 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                   Kjør på nytt
                 </Button>
               )}
+              {retryable > 0 && (
+                <Button size="small" variant="outlined" color="warning" disabled={loadingRun} onClick={() => void executeRetry()}>
+                  Vurder de {retryable} som feilet
+                </Button>
+              )}
               <Button size="small" variant="text" disabled={loadingInitial} onClick={() => void refreshPersisted()}>
                 Oppdater status
               </Button>
@@ -738,6 +780,11 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                 <Chip size="small" color="warning" variant="outlined" label="Semantisk søk mangler embeddings" />
               )}
             </Stack>
+            {state.runStatus?.requirementsChanged && (
+              <Alert severity="warning" sx={{ mb: 1 }}>
+                Kravene er endret etter denne vurderingen. Skårene gjelder kravene slik de var da; start en ny vurdering for å vurdere mot dagens krav.
+              </Alert>
+            )}
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
               Ett modellkall per valgt kandidat (anslått rundt 2 US-cent hver), og ingenting før du trykker. Uten avkryssing sender backend de 20 best rangerte.
             </Typography>
@@ -806,6 +853,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                           qualityLabel={formatQualityLabel(s)}
                           qualityNote={s.qualityNote}
                           passedOnQuality={Boolean(s.passedOnQuality)}
+                          cvChanged={Boolean(s.cvChanged)}
                           requirements={s.requirements}
                           detail={s.justification}
                           skills={s.skills}

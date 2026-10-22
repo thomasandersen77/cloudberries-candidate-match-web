@@ -144,6 +144,20 @@ export async function previewProjectMatches(
 
 // --- Persisted results (no LLM on GET) ---
 
+/**
+ * «Vurder de som feilet»: the current run re-opened, and only its candidates without a score asked
+ * again. The server refuses with 409 when the requirements or the prompt have changed since, when
+ * nothing failed, or while a run is going; its message says which.
+ */
+export async function retryFailedMatches(id: number): Promise<ProjectMatchResults> {
+  const { data } = await aiScoringClient.post<MatchCandidateDto[]>(
+    `project-requests/${id}/matches/retry-failed`,
+    null,
+    { timeout: AI_MATCH_TIMEOUT_MS },
+  );
+  return toResults(id, data ?? [], new Date().toISOString());
+}
+
 export async function getProjectMatchResults(id: number, opts?: { limit?: number }): Promise<ProjectMatchResults | null> {
   try {
     const { data } = await apiClient.get<MatchCandidateDto[]>(`project-requests/${id}/matches`, {
