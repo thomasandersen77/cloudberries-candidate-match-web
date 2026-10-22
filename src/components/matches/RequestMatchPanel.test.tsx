@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import RequestMatchPanel from './RequestMatchPanel';
@@ -25,30 +25,34 @@ const renderPanel = (props: Partial<React.ComponentProps<typeof RequestMatchPane
     </MemoryRouter>,
   );
 
+const defaultPreview = {
+  projectRequestId: 1,
+  semanticSearchReady: true,
+  candidates: [
+    { userId: 'u1', name: 'Kari', combinedScore: 0.8, reason: 'God overlap', mustCovered: 2, mustTotal: 2, matchedRequirements: ['Kotlin', 'Kafka'], missingRequirements: [] },
+    { userId: 'u2', name: 'Ola', combinedScore: 0.72, reason: 'Delvis overlap', mustCovered: 1, mustTotal: 2, matchedRequirements: ['Kotlin'], missingRequirements: ['Kafka'] },
+    { userId: 'u3', name: 'Nina', combinedScore: 0.69, reason: 'Svak overlap', mustCovered: 1, mustTotal: 2, matchedRequirements: ['Kafka'], missingRequirements: ['Kotlin'] },
+  ],
+};
+
+const defaultRun = {
+  projectRequestId: 1,
+  matches: [
+    { userId: 'u1', name: 'Thomas Andersen', cvId: 'c1', score: 8.3, scorePercent: 83, justification: 'God match med lang begrunnelse som skal vises når raden utvides.' },
+    { userId: 'u2', name: 'Stine Holst', cvId: 'c2', score: 7.5, scorePercent: 75, justification: 'Sterk profil med relevant erfaring.' },
+  ],
+  lastUpdated: '2026-01-01T12:00:00Z',
+};
+
 vi.mock('../../api/matchingApi', () => ({
-  getProjectMatchStatus: vi.fn().mockResolvedValue({ projectRequestId: 1, status: 'NOT_STARTED' }),
-  getProjectMatchResults: vi.fn().mockResolvedValue(null),
-  previewProjectMatches: vi.fn().mockResolvedValue({
-    projectRequestId: 1,
-    semanticSearchReady: true,
-    candidates: [
-      { userId: 'u1', name: 'Kari', combinedScore: 0.8, reason: 'God overlap', mustCovered: 2, mustTotal: 2, matchedRequirements: ['Kotlin', 'Kafka'], missingRequirements: [] },
-      { userId: 'u2', name: 'Ola', combinedScore: 0.72, reason: 'Delvis overlap', mustCovered: 1, mustTotal: 2, matchedRequirements: ['Kotlin'], missingRequirements: ['Kafka'] },
-      { userId: 'u3', name: 'Nina', combinedScore: 0.69, reason: 'Svak overlap', mustCovered: 1, mustTotal: 2, matchedRequirements: ['Kafka'], missingRequirements: ['Kotlin'] },
-    ],
-  }),
-  runProjectMatching: vi.fn().mockResolvedValue({
-    projectRequestId: 1,
-    matches: [
-      { userId: 'u1', name: 'Thomas Andersen', cvId: 'c1', score: 8.3, scorePercent: 83, justification: 'God match med lang begrunnelse som skal vises når raden utvides.' },
-      { userId: 'u2', name: 'Stine Holst', cvId: 'c2', score: 7.5, scorePercent: 75, justification: 'Sterk profil med relevant erfaring.' },
-    ],
-    lastUpdated: '2026-01-01T12:00:00Z',
-  }),
+  getProjectMatchStatus: vi.fn(),
+  getProjectMatchResults: vi.fn(),
+  previewProjectMatches: vi.fn(),
+  runProjectMatching: vi.fn(),
 }));
 
 vi.mock('../../services/consultantsService', () => ({
-  getEmbeddingInfo: vi.fn().mockResolvedValue({ enabled: true, semanticSearchReady: false }),
+  getEmbeddingInfo: vi.fn(),
 }));
 
 /**
@@ -56,9 +60,100 @@ vi.mock('../../services/consultantsService', () => ({
  * is free and loads by itself; the AI run is the one paid step and waits for a click; the settings
  * sit behind a button.
  */
+/** A promise the test resolves when it decides, to put answers in the order the network might. */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
+
+const storedRun = {
+  projectRequestId: 1,
+  matches: [{ userId: 'u1', name: 'Thomas Andersen', cvId: 'c1', score: 8.3, scorePercent: 83, justification: 'Lagret.' }],
+  lastUpdated: '2026-01-01T12:00:00Z',
+};
+
 describe('RequestMatchPanel', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  // Reset, then the defaults again: clearAllMocks keeps a test's mockReturnValue, and a deferred
+  // preview from one test hung the next twelve.
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({ projectRequestId: 1, status: 'NOT_STARTED' } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(null as never);
+    vi.mocked(api.previewProjectMatches).mockResolvedValue(defaultPreview as never);
+    vi.mocked(api.runProjectMatching).mockResolvedValue(defaultRun as never);
+    const consultants = await import('../../services/consultantsService');
+    vi.mocked(consultants.getEmbeddingInfo).mockResolvedValue({ enabled: true, semanticSearchReady: false } as never);
+  });
+
+  /**
+   * The four states are separate. The preview is an estimate of whom to assess and says nothing
+   * about whether an assessment was run; it used to write «Forhåndsvisning klar» over a completed
+   * run whenever its answer came last.
+   */
+  it('never lets the preview overwrite the status of a completed run', async () => {
+    const api = await import('../../api/matchingApi');
+    const preview = deferred<unknown>();
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({ projectRequestId: 1, status: 'COMPLETED' } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(storedRun as never);
+    vi.mocked(api.previewProjectMatches).mockReturnValue(preview.promise as never);
+    renderPanel();
+
+    expect(await screen.findByText('Fullført')).toBeInTheDocument();
+    await act(async () => {
+      preview.resolve({ projectRequestId: 1, semanticSearchReady: true, candidates: [{ userId: 'u1', name: 'Kari', combinedScore: 0.8 }] });
+    });
+
+    expect(await screen.findByText('Kari')).toBeInTheDocument();
+    expect(screen.getByText('Fullført')).toBeInTheDocument();
+    expect(screen.queryByText('Forhåndsvisning klar')).not.toBeInTheDocument();
+  });
+
+  /**
+   * A server error is not «not run». It used to fall back to NOT_STARTED and null, so a 500 read
+   * as «nothing has been run» and invited a paid run of what was already stored.
+   */
+  it('says when the stored assessment could not be read, and never calls it «ikke kjørt»', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockRejectedValue(new Error('Request failed with status code 500'));
+    vi.mocked(api.getProjectMatchResults).mockRejectedValue(new Error('Request failed with status code 500'));
+    renderPanel();
+
+    expect(await screen.findByText(/Kunne ikke hente vurderingen/)).toBeInTheDocument();
+    expect(screen.getByText('Status ukjent')).toBeInTheDocument();
+    expect(screen.queryByText('Ikke kjørt')).not.toBeInTheDocument();
+
+    // Retrying reads again and runs nothing.
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({ projectRequestId: 1, status: 'COMPLETED' } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(storedRun as never);
+    await userEvent.click(screen.getByRole('button', { name: 'Hent på nytt' }));
+
+    expect(await screen.findByText('Fullført')).toBeInTheDocument();
+    expect(screen.queryByText(/Kunne ikke hente vurderingen/)).not.toBeInTheDocument();
+    expect(api.runProjectMatching).not.toHaveBeenCalled();
+  });
+
+  /** A slow answer for the avrop the panel left is dropped, not shown under the next one. */
+  it('ignores an answer that arrives for a request the panel has moved on from', async () => {
+    const api = await import('../../api/matchingApi');
+    const firstResults = deferred<unknown>();
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({ projectRequestId: 1, status: 'NOT_STARTED' } as never);
+    vi.mocked(api.getProjectMatchResults).mockImplementation((id: number) =>
+      (id === 1 ? firstResults.promise : Promise.resolve(null)) as never);
+    const view = renderPanel({ requestId: 1 });
+
+    view.rerender(
+      <MemoryRouter>
+        <RequestMatchPanel requestId={2} coverage={coverage} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Kari');
+    await act(async () => { firstResults.resolve(storedRun); });
+
+    expect(screen.queryByText('Thomas Andersen')).not.toBeInTheDocument();
+    expect(screen.queryByText('Fullført')).not.toBeInTheDocument();
   });
 
   it('loads the free preview by itself, and never runs the AI by itself', async () => {

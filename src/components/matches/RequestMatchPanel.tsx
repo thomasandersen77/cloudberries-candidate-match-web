@@ -246,12 +246,26 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
   );
 };
 
+/**
+ * Four things that are true or false on their own: what the server says about the run, whether
+ * the stored result could be read, what the free preview found, and what the last action said.
+ *
+ * They were one `phase`, and the preview wrote «Forhåndsvisning klar» over a completed run when
+ * its answer arrived last, while a failed GET fell back to «ikke kjørt», so a server error read as
+ * «nothing has been run» and invited a paid run. The run phase is written only by the status
+ * endpoint and the run itself; a load failure keeps the last result and says so.
+ */
 type PanelState = {
+  /** The run as the server last reported it, or as this panel started it. Never written by the preview. */
   phase: FrontendMatchPhase;
   results: ProjectMatchResults | null;
+  /** The status or result could not be read; the result shown, if any, is the one read before. */
+  loadError: string | null;
   preview: ProjectMatchPreviewResponse | null;
   previewAvailable: boolean;
+  previewError: string | null;
   semanticReady: boolean | null;
+  /** What the last action (a run) said went wrong. */
   error: string | null;
 };
 
@@ -318,32 +332,62 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
   const [state, setState] = useState<PanelState>({
     phase: 'NOT_STARTED',
     results: null,
+    loadError: null,
     preview: null,
     previewAvailable: true,
+    previewError: null,
     semanticReady: null,
     error: null,
   });
+  /**
+   * The request this panel shows now. An answer that arrives for another request, after the
+   * panel moved on, is dropped: without this a slow result for one avrop landed on the next.
+   */
+  const activeRequestRef = useRef(requestId);
+  activeRequestRef.current = requestId;
+  const stillCurrent = (target: number) => mountedRef.current && activeRequestRef.current === target;
 
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
 
-  const refreshPersisted = useCallback(async () => {
-    const [statusRes, resultsRes, embedInfo] = await Promise.all([
-      getProjectMatchStatus(requestId).catch(() => ({ status: 'NOT_STARTED' } as MatchStatusDto)),
-      getProjectMatchResults(requestId).catch(() => null),
-      getEmbeddingInfo().catch(() => null),
-    ]);
-    if (!mountedRef.current) return;
-    const hasResults = (resultsRes?.matches?.length ?? 0) > 0;
-    setState((prev) => ({
-      ...prev,
-      phase: resolvePhase(statusRes, hasResults),
-      results: resultsRes,
-      semanticReady: embedInfo?.semanticSearchReady ?? embedInfo?.enabled ?? null,
+  useEffect(() => {
+    setState({
+      phase: 'NOT_STARTED',
+      results: null,
+      loadError: null,
+      preview: null,
+      previewAvailable: true,
+      previewError: null,
+      semanticReady: null,
       error: null,
-    }));
+    });
+  }, [requestId]);
+
+  /** Reads only: the run status and the stored result. A failure here is said, never shown as «not run». */
+  const refreshPersisted = useCallback(async () => {
+    const target = requestId;
+    const embedInfoPromise = getEmbeddingInfo().catch(() => null);
+    try {
+      const [statusRes, resultsRes] = await Promise.all([
+        getProjectMatchStatus(target),
+        getProjectMatchResults(target),
+      ]);
+      const embedInfo = await embedInfoPromise;
+      if (!stillCurrent(target)) return;
+      const hasResults = (resultsRes?.matches?.length ?? 0) > 0;
+      setState((prev) => ({
+        ...prev,
+        phase: resolvePhase(statusRes, hasResults),
+        results: resultsRes,
+        loadError: null,
+        semanticReady: embedInfo?.semanticSearchReady ?? embedInfo?.enabled ?? null,
+      }));
+    } catch (error) {
+      if (!stillCurrent(target)) return;
+      setState((prev) => ({ ...prev, loadError: extractError(error, 'Kunne ikke hente matching-status.') }));
+    }
   }, [requestId]);
 
   useEffect(() => {
@@ -351,10 +395,6 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
       setLoadingInitial(true);
       try {
         await refreshPersisted();
-      } catch (error) {
-        if (mountedRef.current) {
-          setState((prev) => ({ ...prev, error: extractError(error, 'Kunne ikke laste matching-status.') }));
-        }
       } finally {
         if (mountedRef.current) setLoadingInitial(false);
       }
@@ -389,19 +429,17 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
     if (!state.preview) setSelectedUserIds([]);
   }, [state.preview]);
 
+  // The preview writes the preview fields and nothing else: it is an estimate of whom to assess,
+  // and says nothing about whether an assessment has been run.
   const handlePreview = useCallback(async () => {
+    const target = requestId;
     setLoadingPreview(true);
-    setState((prev) => ({ ...prev, error: null }));
+    setState((prev) => ({ ...prev, previewError: null }));
     try {
-      const preview = await previewProjectMatches(requestId, { limit });
-      if (!mountedRef.current) return;
+      const preview = await previewProjectMatches(target, { limit });
+      if (!stillCurrent(target)) return;
       if (!preview) {
-        setState((prev) => ({
-          ...prev,
-          preview: null,
-          previewAvailable: false,
-          phase: prev.phase === 'NOT_STARTED' ? 'READY_FOR_PREVIEW' : prev.phase,
-        }));
+        setState((prev) => ({ ...prev, preview: null, previewAvailable: false }));
         return;
       }
       // Everything previewed is ticked by default, so the button behaves as it always has until
@@ -409,18 +447,13 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
       setSelectedUserIds(
         (preview.candidates ?? []).map((c) => c.userId).filter((id): id is string => Boolean(id)),
       );
-      setState((prev) => ({
-        ...prev,
-        preview,
-        previewAvailable: true,
-        phase: 'PREVIEW_READY',
-      }));
+      setState((prev) => ({ ...prev, preview, previewAvailable: true }));
     } catch (error) {
-      if (mountedRef.current) {
-        setState((prev) => ({ ...prev, error: extractError(error, 'Forhåndsvisning feilet.') }));
+      if (stillCurrent(target)) {
+        setState((prev) => ({ ...prev, previewError: extractError(error, 'Forhåndsvisning feilet.') }));
       }
     } finally {
-      if (mountedRef.current) setLoadingPreview(false);
+      if (stillCurrent(target)) setLoadingPreview(false);
     }
   }, [requestId, limit]);
 
@@ -431,21 +464,24 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
   }, [handlePreview]);
 
   const executeRun = async () => {
+    const target = requestId;
     setLoadingRun(true);
     setState((prev) => ({ ...prev, phase: 'RUNNING', error: null }));
     try {
-      const outcome = await runProjectMatching(requestId, {
+      const outcome = await runProjectMatching(target, {
         limit,
         useHighestQualityModel: highQuality,
         cvWeightPercent,
         consultantUserIds: selectedUserIds,
       });
-      if (!mountedRef.current) return;
+      if (!stillCurrent(target)) return;
       if ('async' in outcome && outcome.async) {
         // Poll persisted results briefly
         for (let i = 0; i < 20; i++) {
           await new Promise((r) => setTimeout(r, 1500));
-          const results = await getProjectMatchResults(requestId);
+          if (!stillCurrent(target)) return;
+          const results = await getProjectMatchResults(target).catch(() => null);
+          if (!stillCurrent(target)) return;
           if (results?.matches?.length) {
             setState((prev) => ({ ...prev, results, phase: 'COMPLETED' }));
             return;
@@ -463,7 +499,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
         phase: 'COMPLETED',
       }));
     } catch (error) {
-      if (mountedRef.current) {
+      if (stillCurrent(target)) {
         setState((prev) => ({
           ...prev,
           phase: 'FAILED',
@@ -471,7 +507,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
         }));
       }
     } finally {
-      if (mountedRef.current) setLoadingRun(false);
+      if (stillCurrent(target)) setLoadingRun(false);
       setConfirmOpen(false);
       setPendingRun(null);
     }
@@ -606,6 +642,9 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                 Forhåndsvisning er ikke tilgjengelig fra backend. «Kjør AI-matching» lar backend velge kandidatene.
               </Alert>
             )}
+            {state.previewError && (
+              <Alert severity="warning" sx={{ py: 0.5 }}>Kunne ikke hente forhåndsvisningen: {state.previewError}</Alert>
+            )}
           </Box>
     </>
   );
@@ -645,12 +684,16 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               >
                 {settingsOpen ? 'Skjul innstillinger' : 'Innstillinger'}
               </Button>
-              <Chip
-                size="small"
-                label={hasAiResults || state.phase === 'RUNNING' || state.phase === 'FAILED' ? phaseLabel(state.phase) : 'Ikke kjørt'}
-                color={state.phase === 'COMPLETED' ? 'success' : state.phase === 'FAILED' ? 'error' : 'default'}
-                variant="outlined"
-              />
+              {state.loadError ? (
+                <Chip size="small" label="Status ukjent" color="warning" variant="outlined" />
+              ) : (
+                <Chip
+                  size="small"
+                  label={hasAiResults || state.phase === 'RUNNING' || state.phase === 'FAILED' ? phaseLabel(state.phase) : 'Ikke kjørt'}
+                  color={state.phase === 'COMPLETED' ? 'success' : state.phase === 'FAILED' ? 'error' : 'default'}
+                  variant="outlined"
+                />
+              )}
               {state.semanticReady === false && (
                 <Chip size="small" color="warning" variant="outlined" label="Semantisk søk mangler embeddings" />
               )}
@@ -743,6 +786,15 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
 
   return (
     <Stack spacing={2.5}>
+      {state.loadError && (
+        <Alert
+          severity="warning"
+          action={<Button size="small" color="inherit" onClick={() => void refreshPersisted()}>Hent på nytt</Button>}
+        >
+          Kunne ikke hente vurderingen: {state.loadError}
+          {state.results ? ' Viser det som ble hentet sist.' : ' Om den er kjørt, er ukjent.'}
+        </Alert>
+      )}
       {state.error && <Alert severity="error">{state.error}</Alert>}
 
       {sections.map((section, i) => <React.Fragment key={i}>{section}</React.Fragment>)}
