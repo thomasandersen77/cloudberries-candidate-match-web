@@ -13,16 +13,16 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
  */
 const HOW_MATCHING_WORKS = [
   {
-    title: '1. Forutvalg uten AI',
+    title: '1. Forutvalg uten AI-vurdering',
     text: 'Et grovt anslag fra ferdighetslistene, tekstlikhet og CV-score, bare for å velge hvem som vurderes. Rekkefølgen her forutsier vurderingen dårlig; på ett avrop var modellens nummer to forutvalgets nummer femten. Derfor går tjue videre.',
   },
   {
     title: '2. AI-vurdering',
-    text: 'Modellen leser hele CV-en mot hvert krav og gir en skår per krav med begrunnelse. Kravmatchen regnes ut av systemet fra kravskårene, må-krav teller dobbelt. Dette er svaret; ett modellkall per konsulent, omtrent tre øre.',
+    text: 'Modellen leser et strukturert utdrag av CV-en (ferdigheter, de ti nyeste prosjektene, rollebeskrivelser) og gir en skår per krav og en samlet begrunnelse. Kravmatchen regnes ut av systemet fra kravskårene, må-krav teller dobbelt. Ett modellkall per konsulent, anslått til rundt 2 US-cent.',
   },
   {
     title: '3. Rekkefølge og forslag',
-    text: 'Listen sorteres på kravmatch veid mot CV-score med prosenten du velger; når CV-scoren flytter noen, står det hvorfor. Forslag skrives først når du ber om det for én person.',
+    text: 'Listen sorteres på kravmatch veid mot CV-score med prosenten du velger; når CV-scoren flytter noen, står det hvorfor. Å åpne en lagret vurdering starter ingen ny. Forslag skrives først når du ber om det for én person.',
   },
 ] as const;
 

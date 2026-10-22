@@ -74,7 +74,7 @@ export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
     steps: [
       'Hvert kort viser kravene med antall konsulenter per ferdighet, og hvor mange som har treff på alle må-krav. Et treff er et ord på CV-en, ikke et oppfylt krav.',
       'Åpne et kort for avropets egen side. Der står AI-vurderingen øverst med skår per krav og begrunnelse, og forutvalget under, som bare velger hvem som vurderes.',
-      'AI-vurderingen starter først når du trykker, tjue kandidater som standard, omtrent tre øre per person.',
+      'AI-vurderingen starter først når du trykker, tjue kandidater som standard, anslått til rundt 2 US-cent per person.',
     ],
   },
 

@@ -67,7 +67,7 @@ describe('RequestMatchPage', () => {
 
     expect(await screen.findByText('NAV')).toBeInTheDocument();
     expect(screen.getByText('Slik fungerer matchingen')).toBeInTheDocument();
-    expect(screen.getByText('1. Forutvalg uten AI')).toBeInTheDocument();
+    expect(screen.getByText('1. Forutvalg uten AI-vurdering')).toBeInTheDocument();
     expect(screen.getByText('2. AI-vurdering')).toBeInTheDocument();
     expect(screen.getByText('3. Rekkefølge og forslag')).toBeInTheDocument();
     expect(screen.getByTestId('panel')).toBeInTheDocument();

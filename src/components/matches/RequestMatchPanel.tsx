@@ -699,7 +699,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               )}
             </Stack>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-              Ett modellkall per valgt kandidat, og ingenting før du trykker. Uten avkryssing sender backend de 20 best rangerte.
+              Ett modellkall per valgt kandidat (anslått rundt 2 US-cent hver), og ingenting før du trykker. Uten avkryssing sender backend de 20 best rangerte.
             </Typography>
 
             <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
