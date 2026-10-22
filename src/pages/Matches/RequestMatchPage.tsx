@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useParams } from 'react-router-dom';
 import { Alert, Box, Button, CircularProgress, Container, Link, Paper, Stack, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBackIosNew';
 import { getMatchRequest } from '../../services/matchesRequestsService';
@@ -66,6 +66,10 @@ const RequestRequirements: React.FC<{ request: ProjectRequestResponseDto }> = ({
 const RequestMatchPage: React.FC = () => {
   const { id } = useParams();
   const requestId = Number(id);
+  // The list this page was opened from, with its filters and page; a plain /matches when the page
+  // was reached by a link, a reload or the chat.
+  const listSearch = (useLocation().state as { listSearch?: string } | null)?.listSearch;
+  const backTo = listSearch ? `/matches?${listSearch}` : '/matches';
   const [item, setItem] = useState<MatchesListItemDto | null | undefined>(undefined);
   const [request, setRequest] = useState<ProjectRequestResponseDto | null>(null);
 
@@ -86,7 +90,7 @@ const RequestMatchPage: React.FC = () => {
 
   return (
     <Container sx={{ py: { xs: 2, md: 4 } }}>
-      <Button component={RouterLink} to="/matches" size="small" startIcon={<ArrowBackIcon sx={{ fontSize: 14 }} />} sx={{ textTransform: 'none', mb: 2 }}>
+      <Button component={RouterLink} to={backTo} size="small" startIcon={<ArrowBackIcon sx={{ fontSize: 14 }} />} sx={{ textTransform: 'none', mb: 2 }}>
         Tilbake til matcher
       </Button>
 

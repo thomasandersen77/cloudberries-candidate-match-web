@@ -82,7 +82,10 @@ run, orange «Ikke AI-vurdert» when not. Every other card is tinted.
 The list is ordered and filtered by the server: a select for the order (`date`, `ai`, `coverage`,
 each both ways) and chips for the filters (`assessed`, one of two or none; `coverage`, the lights
 added up). Any change starts again from the first page; the count under the select says how many
-are left.
+are left. The order, the filters, the page and the page size live in the
+URL (`?sort=&assessed=&coverage=&page=&size=`, defaults left out, unknown values ignored),
+written with `replace`; opening a card passes the list's query as navigation state, and the
+request page's «Tilbake til matcher» goes back to it.
 
 ## Verifying
 

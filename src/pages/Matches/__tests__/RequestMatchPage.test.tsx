@@ -114,4 +114,18 @@ describe('RequestMatchPage', () => {
     expect(screen.getByTestId('panel')).toBeInTheDocument();
     expect(panelProps.last).toMatchObject({ requestId: 42, layout: 'page' });
   });
+
+  /** «Tilbake» led to a plain /matches, so a filtered list was lost on every round trip. */
+  it('leads back to the list it was opened from, filters and page included', async () => {
+    vi.mocked(getMatchRequest).mockResolvedValue(item as never);
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/matches/9011', state: { listSearch: 'assessed=true&page=1' } }]}>
+        <Routes>
+          <Route path="/matches/:id" element={<RequestMatchPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('link', { name: 'Tilbake til matcher' })).toHaveAttribute('href', '/matches?assessed=true&page=1');
+  });
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import MatchesPage from '../MatchesPage';
 import { listMatchRequests } from '../../../services/matchesRequestsService';
 
@@ -17,14 +17,22 @@ const mockedList = vi.mocked(listMatchRequests);
  * Sorting on the AI and on coverage is the server's, over values it computes; the page only
  * sends the query and starts again from the first page when it changes.
  */
-const renderList = () => {
+/** What the list's URL says now, from inside the router. */
+const Location: React.FC = () => {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname + location.search}</div>;
+};
+
+const renderList = (at = '/matches') => {
   mockedList.mockResolvedValue({ content: [], currentPage: 0, totalPages: 0, totalElements: 0, pageSize: 20, hasNext: false, hasPrevious: false } as never);
   return render(
-    <MemoryRouter initialEntries={['/matches']}>
-      <Routes><Route path="/matches" element={<MatchesPage />} /></Routes>
+    <MemoryRouter initialEntries={[at]}>
+      <Routes><Route path="/matches" element={<><MatchesPage /><Location /></>} /></Routes>
     </MemoryRouter>
   );
 };
+
+const locationNow = () => screen.getByTestId('location').textContent;
 
 const lastQuery = () => mockedList.mock.calls[mockedList.mock.calls.length - 1][0];
 
@@ -79,5 +87,34 @@ describe('sortering og filtre på matchlisten', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Nullstill' }));
     await waitFor(() => expect(lastQuery()).toMatchObject({ assessed: null, coverage: [] }));
     expect(screen.queryByRole('button', { name: 'Nullstill' })).not.toBeInTheDocument();
+  });
+
+  /**
+   * The order, the filters and the page live in the URL. They were component state, so opening
+   * a request and coming back reset them: «AI-vurdert» narrowed the list to seven, and «Tilbake
+   * til matcher» showed twenty-seven.
+   */
+  it('keeps the order, the filters and the size in the URL, and leaves the defaults out of it', async () => {
+    renderList();
+    await waitFor(() => expect(mockedList).toHaveBeenCalled());
+    expect(locationNow()).toBe('/matches');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ikke AI-vurdert' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mange treff' }));
+    fireEvent.click(screen.getByRole('button', { name: '50' }));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ assessed: false, coverage: ['GREEN'], size: 50, page: 0 }));
+    expect(locationNow()).toBe('/matches?assessed=false&coverage=GREEN&size=50');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nullstill' }));
+    await waitFor(() => expect(locationNow()).toBe('/matches?size=50'));
+  });
+
+  it('reads the order, the filters and the page back from the URL, and ignores what it does not know', async () => {
+    renderList('/matches?sort=coverage,asc&assessed=true&coverage=RED,YELLOW,BOGUS&page=2&size=10&junk=1');
+    await waitFor(() => expect(mockedList).toHaveBeenCalled());
+
+    expect(lastQuery()).toMatchObject({ sort: 'coverage,asc', assessed: true, coverage: ['RED', 'YELLOW'], page: 2, size: 10 });
+    expect(screen.getByRole('button', { name: 'AI-vurdert' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('combobox', { name: /Sortering/ })).toHaveTextContent('Færrest treff først');
   });
 });

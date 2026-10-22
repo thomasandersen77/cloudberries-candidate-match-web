@@ -25,7 +25,7 @@ import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { listMatchRequests } from '../../services/matchesRequestsService';
 import type { CoverageStatus, MatchesListItemDto, PagedMatchesListDto } from '../../types/api';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import PageIntro from '../../components/PageIntro';
 import { CoverageChips } from '../../components/matches/RequestCoverage';
 import { describeAiStatus, describeCoverage, describeFullMatch } from '../../components/matches/coverageText';
@@ -266,40 +266,78 @@ const FilterChip: React.FC<FilterChipProps> = ({ label, active, onClick }) => (
   />
 );
 
+const PAGE_SIZES = [10, 20, 50] as const;
+const SORT_VALUES = SORT_OPTIONS.map((o) => o.value);
+const COVERAGE_VALUES = COVERAGE_FILTERS.map((f) => f.status);
+
+/**
+ * The list's order, filters, page and page size live in the URL, not in component state.
+ *
+ * They were state, so opening a request and coming back reset them: «AI-vurdert» narrowed the
+ * list to seven, the request page opened, «Tilbake til matcher» showed twenty-seven. Read from
+ * the URL on every render, written with `replace` so the browser's back button still leaves
+ * the list rather than stepping through its filters. Anything the URL holds that the page does
+ * not understand falls back to the default rather than reaching the server.
+ */
+type ListQuery = { sort: SortValue; assessed: boolean | null; coverage: CoverageStatus[]; pageIndex: number; pageSize: number };
+
+function readQuery(params: URLSearchParams): ListQuery {
+  const sort = params.get('sort');
+  const assessed = params.get('assessed');
+  const size = Number(params.get('size'));
+  const pageIndex = Number(params.get('page'));
+  return {
+    sort: (SORT_VALUES as string[]).includes(sort ?? '') ? (sort as SortValue) : 'date,desc',
+    assessed: assessed === 'true' ? true : assessed === 'false' ? false : null,
+    coverage: (params.get('coverage') ?? '').split(',').filter((c): c is CoverageStatus => (COVERAGE_VALUES as string[]).includes(c)),
+    pageIndex: Number.isInteger(pageIndex) && pageIndex > 0 ? pageIndex : 0,
+    pageSize: (PAGE_SIZES as readonly number[]).includes(size) ? size : 20,
+  };
+}
+
+/** Only what differs from the default, so the plain `/matches` stays plain. */
+function writeQuery(q: ListQuery): URLSearchParams {
+  const params = new URLSearchParams();
+  if (q.sort !== 'date,desc') params.set('sort', q.sort);
+  if (q.assessed !== null) params.set('assessed', String(q.assessed));
+  if (q.coverage.length > 0) params.set('coverage', q.coverage.join(','));
+  if (q.pageIndex > 0) params.set('page', String(q.pageIndex));
+  if (q.pageSize !== 20) params.set('size', String(q.pageSize));
+  return params;
+}
+
 const MatchesPage: React.FC = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const params = new URLSearchParams(location.search);
+  const [params, setParams] = useSearchParams();
   const requestIdParam = params.get('requestId');
   const requestId = requestIdParam ? Number(requestIdParam) : null;
+  const query = useMemo(() => readQuery(params), [params]);
+  const { sort, assessed, coverage, pageIndex, pageSize } = query;
 
   const [page, setPage] = useState<PagedMatchesListDto | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pageSize, setPageSize] = useState<number>(20);
-  const [sort, setSort] = useState<SortValue>('date,desc');
-  const [assessed, setAssessed] = useState<boolean | null>(null);
-  const [coverage, setCoverage] = useState<CoverageStatus[]>([]);
   const filtering = assessed !== null || coverage.length > 0;
 
-  const loadPage = async (pageIndex: number) => {
-    setLoading(true);
-    try {
-      const p = await listMatchRequests({ page: pageIndex, size: pageSize, sort, assessed, coverage });
-      setPage(p);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Any change to the order, the filters or the size starts over from the first page.
+  const update = (change: Partial<ListQuery>) =>
+    setParams(writeQuery({ ...query, pageIndex: 0, ...change }), { replace: true });
+  const setSort = (value: SortValue) => update({ sort: value });
+  const setAssessed = (value: boolean | null) => update({ assessed: value });
+  const setPageSize = (value: number) => update({ pageSize: value });
+  const toggleCoverage = (status: CoverageStatus) =>
+    update({ coverage: coverage.includes(status) ? coverage.filter((s) => s !== status) : [...coverage, status] });
+  const loadPage = (index: number) => update({ pageIndex: index });
 
-  // Any change to the order or the filters starts over from the first page.
   useEffect(() => {
     if (requestId) return;
-    loadPage(0);
+    let current = true;
+    setLoading(true);
+    listMatchRequests({ page: pageIndex, size: pageSize, sort, assessed, coverage })
+      .then((p) => { if (current) setPage(p); })
+      .finally(() => { if (current) setLoading(false); });
+    return () => { current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageSize, requestId, sort, assessed, coverage]);
-
-  const toggleCoverage = (status: CoverageStatus) =>
-    setCoverage((current) => (current.includes(status) ? current.filter((s) => s !== status) : [...current, status]));
+  }, [requestId, pageIndex, pageSize, sort, assessed, coverage.join(',')]);
 
   const rows = useMemo(() => page?.content ?? [], [page]);
 
@@ -339,7 +377,7 @@ const MatchesPage: React.FC = () => {
               <FilterChip key={f.status} label={f.label} active={coverage.includes(f.status)} onClick={() => toggleCoverage(f.status)} />
             ))}
             {filtering && (
-              <Button size="small" onClick={() => { setAssessed(null); setCoverage([]); }} sx={{ textTransform: 'none' }}>
+              <Button size="small" onClick={() => update({ assessed: null, coverage: [] })} sx={{ textTransform: 'none' }}>
                 Nullstill
               </Button>
             )}
@@ -393,7 +431,8 @@ const MatchesPage: React.FC = () => {
               key={pr.id}
               pr={pr}
               muted={i % 2 === 1}
-              onOpen={() => navigate(`/matches/${pr.id}`)}
+              // The list's query goes along, so «Tilbake til matcher» lands on the same list.
+              onOpen={() => navigate(`/matches/${pr.id}`, { state: { listSearch: params.toString() } })}
             />
           ))}
         </Stack>
