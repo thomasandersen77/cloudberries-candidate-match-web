@@ -1709,6 +1709,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/project-requests/{id}/matches/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the request's active run to stop
+         * @description Calls already sent finish and are kept; candidates not yet asked are not. A batch is asked
+         *     to cancel at the provider and collected as it ends, with what it had produced. Answers with
+         *     the status after the request, which may still be RUNNING. 409 MATCHING_CANCEL_NO_RUN when
+         *     nothing is running.
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The run's status after the cancel request */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProjectMatchStatusResponse"];
+                    };
+                };
+                /** @description Nothing is running. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["ErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/project-requests/{id}/matches/status": {
         parameters: {
             query?: never;
@@ -4004,9 +4057,16 @@ export interface components {
             completedAt?: string | null;
             /** @description The request's consultant requirements are not the ones the run was scored against; null for runs that froze none. */
             requirementsChanged?: boolean | null;
+            /** @description «Avbryt» has been pressed; a RUNNING run is finishing what was already sent. */
+            cancelRequested?: boolean;
+            /** @description Candidates the cancel left unasked. */
+            cancelled?: number;
         };
         /**
          * @description PARTIAL means some candidates have a score and some do not; the list shows the ones that do.
+         *     CANCELLED means «Avbryt» stopped the run before every candidate was asked; it is never the
+         *     run shown, and the answers it got are kept with it.
+         *
          * @enum {string}
          */
         MatchingStatus: "NOT_STARTED" | "READY_FOR_PREVIEW" | "RUNNING" | "COMPLETED" | "PARTIAL" | "FAILED" | "CANCELLED";

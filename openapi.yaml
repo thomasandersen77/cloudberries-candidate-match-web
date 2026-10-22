@@ -1060,6 +1060,32 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /project-requests/{id}/matches/cancel:
+    post:
+      tags: [ Matches ]
+      summary: Ask the request's active run to stop
+      description: |
+        Calls already sent finish and are kept; candidates not yet asked are not. A batch is asked
+        to cancel at the provider and collected as it ends, with what it had produced. Answers with
+        the status after the request, which may still be RUNNING. 409 MATCHING_CANCEL_NO_RUN when
+        nothing is running.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: The run's status after the cancel request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMatchStatusResponse'
+        '409':
+          description: Nothing is running.
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
   /project-requests/{id}/matches/status:
     get:
       tags: [ Matches ]
@@ -3048,10 +3074,19 @@ components:
           type: boolean
           nullable: true
           description: The request's consultant requirements are not the ones the run was scored against; null for runs that froze none.
+        cancelRequested:
+          type: boolean
+          description: «Avbryt» has been pressed; a RUNNING run is finishing what was already sent.
+        cancelled:
+          type: integer
+          description: Candidates the cancel left unasked.
 
     MatchingStatus:
       type: string
-      description: PARTIAL means some candidates have a score and some do not; the list shows the ones that do.
+      description: |
+        PARTIAL means some candidates have a score and some do not; the list shows the ones that do.
+        CANCELLED means «Avbryt» stopped the run before every candidate was asked; it is never the
+        run shown, and the answers it got are kept with it.
       enum: [ NOT_STARTED, READY_FOR_PREVIEW, RUNNING, COMPLETED, PARTIAL, FAILED, CANCELLED ]
 
     ModelTier:

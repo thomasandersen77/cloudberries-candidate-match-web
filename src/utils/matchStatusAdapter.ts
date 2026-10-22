@@ -76,10 +76,13 @@ export function phaseLabel(phase: FrontendMatchPhase): string {
  */
 export function describeRunProgress(status: ProjectMatchStatusResponse | null | undefined): string | null {
   if (!status || !status.attempted) return null;
-  const { attempted, done = 0, succeeded = 0, failed = 0, skipped = 0 } = status;
-  if (status.status === 'RUNNING') return `${done} av ${attempted} ferdige`;
+  const { attempted, done = 0, succeeded = 0, failed = 0, skipped = 0, cancelled = 0 } = status;
+  if (status.status === 'RUNNING') {
+    return status.cancelRequested ? `${done} av ${attempted} ferdige, avbryter` : `${done} av ${attempted} ferdige`;
+  }
   const parts = [`${succeeded} av ${attempted} vurdert`];
   if (failed > 0) parts.push(`${failed} feilet`);
   if (skipped > 0) parts.push(`${skipped} uten CV-grunnlag`);
+  if (cancelled > 0) parts.push(`${cancelled} ikke spurt`);
   return parts.join(', ');
 }

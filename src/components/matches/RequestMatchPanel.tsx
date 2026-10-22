@@ -34,6 +34,7 @@ import {
   previewProjectMatches,
   runProjectMatching,
   retryFailedMatches,
+  cancelMatching,
 } from '../../api/matchingApi';
 import type {
   MatchCandidateDto,
@@ -343,6 +344,11 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingRun, setLoadingRun] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  /** Said once a run this panel made was stopped with «Avbryt»; the list then shows the run before it. */
+  const [cancelNotice, setCancelNotice] = useState<string | null>(null);
+  /** The run «Avbryt» was pressed for, while this panel waits for that run's answer. */
+  const cancelledRunRef = useRef<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingRun, setPendingRun] = useState<'run' | 'rerun' | null>(null);
   const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
@@ -508,9 +514,47 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
     void handlePreview();
   }, [handlePreview]);
 
+  /**
+   * A run this panel made has answered after «Avbryt». The answer is the list of what that run
+   * scored, which is not the list the page shows: a cancelled run is never current. The status
+   * tells which it was. The run that was cancelled is the current one only if the cancel came too
+   * late to stop anything.
+   */
+  const settleAfterCancel = async (target: number, cancelledRunId: number): Promise<boolean> => {
+    const status = await getProjectMatchStatus(target).catch(() => null);
+    if (!stillCurrent(target)) return true;
+    const finishedAnyway = status != null && 'attempted' in status
+      && (status as ProjectMatchStatusResponse).runId === cancelledRunId
+      && (status as ProjectMatchStatusResponse).status !== 'CANCELLED';
+    if (finishedAnyway) return false;
+    setCancelNotice('Vurderingen ble avbrutt. Kandidater som alt var sendt, ble vurdert ferdig og er lagret; resten ble ikke spurt. Listen viser forrige vurdering.');
+    await refreshPersisted();
+    return true;
+  };
+
+  const executeCancel = async () => {
+    const target = requestId;
+    setCancelling(true);
+    try {
+      const status = await cancelMatching(target);
+      if (!stillCurrent(target)) return;
+      if (loadingRun) cancelledRunRef.current = status.runId ?? -1;
+      setState((prev) => ({ ...prev, runStatus: status, error: null }));
+    } catch (error) {
+      if (stillCurrent(target)) {
+        setState((prev) => ({ ...prev, error: extractError(error, 'Kunne ikke avbryte vurderingen.') }));
+        void refreshStatus();
+      }
+    } finally {
+      if (stillCurrent(target)) setCancelling(false);
+    }
+  };
+
   const executeRun = async () => {
     const target = requestId;
     setLoadingRun(true);
+    setCancelNotice(null);
+    cancelledRunRef.current = null;
     setState((prev) => ({ ...prev, phase: 'RUNNING', error: null }));
     try {
       const outcome = await runProjectMatching(target, {
@@ -535,6 +579,10 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
         setState((prev) => ({ ...prev, phase: 'RUNNING', error: 'Matching pågår fortsatt. Prøv å oppdatere siden om litt.' }));
         return;
       }
+      const cancelledRunId = cancelledRunRef.current;
+      cancelledRunRef.current = null;
+      if (cancelledRunId != null && await settleAfterCancel(target, cancelledRunId)) return;
+      if (!stillCurrent(target)) return;
       const results = outcome as ProjectMatchResults;
       // The candidates stay. Clearing them left an empty «Kandidater» under a card that said six
       // people covered every must, and no way back to the list short of closing the card.
@@ -556,6 +604,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
         }));
       }
     } finally {
+      cancelledRunRef.current = null;
       if (stillCurrent(target)) setLoadingRun(false);
       setConfirmOpen(false);
       setPendingRun(null);
@@ -606,6 +655,9 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
     ? (state.runStatus.failed ?? 0)
     : 0;
   const hasAiResults = aiMatches.length > 0;
+  // A run going on: this panel's, or one started elsewhere that the status reports.
+  const running = (state.phase === 'RUNNING' && loadingRun) || state.runStatus?.status === 'RUNNING';
+  const cancelPending = cancelling || (running && state.runStatus?.status === 'RUNNING' && !!state.runStatus?.cancelRequested);
   const previewCandidates = state.preview?.candidates ?? [];
   const otherRequirements = coverage?.otherRequirements ?? [];
 
@@ -745,6 +797,11 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                   Kjør på nytt
                 </Button>
               )}
+              {running && (
+                <Button size="small" variant="outlined" color="error" disabled={cancelPending} onClick={() => void executeCancel()}>
+                  {cancelPending ? 'Avbryter…' : 'Avbryt'}
+                </Button>
+              )}
               {retryable > 0 && (
                 <Button size="small" variant="outlined" color="warning" disabled={loadingRun} onClick={() => void executeRetry()}>
                   Vurder de {retryable} som feilet
@@ -780,6 +837,11 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                 <Chip size="small" color="warning" variant="outlined" label="Semantisk søk mangler embeddings" />
               )}
             </Stack>
+            {cancelNotice && (
+              <Alert severity="info" sx={{ mb: 1 }} onClose={() => setCancelNotice(null)}>
+                {cancelNotice}
+              </Alert>
+            )}
             {state.runStatus?.requirementsChanged && (
               <Alert severity="warning" sx={{ mb: 1 }}>
                 Kravene er endret etter denne vurderingen. Skårene gjelder kravene slik de var da; start en ny vurdering for å vurdere mot dagens krav.
@@ -820,9 +882,11 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
                 <CircularProgress size={16} />
                 <Typography variant="body2">
-                  {selectedCount > 0
-                    ? `Kjører AI-vurdering på ${selectedCount} valgte kandidater…`
-                    : 'Kjører AI-vurdering på de best rangerte kandidatene…'}
+                  {cancelPending
+                    ? 'Avbryter: kall som alt er sendt, gjøres ferdig, resten sendes ikke.'
+                    : selectedCount > 0
+                      ? `Kjører AI-vurdering på ${selectedCount} valgte kandidater…`
+                      : 'Kjører AI-vurdering på de best rangerte kandidatene…'}
                 </Typography>
               </Stack>
             )}

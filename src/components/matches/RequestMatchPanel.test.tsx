@@ -50,6 +50,7 @@ vi.mock('../../api/matchingApi', () => ({
   previewProjectMatches: vi.fn(),
   runProjectMatching: vi.fn(),
   retryFailedMatches: vi.fn(),
+  cancelMatching: vi.fn(),
 }));
 
 vi.mock('../../services/consultantsService', () => ({
@@ -473,6 +474,66 @@ describe('RequestMatchPanel', () => {
 
     expect(await screen.findByText(/Kravene er endret etter denne vurderingen/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /som feilet/ })).not.toBeInTheDocument();
+  });
+
+  /**
+   * «Avbryt» while the panel's own run is out. The run answers with what it scored, but a
+   * cancelled run is never the one shown: the panel says so and reads the list the page shows.
+   */
+  it('cancels a running assessment, says so, and shows the run before it', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'COMPLETED', runId: 21, attempted: 2, done: 2, succeeded: 2, failed: 0, skipped: 0,
+    } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(storedRun as never);
+    const run = deferred<unknown>();
+    vi.mocked(api.runProjectMatching).mockReturnValue(run.promise as never);
+    vi.mocked(api.cancelMatching).mockResolvedValue({
+      projectRequestId: 1, status: 'RUNNING', runId: 22, attempted: 20, done: 1, succeeded: 1, failed: 0, skipped: 0, cancelRequested: true,
+    } as never);
+    renderPanel();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Kjør AI-matching/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Avbryt' }));
+
+    expect(api.cancelMatching).toHaveBeenCalledWith(1);
+    expect(await screen.findByRole('button', { name: 'Avbryter…' })).toBeDisabled();
+    expect(screen.getByText('1 av 20 ferdige, avbryter')).toBeInTheDocument();
+
+    // Run 22 was cancelled; the status still reports run 21, the one shown.
+    const readsBefore = vi.mocked(api.getProjectMatchResults).mock.calls.length;
+    await act(async () => { run.resolve({ projectRequestId: 1, matches: [defaultRun.matches[0]], lastUpdated: '2026-01-01T12:00:00Z' }); });
+
+    expect(await screen.findByText(/Vurderingen ble avbrutt/)).toBeInTheDocument();
+    await waitFor(() => expect(vi.mocked(api.getProjectMatchResults).mock.calls.length).toBeGreaterThan(readsBefore));
+    expect(screen.queryByRole('button', { name: /Avbryt/ })).not.toBeInTheDocument();
+  });
+
+  /** A cancel that came after the last call went out stopped nothing; the run is shown as it finished. */
+  it('shows the run as it finished when the cancel came too late to stop anything', async () => {
+    const api = await import('../../api/matchingApi');
+    const run = deferred<unknown>();
+    vi.mocked(api.runProjectMatching).mockReturnValue(run.promise as never);
+    vi.mocked(api.cancelMatching).mockResolvedValue({
+      projectRequestId: 1, status: 'RUNNING', runId: 22, attempted: 2, done: 2, succeeded: 2, failed: 0, skipped: 0, cancelRequested: true,
+    } as never);
+    renderPanel();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Kjør AI-matching/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Avbryt' }));
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'COMPLETED', runId: 22, attempted: 2, done: 2, succeeded: 2, failed: 0, skipped: 0, cancelRequested: true,
+    } as never);
+    await act(async () => { run.resolve(defaultRun); });
+
+    expect(await screen.findByText('Stine Holst')).toBeInTheDocument();
+    expect(screen.queryByText(/Vurderingen ble avbrutt/)).not.toBeInTheDocument();
+  });
+
+  it('says how many a cancelled run left unasked', async () => {
+    const { describeRunProgress } = await import('../../utils/matchStatusAdapter');
+    expect(describeRunProgress({ projectRequestId: 1, status: 'CANCELLED', attempted: 20, done: 20, succeeded: 6, failed: 0, skipped: 0, cancelled: 14 } as never))
+      .toBe('6 av 20 vurdert, 14 ikke spurt');
   });
 
   it('marks a candidate whose CV has changed since the run', async () => {

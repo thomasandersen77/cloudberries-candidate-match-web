@@ -158,6 +158,15 @@ export async function retryFailedMatches(id: number): Promise<ProjectMatchResult
   return toResults(id, data ?? [], new Date().toISOString());
 }
 
+/**
+ * «Avbryt»: asks the request's active run to stop. Calls already sent finish and are kept; the
+ * answer is the status after the request, which may still say RUNNING. 409 when nothing runs.
+ */
+export async function cancelMatching(id: number): Promise<ProjectMatchStatusResponse> {
+  const { data } = await apiClient.post<ProjectMatchStatusResponse>(`project-requests/${id}/matches/cancel`);
+  return data;
+}
+
 export async function getProjectMatchResults(id: number, opts?: { limit?: number }): Promise<ProjectMatchResults | null> {
   try {
     const { data } = await apiClient.get<MatchCandidateDto[]>(`project-requests/${id}/matches`, {
