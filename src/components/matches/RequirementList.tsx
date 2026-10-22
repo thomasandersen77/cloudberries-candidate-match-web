@@ -61,6 +61,9 @@ export function RequirementList({ title, tone, rows }: {
             >
               <Typography
                 variant="body2"
+                // A div, not the default p: the supplier chip inside is a div, and a div in a p is
+                // invalid HTML that React reports on every request page.
+                component="div"
                 // anywhere rather than break-word: a reference like "20250001)" is one long token
                 // and would otherwise widen the column on its own.
                 sx={{ overflowWrap: 'anywhere' }}
