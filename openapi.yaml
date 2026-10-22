@@ -2910,7 +2910,8 @@ components:
         skills:
           type: array
           items: { type: string }
-          description: Canonical skill names it resolved to; holding any one of them covers it.
+          description: Canonical skill names it resolved to, umbrellas widened. How they combine is in combination.
+        combination: { $ref: '#/components/schemas/TermCombination' }
         consultants:
           type: integer
           description: >-
@@ -2922,6 +2923,15 @@ components:
             Of consultants, how many hold the skill on a project experience alone. A project skill
             carries no recorded duration, so these people have the skill but no years for it. Show
             the number rather than folding it in or leaving it out.
+
+    TermCombination:
+      type: string
+      description: >-
+        How a requirement's technologies combine, read from its text. ALL: every one («Linux, Maven
+        og Git»). ANY: one («Kotlin eller Java»). SINGLE: one term, possibly with alternatives
+        («Java/Kotlin»). UNCLEAR: not read with confidence («og/eller», commas alone); counted as
+        one of them, as before, and shown so a person can check it.
+      enum: [ SINGLE, ALL, ANY, UNCLEAR ]
 
     RequirementCoverageDto:
       type: object

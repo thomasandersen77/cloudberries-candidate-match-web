@@ -46,11 +46,25 @@ export function describeFullMatch(coverage: RequirementCoverage): string | null 
  * card used to count none of those people at all, so the reader should see both that they are
  * counted now and that the record behind them is thinner.
  */
+/**
+ * The requirement in words for the chip's tooltip: what it asks for, read the way it was counted.
+ * «og» when every technology is asked for, «eller» otherwise; an unclear requirement says so,
+ * because it was counted as asking for one of them and a person should check that.
+ */
 export function describeRequirement(item: RequirementCoverageItem): string {
   const kind = item.priority === 'MUST' ? 'Må-krav' : 'Bør-krav';
-  const skills = item.skills.join(' eller ').toLowerCase();
+  const all = item.combination === 'ALL';
+  const skills = item.skills.join(all ? ' og ' : ' eller ').toLowerCase();
   const projectPart = item.projectOnly > 0 ? `, ${item.projectOnly} av dem bare fra prosjekterfaring` : '';
-  return `${kind}: ${item.name}. ${item.consultants} aktive konsulenter har ${skills} på CV-en${projectPart}.`;
+  const unclear = item.combination === 'UNCLEAR'
+    ? ' Kravet er ikke entydig (og/eller, eller bare komma); det er regnet som at én av teknologiene holder. Kontroller tolkningen.'
+    : '';
+  return `${kind}: ${item.name}. ${item.consultants} aktive konsulenter har ${skills} på CV-en${projectPart}.${unclear}`;
+}
+
+/** «(uklart)» after the name on the chip itself, so it is seen without the tooltip and without colour. */
+export function unclearMark(item: RequirementCoverageItem): string {
+  return item.combination === 'UNCLEAR' ? ' (uklart)' : '';
 }
 
 /** "3 AI-vurdert – 10.9.2026", or that nobody has been. */

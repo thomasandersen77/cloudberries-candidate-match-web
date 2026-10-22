@@ -3942,13 +3942,19 @@ export interface components {
             /** @description The requirement as written. */
             name: string;
             priority: components["schemas"]["RequirementPriority"];
-            /** @description Canonical skill names it resolved to; holding any one of them covers it. */
+            /** @description Canonical skill names it resolved to, umbrellas widened. How they combine is in combination. */
             skills: string[];
+            combination?: components["schemas"]["TermCombination"];
             /** @description Active consultants holding at least one of the skills, in a CV skill category or on a project experience. Both are evidence the consultant wrote down; neither is inferred. */
             consultants: number;
             /** @description Of consultants, how many hold the skill on a project experience alone. A project skill carries no recorded duration, so these people have the skill but no years for it. Show the number rather than folding it in or leaving it out. */
             projectOnly: number;
         };
+        /**
+         * @description How a requirement's technologies combine, read from its text. ALL: every one («Linux, Maven og Git»). ANY: one («Kotlin eller Java»). SINGLE: one term, possibly with alternatives («Java/Kotlin»). UNCLEAR: not read with confidence («og/eller», commas alone); counted as one of them, as before, and shown so a person can check it.
+         * @enum {string}
+         */
+        TermCombination: "SINGLE" | "ALL" | "ANY" | "UNCLEAR";
         /** @description How the corpus covers a request, requirement by requirement. Requirements aimed at the supplier are left out. Requirements naming no technology the corpus knows (years, language, sector) are listed under otherRequirements rather than counted as uncovered. */
         RequirementCoverageDto: {
             /** @description Consultant requirements that named a technology. */

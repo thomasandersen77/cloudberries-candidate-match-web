@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Chip, Tooltip, Typography } from '@mui/material';
-import { describeRequirement, type RequirementCoverage, type RequirementCoverageItem } from './coverageText';
+import { describeRequirement, unclearMark, type RequirementCoverage, type RequirementCoverageItem } from './coverageText';
 
 export type { RequirementCoverage, RequirementCoverageItem } from './coverageText';
 
@@ -9,7 +9,7 @@ const CHIP_LABEL_MAX = 44;
 
 function chipLabel(item: RequirementCoverageItem): string {
   const name = item.name.length > CHIP_LABEL_MAX ? `${item.name.slice(0, CHIP_LABEL_MAX - 1)}…` : item.name;
-  return `${name} ${item.consultants}`;
+  return `${name}${unclearMark(item)} ${item.consultants}`;
 }
 
 type CoverageChipsProps = {
