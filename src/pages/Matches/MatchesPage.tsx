@@ -238,17 +238,17 @@ const SORT_OPTIONS = [
   { value: 'date,asc', label: 'Eldste først' },
   { value: 'ai,desc', label: 'AI-vurdert først' },
   { value: 'ai,asc', label: 'Ikke AI-vurdert først' },
-  { value: 'coverage,desc', label: 'Høy dekning først' },
-  { value: 'coverage,asc', label: 'Lav dekning først' },
+  { value: 'coverage,desc', label: 'Flest treff først' },
+  { value: 'coverage,asc', label: 'Færrest treff først' },
 ] as const;
 
 type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 
 /** The coverage lights a reader can keep, in the words of the sort above. Grey has no chip; it shows when nothing is kept out. */
 const COVERAGE_FILTERS: { status: CoverageStatus; label: string }[] = [
-  { status: 'GREEN', label: 'Høy dekning' },
-  { status: 'YELLOW', label: 'Middels dekning' },
-  { status: 'RED', label: 'Lav dekning' },
+  { status: 'GREEN', label: 'Mange treff' },
+  { status: 'YELLOW', label: 'Noen treff' },
+  { status: 'RED', label: 'Få treff' },
 ];
 
 type FilterChipProps = { label: string; active: boolean; onClick: () => void };
@@ -319,8 +319,9 @@ const MatchesPage: React.FC = () => {
       {!requestId && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5, maxWidth: 760 }}>
           Tallet på hvert krav er hvor mange aktive konsulenter som har den ferdigheten på CV-en, og
-          merket er hvor mange som har noe for hvert må-krav. Det sier hvem som finnes, ikke hvem
-          som passer. Vurderingen gjør du på avropets side; åpne kortet.
+          merket er hvor mange som har treff på hvert må-krav. Et treff er et ord på CV-en, ikke et
+          oppfylt krav; det sier hvem som finnes, ikke hvem som passer. Vurderingen gjør du på
+          avropets side.
         </Typography>
       )}
 

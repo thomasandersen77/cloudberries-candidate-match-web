@@ -591,7 +591,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
             {!loadingPreview && previewCandidates.length > 0 && (
               <Box>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Sortert etter et grovt anslag uten AI. Hver rad sier hvilke må-krav personen dekker og mangler; kryss av dem du vil ha vurdert.
+                  Sortert etter et grovt anslag uten AI. Hver rad sier hvilke må-krav personen har treff på og mangler; kryss av dem du vil ha vurdert.
                   {state.preview?.semanticSearchUsed === false && ' Semantisk søk ble ikke brukt.'}
                 </Typography>
                 <Stack spacing={0.75}>
@@ -610,7 +610,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                         name={c.name ?? 'Ukjent'}
                         scoreLabel={
                           mustTotal > 0
-                            ? ` • dekker ${c.mustCovered ?? 0} av ${mustTotal} må-krav`
+                            ? ` • treff på ${c.mustCovered ?? 0} av ${mustTotal} må-krav`
                             : (typeof c.combinedScore === 'number' ? ` • rang ${formatPercentScore(c.combinedScore)}` : '')
                         }
                         qualityScore={typeof c.cvQualityScore === 'number' ? c.cvQualityScore * 100 : null}

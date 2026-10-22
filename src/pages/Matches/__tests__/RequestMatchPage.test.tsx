@@ -22,7 +22,7 @@ vi.mock('../../../components/matches/RequestMatchPanel', () => ({
 
 const item = {
   id: 9011, title: 'Tech lead, backend (Kotlin)', role: 'Tech lead', customerName: 'NAV', date: '2026-09-18', deadlineDate: '2026-10-02',
-  coverageStatus: 'AMBER', coverageLabel: '1 dekker alle må-krav',
+  coverageStatus: 'AMBER', coverageLabel: '1 har treff på alle må-krav',
   coverage: {
     technologyRequirements: 2, covered: 2, fullMatchCount: 1, fullMatchBasis: 'MUST', fullMatchNames: ['Ayhan Ileri'],
     requirements: [

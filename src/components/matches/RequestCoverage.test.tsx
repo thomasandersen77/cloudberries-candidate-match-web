@@ -23,12 +23,12 @@ const coverage: RequirementCoverage = {
 
 describe('describeCoverage', () => {
   it('counts the technology requirements and names how many could not be checked', () => {
-    expect(describeCoverage(coverage)).toBe('Dekker 3 av 4 teknologikrav · 2 krav sjekkes ikke mot ferdigheter');
+    expect(describeCoverage(coverage)).toBe('Treff på 3 av 4 teknologikrav · 2 krav må vurderes manuelt');
   });
 
   it('says so when nothing could be checked at all', () => {
     expect(describeCoverage({ ...coverage, technologyRequirements: 0, covered: 0, requirements: [], otherRequirements: ['Tilbud leveres i KGV'] }))
-      .toBe('Ingen krav som kan sjekkes mot ferdighetene i CV-ene · 1 krav sjekkes ikke mot ferdigheter');
+      .toBe('Ingen teknologikrav gjenkjent · 1 krav må vurderes manuelt');
   });
 });
 

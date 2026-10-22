@@ -3755,7 +3755,7 @@ export interface components {
             /** Format: date-time */
             deadlineDate?: string | null;
             coverageStatus: components["schemas"]["CoverageStatus"];
-            /** @description Norwegian words for coverageStatus, e.g. "4 dekker alle må-krav", "Ingen dekker alle må-krav", "Ingen teknologikrav gjenkjent". The server owns the wording. */
+            /** @description Norwegian words for coverageStatus, e.g. "4 har treff på alle må-krav", "Ingen har treff på alle må-krav", "Ingen teknologikrav gjenkjent". The server owns the wording. */
             coverageLabel: string;
             coverage: components["schemas"]["RequirementCoverageDto"];
             /** @description Stored AI assessments for this request. Null when none has been run; nothing is computed for the list. */

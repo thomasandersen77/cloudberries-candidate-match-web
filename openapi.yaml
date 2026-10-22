@@ -2759,7 +2759,7 @@ components:
         coverageLabel:
           type: string
           description: >-
-            Norwegian words for coverageStatus, e.g. "4 dekker alle må-krav", "Ingen dekker alle
+            Norwegian words for coverageStatus, e.g. "4 har treff på alle må-krav", "Ingen har treff på alle
             må-krav", "Ingen teknologikrav gjenkjent". The server owns the wording.
         coverage: { $ref: '#/components/schemas/RequirementCoverageDto' }
         aiMatchCount:

@@ -6,24 +6,26 @@ export type RequirementCoverageItem = components['schemas']['RequirementCoverage
 /**
  * One line on what the numbers below mean, for the card and the panel alike.
  *
- * "Dekker 11 av 11 teknologikrav · 2 krav sjekkes ikke mot ferdigheter". The second half is the
- * honest part: years, language, sector and a technology the corpus has never seen all end up
- * there, and the reader must know they were not counted rather than counted as covered.
+ * "Treff på 11 av 11 teknologikrav · 2 krav må vurderes manuelt". A hit is a recognised
+ * technology on a CV, not a fulfilled requirement; «dekker» claimed more than the count gives.
+ * The second half is the honest part: years, language, sector and a technology the corpus has
+ * never seen all end up there, and the reader must know they were not counted rather than
+ * counted as covered.
  */
 export function describeCoverage(coverage: RequirementCoverage): string {
   const other = coverage.otherRequirements.length;
-  const otherPart = other === 0 ? '' : ` · ${other} ${other === 1 ? 'krav sjekkes' : 'krav sjekkes'} ikke mot ferdigheter`;
+  const otherPart = other === 0 ? '' : ` · ${other} krav må vurderes manuelt`;
   if (coverage.technologyRequirements === 0) {
-    return `Ingen krav som kan sjekkes mot ferdighetene i CV-ene${otherPart}`;
+    return `Ingen teknologikrav gjenkjent${otherPart}`;
   }
-  return `Dekker ${coverage.covered} av ${coverage.technologyRequirements} teknologikrav${otherPart}`;
+  return `Treff på ${coverage.covered} av ${coverage.technologyRequirements} teknologikrav${otherPart}`;
 }
 
 /** How many names the line shows before it says how many more there are. */
 const FULL_MATCH_NAMES_SHOWN = 4;
 
 /**
- * Who covers every must, by name: "Dekker alle må-krav: Ayhan Ileri". The card said only how many,
+ * Who has a hit on every must, by name: "Treff på alle må-krav: Ayhan Ileri". The card said only how many,
  * so finding the one person meant opening it and reading down a list ordered by something else.
  * Null when nobody does, or when the request named no technology.
  */
@@ -33,7 +35,7 @@ export function describeFullMatch(coverage: RequirementCoverage): string | null 
   const kind = coverage.fullMatchBasis === 'MUST' ? 'må-krav' : 'bør-krav';
   const shown = names.slice(0, FULL_MATCH_NAMES_SHOWN).join(', ');
   const rest = names.length - FULL_MATCH_NAMES_SHOWN;
-  return `Dekker alle ${kind}: ${shown}${rest > 0 ? ` og ${rest} til` : ''}`;
+  return `Treff på alle ${kind}: ${shown}${rest > 0 ? ` og ${rest} til` : ''}`;
 }
 
 /**

@@ -175,8 +175,8 @@ describe('RequestMatchPanel', () => {
   it('says per candidate which musts they cover and which they lack', async () => {
     renderPanel();
     await screen.findByText(/3 av 3 valgt/);
-    expect(screen.getByText(/dekker 2 av 2 må-krav/)).toBeInTheDocument();
-    expect(screen.getAllByText(/dekker 1 av 2 må-krav/)).toHaveLength(2);
+    expect(screen.getByText(/treff på 2 av 2 må-krav/)).toBeInTheDocument();
+    expect(screen.getAllByText(/treff på 1 av 2 må-krav/)).toHaveLength(2);
     expect(screen.getByText(/Mangler: Kafka/)).toBeInTheDocument();
     expect(screen.getByText(/Mangler: Kotlin/)).toBeInTheDocument();
   });
@@ -392,7 +392,7 @@ describe('RequestMatchPanel', () => {
   it('says by name who covers every must', async () => {
     renderPanel({ coverage: { ...coverage, fullMatchNames: ['Kari'] } });
 
-    expect(await screen.findByText('Dekker alle må-krav: Kari')).toBeInTheDocument();
+    expect(await screen.findByText('Treff på alle må-krav: Kari')).toBeInTheDocument();
   });
 
   it('expands consultant details with accordion — only one open at a time', async () => {

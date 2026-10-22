@@ -42,10 +42,10 @@ describe('sortering og filtre på matchlisten', () => {
     await waitFor(() => expect(mockedList).toHaveBeenCalled());
 
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sortering/ }));
-    fireEvent.click(within(screen.getByRole('listbox')).getByText('Høy dekning først'));
+    fireEvent.click(within(screen.getByRole('listbox')).getByText('Flest treff først'));
 
     await waitFor(() => expect(lastQuery()).toMatchObject({ page: 0, sort: 'coverage,desc' }));
-    expect(screen.getByRole('combobox', { name: /Sortering/ })).toHaveTextContent('Høy dekning først');
+    expect(screen.getByRole('combobox', { name: /Sortering/ })).toHaveTextContent('Flest treff først');
   });
 
   /** One of two states or none: the two AI chips exclude each other, and a second click clears. */
@@ -69,11 +69,11 @@ describe('sortering og filtre på matchlisten', () => {
     renderList();
     await waitFor(() => expect(mockedList).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Høy dekning' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Lav dekning' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mange treff' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Få treff' }));
     await waitFor(() => expect(lastQuery()).toMatchObject({ coverage: ['GREEN', 'RED'] }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Høy dekning' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mange treff' }));
     await waitFor(() => expect(lastQuery()).toMatchObject({ coverage: ['RED'] }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Nullstill' }));

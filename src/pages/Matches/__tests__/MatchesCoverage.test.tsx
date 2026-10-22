@@ -45,7 +45,7 @@ const row = (over: Record<string, unknown>) => ({
   date: '2026-01-01T10:00:00Z',
   deadlineDate: '2026-01-20T10:00:00Z',
   coverageStatus: 'RED',
-  coverageLabel: 'Ingen dekker alle må-krav',
+  coverageLabel: 'Ingen har treff på alle må-krav',
   coverage,
   aiMatchCount: null,
   aiLastUpdated: null,
@@ -76,9 +76,9 @@ describe('dekning på et forespørselskort', () => {
 
   /** The words are the server's; the page paints them and adds nothing. */
   it.each([
-    ['GREEN', '4 dekker alle må-krav'],
-    ['YELLOW', '1 dekker alle må-krav'],
-    ['RED', 'Ingen dekker alle må-krav'],
+    ['GREEN', '4 har treff på alle må-krav'],
+    ['YELLOW', '1 har treff på alle må-krav'],
+    ['RED', 'Ingen har treff på alle må-krav'],
     ['NEUTRAL', 'Ingen teknologikrav gjenkjent'],
   ])('gjengir serverens etikett for %s', async (coverageStatus, coverageLabel) => {
     renderWith({ coverageStatus, coverageLabel });
@@ -94,25 +94,25 @@ describe('dekning på et forespørselskort', () => {
     expect(screen.getByText('Flink 0').closest('.MuiChip-root')?.className).toMatch(/MuiChip-colorError/);
     expect(screen.queryByText('Terraform 11')).not.toBeInTheDocument();
     expect(screen.getByText('+ 1 bør-krav')).toBeInTheDocument();
-    expect(screen.getByText('Dekker 2 av 3 teknologikrav · 1 krav sjekkes ikke mot ferdigheter')).toBeInTheDocument();
+    expect(screen.getByText('Treff på 2 av 3 teknologikrav · 1 krav må vurderes manuelt')).toBeInTheDocument();
   });
 
   /** The card said how many; finding the one person meant opening it. Now it says who, closed. */
-  it('sier hvem som dekker alle må-krav uten at kortet åpnes, og hvor mange til', async () => {
+  it('sier hvem som har treff på alle må-krav uten at kortet åpnes, og hvor mange til', async () => {
     renderWith({
       coverageStatus: 'GREEN',
-      coverageLabel: '6 dekker alle må-krav',
+      coverageLabel: '6 har treff på alle må-krav',
       coverage: { ...coverage, fullMatchCount: 6, fullMatchNames: ['Ayhan Ileri', 'Geir Normann Hansen', 'Joachim Lous', 'Shervin Asgari', 'Thomas Andersen', 'Thomas Andersen Sopra'] },
     });
 
-    expect(await screen.findByText('Dekker alle må-krav: Ayhan Ileri, Geir Normann Hansen, Joachim Lous, Shervin Asgari og 2 til')).toBeInTheDocument();
+    expect(await screen.findByText('Treff på alle må-krav: Ayhan Ileri, Geir Normann Hansen, Joachim Lous, Shervin Asgari og 2 til')).toBeInTheDocument();
   });
 
-  it('sier ingenting om navn når ingen dekker alle må-krav', async () => {
+  it('sier ingenting om navn når ingen har treff på alle må-krav', async () => {
     renderWith({});
 
     await screen.findByText('Kotlin 16');
-    expect(screen.queryByText(/Dekker alle må-krav:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Treff på alle må-krav:/)).not.toBeInTheDocument();
   });
 
   it('sier om AI-en har vurdert noen, med dato, og ellers at den ikke har', async () => {
