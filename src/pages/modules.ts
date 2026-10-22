@@ -31,10 +31,10 @@ export const EVERYDAY_MODULES: ModuleLink[] = [
   },
   // One line each: the front page shows them as tiles, and a description that wraps is a tile that
   // grows taller than its neighbours.
-  { to: '/consultants', title: 'Konsulenter', desc: 'Konsulentliste med CV-kvalitet' },
+  { to: '/consultants', title: 'Konsulenter', desc: 'Konsulentliste med CV-score' },
   { to: '/matches', title: 'Matcher', desc: 'Kandidater vurdert mot avrop' },
-  { to: '/project-requests/upload', title: 'Last opp kundeforespørsel', desc: 'PDF inn, krav ut, klar for matching' },
-  { to: '/cv-score', title: 'CV-Score', desc: 'Kvalitet og forbedringer per CV' },
+  { to: '/project-requests/upload', title: 'Last opp avrop', desc: 'PDF inn, krav ut, klar for matching' },
+  { to: '/cv-score', title: 'CV-score', desc: 'Score og forbedringer per CV' },
   { to: '/stats', title: 'Statistikk', desc: 'Programmeringsspråk og roller' },
   { to: '/health', title: 'Helse', desc: 'Systemstatus og tilgjengelighet' },
 ];

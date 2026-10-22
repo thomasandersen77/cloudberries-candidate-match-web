@@ -151,7 +151,7 @@ const CvScoreListPage: React.FC = () => {
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'flex-end' }, justifyContent: 'space-between', mb: 3 }}>
         <Box>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 0.5 }}>
-            CV-Score
+            CV-score
           </Typography>
         </Box>
         <Stack spacing={1} alignItems={{ xs: 'flex-start', sm: 'flex-end' }}>

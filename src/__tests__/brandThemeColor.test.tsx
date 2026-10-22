@@ -65,7 +65,7 @@ describe('theme-color follows the brand', () => {
   it('follows the switch in the menu, both ways', () => {
     renderApp();
 
-    switchTo('Cloudberries look');
+    switchTo('Cloudberries-utseende');
     expect(themeColor()).toBe(palettes.cloudberries.primary);
 
     switchTo('Sopra Steria look');

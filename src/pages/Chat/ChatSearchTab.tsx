@@ -433,7 +433,7 @@ const ChatSearchTab = () => {
     }, [onSubmit]);
     
     const formatTimestamp = (date: Date) => {
-        return date.toLocaleTimeString('no-NO', { 
+        return date.toLocaleTimeString('nb-NO', { 
             hour: '2-digit', 
             minute: '2-digit' 
         });

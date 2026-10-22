@@ -69,7 +69,7 @@ export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
 
   matches: {
     intro:
-      'Vurder kandidater mot en kundeforespørsel. Forhåndsvis kandidatene, velg hvem du vil ' +
+      'Vurder kandidater mot et avrop. Forhåndsvis kandidatene, velg hvem du vil ' +
       'vurdere, og sammenlign resultatene fra AI-matching.',
     steps: [
       'Hvert kort viser kravene med hvor mange konsulenter som har hver ferdighet, og hvor mange som dekker alle må-kravene. Rødt krav er flaskehalsen.',
@@ -80,10 +80,10 @@ export const PAGE_INTROS: Record<PageIntroKey, PageIntroContent> = {
 
   projectRequests: {
     intro:
-      'Last opp en kundeforespørsel som PDF. AI trekker ut informasjon og må- og bør-krav, som du ' +
+      'Last opp et avrop (en kundeforespørsel) som PDF. AI trekker ut informasjon og må- og bør-krav, som du ' +
       'kan kontrollere før du går videre til Matcher.',
     steps: [
-      'Velg PDF, last opp, og åpne forespørselen for å kontrollere kravene som ble tolket ut.',
+      'Velg PDF, last opp, og åpne avropet for å kontrollere kravene som ble tolket ut.',
       'Skillet mellom må-krav og bør-krav er AI-ens lesning av dokumentet. Les gjennom før du bruker det videre.',
       'Opplasting og matching er to handlinger. Kandidater finner du under Matcher, ikke her.',
     ],

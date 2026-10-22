@@ -112,8 +112,8 @@ export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCovera
   const style = COVERAGE_STYLE[pr.coverageStatus] ?? COVERAGE_STYLE.NEUTRAL;
   const documentTitle = pr.title || `Forespørsel #${id}`;
   const meta = [
-    pr.deadlineDate ? `Frist ${new Date(pr.deadlineDate).toLocaleDateString('no-NO')}` : null,
-    pr.date ? `lastet opp ${new Date(pr.date).toLocaleDateString('no-NO')}` : null,
+    pr.deadlineDate ? `Frist ${new Date(pr.deadlineDate).toLocaleDateString('nb-NO')}` : null,
+    pr.date ? `lastet opp ${new Date(pr.date).toLocaleDateString('nb-NO')}` : null,
   ].filter(Boolean).join(' · ');
 
   return (
@@ -375,13 +375,13 @@ const MatchesPage: React.FC = () => {
       {!requestId && loading && (
         <Box sx={{ p: 4, textAlign: 'center' }}>
           <CircularProgress />
-          <Typography variant="body2" sx={{ mt: 1 }}>Laster prosjektforespørsler…</Typography>
+          <Typography variant="body2" sx={{ mt: 1 }}>Laster avrop…</Typography>
         </Box>
       )}
 
       {!requestId && !loading && rows.length === 0 && (
         <Paper sx={{ p: 2 }}>
-          <Typography variant="body1">{filtering ? 'Ingen avrop passer filtrene.' : 'Ingen prosjektforespørsler funnet.'}</Typography>
+          <Typography variant="body1">{filtering ? 'Ingen avrop passer filtrene.' : 'Ingen avrop funnet.'}</Typography>
         </Paper>
       )}
 

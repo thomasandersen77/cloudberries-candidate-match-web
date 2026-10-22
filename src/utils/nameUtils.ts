@@ -21,6 +21,6 @@ export function sortConsultantsByLastName<T extends { name: string }>(consultant
   return [...consultants].sort((a, b) => {
     const lastNameA = getLastName(a.name).toLowerCase();
     const lastNameB = getLastName(b.name).toLowerCase();
-    return lastNameA.localeCompare(lastNameB, 'no-NO');
+    return lastNameA.localeCompare(lastNameB, 'nb-NO');
   });
 }

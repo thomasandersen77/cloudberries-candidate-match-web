@@ -10,7 +10,7 @@ import HowMatchingWorks from '../../components/matches/HowMatchingWorks';
 import RequirementList from '../../components/matches/RequirementList';
 import { RequestCard } from './MatchesPage';
 
-const formatDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString('no-NO') : null);
+const formatDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString('nb-NO') : null);
 
 /**
  * What the request asks for, in its own words: the summary, the period, and every requirement

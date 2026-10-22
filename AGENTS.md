@@ -54,6 +54,15 @@ looking the id up in a list said «Konsulent ikke funnet» for a CV the backend 
 search table keeps the backend's order (by similarity) and shows similarity and CV quality as two
 columns; sorting it by quality hid which signal put a row where it was.
 
+## Words
+
+One word per thing, everywhere in the UI, in tests and in `aria-label`s: **avrop** (not
+kundeforespørsel, forespørsel, prosjektforespørsel; «kundeforespørsel» appears once, as the
+explanation on the upload page), **CV-score** (never CV-Score, CV score, CV-kvalitet or
+kvalitet), **kravmatch** (the model's score per requirement), **presentert skår** (the match
+weighed with CV-score). Every `aria-label` is Norwegian; the document is `lang="nb"`; dates use
+`nb-NO`. A wording that drifts is fixed in one pass, not page by page.
+
 ## Matching pages
 
 `/matches` is an overview: one card per request, which opens `/matches/{id}`, the request's own

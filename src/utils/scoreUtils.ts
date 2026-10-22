@@ -56,5 +56,5 @@ export function compareByQualityThenName<T extends { name: string } & QualitySco
   if (qa === null && qb !== null) return 1;   // nulls last
   if (qa !== null && qb === null) return -1;  // non-nulls first
   // tie-break by name asc
-  return a.name.localeCompare(b.name, 'no-NO');
+  return a.name.localeCompare(b.name, 'nb-NO');
 }

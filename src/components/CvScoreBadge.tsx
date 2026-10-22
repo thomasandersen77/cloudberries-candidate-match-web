@@ -37,7 +37,7 @@ const CvScoreBadge: React.FC<CvScoreBadgeProps> = ({
   const fontSize = sizeToFont[size];
   const color = hasScore ? getScoreColor(pct) : undefined;
 
-  const label = ariaLabel ?? (hasScore ? `CV score ${pct} av 100` : 'CV score ikke tilgjengelig');
+  const label = ariaLabel ?? (hasScore ? `CV-score ${pct} av 100` : 'CV-score ikke tilgjengelig');
 
   return (
     <Box sx={{ position: 'relative', display: 'inline-flex' }} aria-label={label}>

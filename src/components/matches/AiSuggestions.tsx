@@ -78,7 +78,7 @@ const AiSuggestions: React.FC<{ suggestions: AISuggestionDto[] }> = ({ suggestio
                   <RequirementGroup title="Må-krav" rows={must} />
                   <RequirementGroup title="Bør-krav" rows={should} />
                 </TableCell>
-                <TableCell sx={{ whiteSpace: 'nowrap' }}>{new Date(s.createdAt).toLocaleString('no-NO')}</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>{new Date(s.createdAt).toLocaleString('nb-NO')}</TableCell>
               </TableRow>
             );
           })}

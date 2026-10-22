@@ -82,7 +82,7 @@ const ProjectRequestUploadPage: React.FC = () => {
 
   const sortedExisting = useMemo(() => {
     const arr = [...(existing ?? [])];
-    const collator = new Intl.Collator('no-NO', { sensitivity: 'base' });
+    const collator = new Intl.Collator('nb-NO', { sensitivity: 'base' });
     arr.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
       const get = (r: ProjectRequestResponseDto): unknown => {
@@ -153,7 +153,7 @@ const ProjectRequestUploadPage: React.FC = () => {
       if (result?.id === id) setResult(null);
       setPendingDelete(null);
     } catch {
-      setError('Kunne ikke slette forespørselen. Prøv igjen senere.');
+      setError('Kunne ikke slette avropet. Prøv igjen senere.');
     } finally {
       setDeletingId(null);
     }
@@ -228,7 +228,7 @@ const ProjectRequestUploadPage: React.FC = () => {
       <Paper elevation={0} sx={{ p: { xs: 2, md: 2.5 }, mb: 3, overflow: 'hidden' }}>
         <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 1 }}>
           <Typography variant="h6" sx={{ m: 0, flex: 1, fontWeight: 600, letterSpacing: '-0.01em' }}>
-            Eksisterende forespørsler
+            Eksisterende avrop
           </Typography>
           {loadingList && <LinearProgress sx={{ flex: 1, maxWidth: 200 }} />}
         </Stack>
@@ -297,11 +297,11 @@ const ProjectRequestUploadPage: React.FC = () => {
                       if (r.id != null) onOpenDetails(r.id);
                     }}
                   >
-                    <TableCell>{r.uploadedAt ? new Date(r.uploadedAt).toLocaleString('no-NO') : '-'}</TableCell>
+                    <TableCell>{r.uploadedAt ? new Date(r.uploadedAt).toLocaleString('nb-NO') : '-'}</TableCell>
                     <TableCell>{r.customerName ?? '-'}</TableCell>
                     <TableCell>{r.summary ? (r.summary.length > 120 ? r.summary.slice(0, 120) + '…' : r.summary) : '-'}</TableCell>
                     <TableCell>{(r as unknown as { status?: string }).status ?? '-'}</TableCell>
-                    <TableCell>{r.deadlineDate ? new Date(r.deadlineDate).toLocaleDateString('no-NO') : '-'}</TableCell>
+                    <TableCell>{r.deadlineDate ? new Date(r.deadlineDate).toLocaleDateString('nb-NO') : '-'}</TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={0.5}>
                         <Button
@@ -381,7 +381,7 @@ const ProjectRequestUploadPage: React.FC = () => {
       >
         <DialogTitle id="delete-request-title" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <WarningAmberIcon color="error" />
-          Slette prosjektforespørsel?
+          Slette avropet?
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="delete-request-description" component="div">
@@ -449,8 +449,8 @@ function ProjectRequestDetails({
       )}
 
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
-        <Typography variant="body2"><strong>Analysert:</strong> {dto.uploadedAt ? new Date(dto.uploadedAt).toLocaleString('no-NO') : '-'}</Typography>
-        <Typography variant="body2"><strong>Svarfrist:</strong> {dto.deadlineDate ? new Date(dto.deadlineDate).toLocaleDateString('no-NO') : '-'}</Typography>
+        <Typography variant="body2"><strong>Analysert:</strong> {dto.uploadedAt ? new Date(dto.uploadedAt).toLocaleString('nb-NO') : '-'}</Typography>
+        <Typography variant="body2"><strong>Svarfrist:</strong> {dto.deadlineDate ? new Date(dto.deadlineDate).toLocaleDateString('nb-NO') : '-'}</Typography>
       </Stack>
 
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>

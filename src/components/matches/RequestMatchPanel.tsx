@@ -634,7 +634,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
             )}
 
             {!loadingPreview && state.preview && previewCandidates.length === 0 && (
-              <Typography variant="body2" color="text.secondary">Ingen kandidater å vise for denne forespørselen.</Typography>
+              <Typography variant="body2" color="text.secondary">Ingen kandidater å vise for dette avropet.</Typography>
             )}
 
             {!state.previewAvailable && !state.preview && !loadingPreview && (
@@ -746,7 +746,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                   <Chip label={`${aiMatches.length} AI-vurdert`} size="small" color="primary" variant="outlined" />
                   {state.results?.lastUpdated && (
                     <Typography variant="caption" color="text.secondary">
-                      Sist oppdatert: {new Date(state.results.lastUpdated).toLocaleString('no-NO')}
+                      Sist oppdatert: {new Date(state.results.lastUpdated).toLocaleString('nb-NO')}
                     </Typography>
                   )}
                 </Stack>

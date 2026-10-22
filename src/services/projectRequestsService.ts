@@ -54,7 +54,7 @@ function deriveTitle(dto: LegacyProjectRequestDto): string {
   }
 
   if (dto.customerName?.trim()) return `Behov fra ${dto.customerName.trim()}`;
-  return 'Kundeforspørsel';
+  return 'Avrop';
 }
 
 function normalizeProjectRequestResponse(dto: LegacyProjectRequestDto): ProjectRequestResponseDto {

@@ -33,7 +33,7 @@ const ProjectRequestDetailPage: React.FC = () => {
           // ignore
         }
       } catch {
-        setError('Kunne ikke hente kundeforespørselen. Backend svarte med feil.');
+        setError('Kunne ikke hente avropet. Backend svarte med feil.');
       } finally {
         setLoading(false);
       }
@@ -44,7 +44,7 @@ const ProjectRequestDetailPage: React.FC = () => {
 
   return (
     <Container sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>Kundeforspørsel</Typography>
+      <Typography variant="h4" gutterBottom>Avrop</Typography>
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Typography color="error.main" sx={{ mb: 2 }}>{error}</Typography>}
       {dto && (
@@ -55,8 +55,8 @@ const ProjectRequestDetailPage: React.FC = () => {
             <Typography variant="body2"><strong>Tittel:</strong> {dto.title ?? '-'}</Typography>
             <Typography variant="body2"><strong>Filnavn:</strong> {dto.originalFilename ?? '-'}</Typography>
             <Typography variant="body2"><strong>Status:</strong> {status ?? '-'}</Typography>
-            <Typography variant="body2"><strong>Opplastet:</strong> {dto.uploadedAt ? new Date(dto.uploadedAt).toLocaleString('no-NO') : '-'}</Typography>
-            <Typography variant="body2"><strong>Svarfrist:</strong> {dto.deadlineDate ? new Date(dto.deadlineDate).toLocaleDateString('no-NO') : '-'}</Typography>
+            <Typography variant="body2"><strong>Opplastet:</strong> {dto.uploadedAt ? new Date(dto.uploadedAt).toLocaleString('nb-NO') : '-'}</Typography>
+            <Typography variant="body2"><strong>Svarfrist:</strong> {dto.deadlineDate ? new Date(dto.deadlineDate).toLocaleDateString('nb-NO') : '-'}</Typography>
             <Box sx={{ flex: 1 }} />
             <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={actionsLoading} />
             <Button size="small" variant="outlined" disabled={actionsLoading || !dto.id} onClick={async () => {
@@ -83,11 +83,11 @@ const ProjectRequestDetailPage: React.FC = () => {
                 setDto(closed as ProjectRequestResponseDto);
                 setError(null);
               } catch {
-                setError('Kunne ikke lukke forespørselen.');
+                setError('Kunne ikke lukke avropet.');
               } finally {
                 setActionsLoading(false);
               }
-            }}>Lukk forespørsel</Button>
+            }}>Lukk avropet</Button>
           </Stack>
           {dto.summary && (
             <>

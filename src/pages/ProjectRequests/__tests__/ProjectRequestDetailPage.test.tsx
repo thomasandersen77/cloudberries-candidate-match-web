@@ -35,16 +35,16 @@ it('shows the request as closed once the server has closed it, and does not offe
   vi.mocked(closeProjectRequest).mockResolvedValue(request('CLOSED') as never);
   renderPage();
 
-  const close = await screen.findByRole('button', { name: 'Lukk forespørsel' });
+  const close = await screen.findByRole('button', { name: 'Lukk avropet' });
   fireEvent.click(close);
 
   await waitFor(() => expect(screen.getByText('CLOSED')).toBeInTheDocument());
-  expect(screen.getByRole('button', { name: 'Lukk forespørsel' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Lukk avropet' })).toBeDisabled();
 });
 
 it('does not offer to close a request that is already closed', async () => {
   vi.mocked(getProjectRequestById).mockResolvedValue(request('CLOSED') as never);
   renderPage();
 
-  expect(await screen.findByRole('button', { name: 'Lukk forespørsel' })).toBeDisabled();
+  expect(await screen.findByRole('button', { name: 'Lukk avropet' })).toBeDisabled();
 });

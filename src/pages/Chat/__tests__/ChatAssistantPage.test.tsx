@@ -637,7 +637,7 @@ describe('ChatAssistantPage', () => {
     await waitFor(() => expect(screen.getByText('Krav filtrert, likhet rangert')).toBeInTheDocument());
     expect(screen.getByText('Oppfyller: Kotlin (9 år)')).toBeInTheDocument();
     expect(screen.getByText('Traff i CV-en: Prosjekt: Skatteetaten')).toBeInTheDocument();
-    expect(screen.getByText('CV-kvalitet 76')).toBeInTheDocument();
+    expect(screen.getByText('CV-score 76')).toBeInTheDocument();
     // A similarity, not a percentage.
     expect(screen.getByText('Likhet 0.86')).toBeInTheDocument();
     expect(screen.queryByText(/86 ?%/)).not.toBeInTheDocument();

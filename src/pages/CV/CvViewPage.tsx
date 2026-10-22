@@ -141,7 +141,7 @@ const CvViewPage: React.FC = () => {
           {/* CV Quality Score */}
           {activeCv.qualityScore && (
             <Paper sx={{ p: 2, mb: 3, bgcolor: 'success.50' }}>
-              <Typography variant="h6">CV-kvalitet: {activeCv.qualityScore}%</Typography>
+              <Typography variant="h6">CV-score: {activeCv.qualityScore} %</Typography>
             </Paper>
           )}
           

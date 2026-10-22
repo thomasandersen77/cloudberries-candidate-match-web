@@ -137,7 +137,7 @@ const ResultsTable: React.FC<{
           <TableRow>
             <TableCell>Navn</TableCell>
             <TableCell>Ferdigheter</TableCell>
-            <TableCell align="center">CV-kvalitet</TableCell>
+            <TableCell align="center">CV-score</TableCell>
             <TableCell align="right">Handlinger</TableCell>
           </TableRow>
         </TableHead>

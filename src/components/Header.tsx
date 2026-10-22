@@ -19,9 +19,9 @@ const topNavItems = [
   { label: 'Dashboard', to: '/' },
   { label: 'Assistent', to: '/chat' },
   { label: 'Konsulenter', to: '/consultants' },
-  { label: 'CV-Score', to: '/cv-score' },
+  { label: 'CV-score', to: '/cv-score' },
   { label: 'Matcher', to: '/matches' },
-  { label: 'Kundeforspørsel', to: '/project-requests/upload' },
+  { label: 'Avrop', to: '/project-requests/upload' },
 ];
 
 const Header: React.FC = () => {
@@ -231,12 +231,12 @@ const Header: React.FC = () => {
           </Tooltip>
           <HealthCheckIndicator />
           <Tooltip title={mode === 'dark' ? 'Bytt til lys modus' : 'Bytt til mørk modus'}>
-            <IconButton color="inherit" aria-label="toggle color mode" onClick={toggle} size="small">
+            <IconButton color="inherit" aria-label="bytt mellom lys og mørk modus" onClick={toggle} size="small">
               {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
             </IconButton>
           </Tooltip>
           <Tooltip title={`Tema: ${palettes[brandTheme].name}`}>
-            <IconButton color="inherit" aria-label="brand palette selector" size="small" onClick={handleMenuOpen}>
+            <IconButton color="inherit" aria-label="velg merkevare" size="small" onClick={handleMenuOpen}>
               <PaletteOutlinedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -295,7 +295,7 @@ const Header: React.FC = () => {
             }}
             sx={{ display: 'flex', justifyContent: 'space-between' }}
           >
-            Cloudberries look
+            Cloudberries-utseende
             {brandTheme === 'cloudberries' ? <CheckIcon fontSize="small" /> : null}
           </MenuItem>
           <MenuItem

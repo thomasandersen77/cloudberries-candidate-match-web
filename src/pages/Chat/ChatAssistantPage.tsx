@@ -160,7 +160,7 @@ const MESSAGES_KEY = 'chatAnalyzeMessages';
 const CONVERSATION_KEY = 'chatAnalyzeConversationId';
 
 const formatTimestamp = (date: Date) =>
-  date.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
+  date.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
 
 /*
  * The message components live at module scope, not inside ChatAssistantPage.
@@ -470,7 +470,7 @@ const ResultCards: React.FC<{
             )}
             <Stack direction="row" spacing={1.5} sx={{ mt: 0.5 }}>
               {r.cvQualityScore != null && (
-                <Typography variant="caption" color="text.secondary">CV-kvalitet {r.cvQualityScore}</Typography>
+                <Typography variant="caption" color="text.secondary">CV-score {r.cvQualityScore}</Typography>
               )}
               {r.semanticSimilarity != null && (
                 <Tooltip title="Likhet i CV-teksten, ikke en matchprosent. To urelaterte CV-er ligger rundt 0,80.">
@@ -518,7 +518,7 @@ const SourceChips: React.FC<{ sources: ChatSource[]; alreadyShown?: Set<string> 
         source.consultantCvId && `CV: ${source.consultantCvId}`,
         source.projectRequestId != null && `Avrop ${source.projectRequestId}`,
         source.matchResultId != null && `Kjøring ${source.matchResultId}`,
-        source.evaluatedAt && `Vurdert ${new Date(source.evaluatedAt).toLocaleDateString('no-NO')}`
+        source.evaluatedAt && `Vurdert ${new Date(source.evaluatedAt).toLocaleDateString('nb-NO')}`
       ].filter(Boolean).join(' • ');
 
       return (
@@ -1264,7 +1264,7 @@ const ChatAssistantPage: React.FC = () => {
               {scope === 'DATABASE' && (
                 <Typography variant="caption" color="text.secondary">
                   Et ferdighetssøk, som «Hvem kan Java og Kotlin?», rangerer på dokumentert varighet
-                  i CV-en. CV-kvalitet teller en femtedel: den måler hvor mye av konsulenten som
+                  i CV-en. CV-score teller en femtedel: den måler hvor mye av konsulenten som
                   faktisk står på siden, rolle, effekt og hva prosjektet gikk ut på. En tynn CV
                   havner lenger ned enn kompetansen skulle tilsi, fordi CV-en er det kunden leser.
                 </Typography>

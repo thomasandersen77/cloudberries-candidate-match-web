@@ -140,7 +140,7 @@ const ConsultantDetailPage: React.FC = () => {
           {hasQuality && (
             <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                CV-kvalitet
+                CV-score
               </Typography>
               <CvScoreBadge score={qScore} size="lg" />
             </Stack>

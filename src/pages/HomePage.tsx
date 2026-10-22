@@ -59,7 +59,7 @@ const HomePage: React.FC = () => {
             Intelligent kompetansesøk og AI-drevet matching
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
-            Finn konsulenter på dokumentert erfaring, vurder CV-kvalitet og match mot kundeforespørsler.
+            Finn konsulenter på dokumentert erfaring, vurder CV-score og match mot avrop.
           </Typography>
         </Box>
         <Box
@@ -87,7 +87,7 @@ const HomePage: React.FC = () => {
           Andre arbeidsflater
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Konsulentlisten, matching mot avrop, opplasting av nye forespørsler og oversikter.
+          Konsulentlisten, matching mot avrop, opplasting av nye avrop og oversikter.
         </Typography>
       </Box>
 

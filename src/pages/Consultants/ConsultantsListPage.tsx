@@ -84,7 +84,7 @@ const TableSkeleton: React.FC<{ rows?: number }> = ({ rows = 5 }) => (
           <TableCell width={64}></TableCell>
           <TableCell>Navn</TableCell>
           <TableCell>Ferdigheter</TableCell>
-          <TableCell align="center">Kvalitet</TableCell>
+          <TableCell align="center">CV-score</TableCell>
           <TableCell align="right">Handlinger</TableCell>
         </TableRow>
       </TableHead>
@@ -439,7 +439,7 @@ const fetchData = async () => {
                         <TableCell width={isTablet ? 48 : 64} />
                         <TableCell>Navn</TableCell>
                         {!isTablet && <TableCell>Ferdigheter</TableCell>}
-                        <TableCell align="center">Kvalitet</TableCell>
+                        <TableCell align="center">CV-score</TableCell>
                         <TableCell align="right">Handlinger</TableCell>
                       </TableRow>
                     </TableHead>
