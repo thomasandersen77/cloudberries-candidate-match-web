@@ -414,4 +414,28 @@ describe('RequestMatchPanel', () => {
     expect(expandThomas).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByText(/Sterk profil med relevant erfaring/)).toBeVisible();
   });
+
+  /**
+   * The run's own counters, from the status endpoint: a run where seventeen of twenty answered
+   * is «Delvis fullført, 17 av 20 vurdert, 3 feilet», not «Fullført». A running one says how far.
+   */
+  it('shows how a run went, and how far a running one has come', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'PARTIAL', runId: 21, attempted: 20, done: 20, succeeded: 17, failed: 3, skipped: 0,
+    } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(storedRun as never);
+    renderPanel();
+
+    expect(await screen.findByText('Delvis fullført')).toBeInTheDocument();
+    expect(screen.getByText('17 av 20 vurdert, 3 feilet')).toBeInTheDocument();
+
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'RUNNING', runId: 22, attempted: 20, done: 7, succeeded: 6, failed: 1, skipped: 0,
+    } as never);
+    await userEvent.click(screen.getByRole('button', { name: 'Oppdater status' }));
+
+    expect(await screen.findByText('7 av 20 ferdige')).toBeInTheDocument();
+    expect(screen.getByText('Kjører AI-matching…')).toBeInTheDocument();
+  });
 });

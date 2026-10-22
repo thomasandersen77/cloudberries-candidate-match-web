@@ -1586,6 +1586,13 @@ export interface paths {
                         "application/json": components["schemas"]["MatchCandidateDto"][];
                     };
                 };
+                /** @description A run is already going for this request (MATCHING_RUN_IN_PROGRESS); the message names it and its status URL. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
                 default: components["responses"]["ErrorResponse"];
             };
         };
@@ -3914,6 +3921,7 @@ export interface components {
             yearsOfExperience?: string;
             comment?: string;
         };
+        /** @description The run's own status: the one running now, else the current one, else NOT_STARTED. The counters say how far a running one has come and how a finished one went. */
         ProjectMatchStatusResponse: {
             /** Format: int64 */
             projectRequestId?: number;
@@ -3921,11 +3929,29 @@ export interface components {
             /** Format: date-time */
             lastUpdated?: string | null;
             error?: string | null;
+            /** @description Candidates with a score. */
             matchCount?: number;
             semanticSearchReady?: boolean;
+            /** Format: int64 */
+            runId?: number | null;
+            /** @description How many the run tried. */
+            attempted?: number;
+            /** @description How many have an outcome so far; equals attempted once finished. */
+            done?: number;
+            succeeded?: number;
+            /** @description Failed and incomplete together. */
+            failed?: number;
+            skipped?: number;
+            /** Format: date-time */
+            startedAt?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
         };
-        /** @enum {string} */
-        MatchingStatus: "NOT_STARTED" | "READY_FOR_PREVIEW" | "RUNNING" | "COMPLETED" | "FAILED";
+        /**
+         * @description PARTIAL means some candidates have a score and some do not; the list shows the ones that do.
+         * @enum {string}
+         */
+        MatchingStatus: "NOT_STARTED" | "READY_FOR_PREVIEW" | "RUNNING" | "COMPLETED" | "PARTIAL" | "FAILED" | "CANCELLED";
         /** @enum {string} */
         ModelTier: "FAST" | "DEFAULT" | "QUALITY";
         ProjectRequestResponseDto: {
@@ -4300,6 +4326,15 @@ export interface components {
             lastUpdated?: string | null;
             /** @description The CV-quality weight the run was made with (0, 10, 20 or 30); null for runs from before it was kept. */
             cvWeightPercent?: number | null;
+            /** Format: int64 */
+            runId?: number | null;
+            /** @description COMPLETED */
+            runStatus?: string | null;
+            attempted?: number;
+            succeeded?: number;
+            /** @description Failed and incomplete together. */
+            failed?: number;
+            skipped?: number;
         };
         MatchesHealthResponse: {
             /** @enum {string} */

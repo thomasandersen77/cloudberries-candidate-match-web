@@ -96,6 +96,11 @@ A list card carries two framed statuses of one size at its right: the coverage i
 colour the server chose, and the AI status, green with count and date when the model has been
 run, orange «Ikke AI-vurdert» when not. Every other card is tinted.
 
+The panel's status chip and the line under it come from `GET …/matches/status`, which reports
+the run itself: `RUNNING` with «7 av 20 ferdige», `PARTIAL` («Delvis fullført», warning colour)
+with «17 av 20 vurdert, 3 feilet», `COMPLETED`, `FAILED`, `CANCELLED`. A `409` on «Kjør
+AI-matching» means a run is already going for the request; the message names it.
+
 The list is ordered and filtered by the server: a select for the order (`date`, `ai`, `coverage`,
 each both ways) and chips for the filters (`assessed`, one of two or none; `coverage`, the lights
 added up). Any change starts again from the first page; the count under the select says how many

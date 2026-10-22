@@ -45,6 +45,7 @@ import type {
 import { getEmbeddingInfo } from '../../services/consultantsService';
 import {
   fromLegacyMatchStatus,
+  describeRunProgress,
   fromProjectMatchStatus,
   phaseLabel,
   type FrontendMatchPhase,
@@ -267,6 +268,8 @@ const rowLinkSx = {
 type PanelState = {
   /** The run as the server last reported it, or as this panel started it. Never written by the preview. */
   phase: FrontendMatchPhase;
+  /** The status endpoint's last answer, for the counters; null before it has answered or when it is the older shape. */
+  runStatus: ProjectMatchStatusResponse | null;
   results: ProjectMatchResults | null;
   /** The status or result could not be read; the result shown, if any, is the one read before. */
   loadError: string | null;
@@ -340,6 +343,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [state, setState] = useState<PanelState>({
     phase: 'NOT_STARTED',
+    runStatus: null,
     results: null,
     loadError: null,
     preview: null,
@@ -364,6 +368,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
   useEffect(() => {
     setState({
       phase: 'NOT_STARTED',
+      runStatus: null,
       results: null,
       loadError: null,
       preview: null,
@@ -389,6 +394,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
       setState((prev) => ({
         ...prev,
         phase: resolvePhase(statusRes, hasResults),
+        runStatus: 'attempted' in statusRes ? (statusRes as ProjectMatchStatusResponse) : null,
         results: resultsRes,
         loadError: null,
         semanticReady: embedInfo?.semanticSearchReady ?? embedInfo?.enabled ?? null,
@@ -396,6 +402,23 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
     } catch (error) {
       if (!stillCurrent(target)) return;
       setState((prev) => ({ ...prev, loadError: extractError(error, 'Kunne ikke hente matching-status.') }));
+    }
+  }, [requestId]);
+
+  /** The status endpoint alone, for the counters after a run this panel made. */
+  const refreshStatus = useCallback(async () => {
+    const target = requestId;
+    try {
+      const statusRes = await getProjectMatchStatus(target);
+      if (!stillCurrent(target) || !('attempted' in statusRes)) return;
+      const status = statusRes as ProjectMatchStatusResponse;
+      setState((prev) => ({
+        ...prev,
+        runStatus: status,
+        phase: status.status === 'PARTIAL' ? 'PARTIAL' : prev.phase,
+      }));
+    } catch {
+      // The list is already on screen; the counters can wait for the next read.
     }
   }, [requestId]);
 
@@ -507,6 +530,10 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
         results,
         phase: 'COMPLETED',
       }));
+      // The run's own status and counters («3 av 3 vurdert», or PARTIAL with how many failed):
+      // the answer above is the list, the status endpoint is the run. Status only; the list the
+      // run just answered with is not re-read.
+      void refreshStatus();
     } catch (error) {
       if (stillCurrent(target)) {
         setState((prev) => ({
@@ -698,10 +725,14 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               ) : (
                 <Chip
                   size="small"
-                  label={hasAiResults || state.phase === 'RUNNING' || state.phase === 'FAILED' ? phaseLabel(state.phase) : 'Ikke kjørt'}
-                  color={state.phase === 'COMPLETED' ? 'success' : state.phase === 'FAILED' ? 'error' : 'default'}
+                  label={hasAiResults || ['RUNNING', 'FAILED', 'PARTIAL', 'CANCELLED'].includes(state.phase) ? phaseLabel(state.phase) : 'Ikke kjørt'}
+                  color={state.phase === 'COMPLETED' ? 'success' : state.phase === 'PARTIAL' ? 'warning' : ['FAILED', 'CANCELLED'].includes(state.phase) ? 'error' : 'default'}
                   variant="outlined"
                 />
+              )}
+              {/* The run's own counters: how far it has come, or how it went. */}
+              {describeRunProgress(state.runStatus) && (
+                <Typography variant="caption" color="text.secondary">{describeRunProgress(state.runStatus)}</Typography>
               )}
               {state.semanticReady === false && (
                 <Chip size="small" color="warning" variant="outlined" label="Semantisk søk mangler embeddings" />

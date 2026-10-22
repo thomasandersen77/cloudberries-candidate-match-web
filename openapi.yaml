@@ -994,6 +994,8 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/MatchCandidateDto' }
+        '409':
+          description: A run is already going for this request (MATCHING_RUN_IN_PROGRESS); the message names it and its status URL.
         default:
           $ref: '#/components/responses/ErrorResponse'
 
@@ -2992,17 +2994,29 @@ components:
 
     ProjectMatchStatusResponse:
       type: object
+      description: >-
+        The run's own status: the one running now, else the current one, else NOT_STARTED. The
+        counters say how far a running one has come and how a finished one went.
       properties:
         projectRequestId: { type: integer, format: int64 }
         status: { $ref: '#/components/schemas/MatchingStatus' }
         lastUpdated: { type: string, format: date-time, nullable: true }
         error: { type: string, nullable: true }
-        matchCount: { type: integer }
+        matchCount: { type: integer, description: Candidates with a score. }
         semanticSearchReady: { type: boolean }
+        runId: { type: integer, format: int64, nullable: true }
+        attempted: { type: integer, description: How many the run tried. }
+        done: { type: integer, description: "How many have an outcome so far; equals attempted once finished." }
+        succeeded: { type: integer }
+        failed: { type: integer, description: Failed and incomplete together. }
+        skipped: { type: integer }
+        startedAt: { type: string, format: date-time, nullable: true }
+        completedAt: { type: string, format: date-time, nullable: true }
 
     MatchingStatus:
       type: string
-      enum: [ NOT_STARTED, READY_FOR_PREVIEW, RUNNING, COMPLETED, FAILED ]
+      description: PARTIAL means some candidates have a score and some do not; the list shows the ones that do.
+      enum: [ NOT_STARTED, READY_FOR_PREVIEW, RUNNING, COMPLETED, PARTIAL, FAILED, CANCELLED ]
 
     ModelTier:
       type: string
@@ -3511,6 +3525,12 @@ components:
           type: integer
           nullable: true
           description: The CV-quality weight the run was made with (0, 10, 20 or 30); null for runs from before it was kept.
+        runId: { type: integer, format: int64, nullable: true }
+        runStatus: { type: string, nullable: true, description: COMPLETED, or PARTIAL when some candidates got no answer. }
+        attempted: { type: integer }
+        succeeded: { type: integer }
+        failed: { type: integer, description: Failed and incomplete together. }
+        skipped: { type: integer }
 
     MatchesHealthResponse:
       type: object
