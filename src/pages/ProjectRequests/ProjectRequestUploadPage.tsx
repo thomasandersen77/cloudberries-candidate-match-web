@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import AnalysisFailedAlert from '../../components/projectRequests/AnalysisFailedAlert';
 import { alpha, useTheme } from '@mui/material/styles';
 import { Box, Button, Collapse, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, LinearProgress, Paper, Stack, Typography, Table, TableBody, TableCell, TableHead, TableRow, Alert, TableSortLabel } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -363,6 +364,17 @@ const ProjectRequestUploadPage: React.FC = () => {
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, letterSpacing: '-0.01em' }}>
             Resultat
           </Typography>
+          {result.id != null && result.analysisStatus === 'FAILED' && (
+            <Box sx={{ mb: 2 }}>
+              <AnalysisFailedAlert
+                requestId={result.id}
+                error={result.analysisError}
+                onAnalysed={() => {
+                  void getProjectRequestById(result.id as number).then((fresh) => { if (fresh) setResult(fresh); });
+                }}
+              />
+            </Box>
+          )}
           <ProjectRequestDetails
             dto={result}
             deleting={result.id != null && deletingId === result.id}

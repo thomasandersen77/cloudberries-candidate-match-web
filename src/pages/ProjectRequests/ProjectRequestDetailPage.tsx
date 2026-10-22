@@ -6,6 +6,7 @@ import RequirementList from '../../components/matches/RequirementList';
 import AiSuggestions from '../../components/matches/AiSuggestions';
 import { getProjectRequestById, analyzeProjectRequest, getProjectRequestSuggestions, closeProjectRequest } from '../../services/projectRequestsService';
 import HighQualityToggle from '../../components/HighQualityToggle';
+import AnalysisFailedAlert from '../../components/projectRequests/AnalysisFailedAlert';
 
 const ProjectRequestDetailPage: React.FC = () => {
   const { id } = useParams();
@@ -47,6 +48,12 @@ const ProjectRequestDetailPage: React.FC = () => {
       <Typography variant="h4" gutterBottom>Avrop</Typography>
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Typography color="error.main" sx={{ mb: 2 }}>{error}</Typography>}
+      {dto?.id != null && dto.analysisStatus === 'FAILED' && (
+        <Box sx={{ mb: 2 }}>
+          <AnalysisFailedAlert requestId={dto.id} error={dto.analysisError}
+            onAnalysed={() => { void getProjectRequestById(dto.id as number).then(setDto); }} />
+        </Box>
+      )}
       {dto && (
         <Paper sx={{ p: 2 }}>
           <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>

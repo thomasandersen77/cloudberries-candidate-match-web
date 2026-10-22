@@ -2,6 +2,7 @@ import apiClient, { aiScoringClient } from './apiClient';
 import { isAxiosError } from 'axios';
 import type {
   CoverageStatus,
+  WorkStatus,
   MatchesListItemDto,
   PagedMatchesListDto,
   MatchCandidateDto,
@@ -35,10 +36,12 @@ export type MatchesListQuery = {
   assessed?: boolean | null;
   /** Only these coverage statuses; empty for all. */
   coverage?: CoverageStatus[];
+  /** Only these work statuses (active, deadline passed, closed); empty for all. */
+  work?: WorkStatus[];
 };
 
 export async function listMatchRequests(params: MatchesListQuery = {}): Promise<PagedMatchesListDto> {
-  const { page = 0, size = 20, sort = 'uploadedAt,desc', assessed, coverage } = params;
+  const { page = 0, size = 20, sort = 'uploadedAt,desc', assessed, coverage, work } = params;
   const { data } = await apiClient.get<PagedMatchesListDto>('matches/requests-paged', {
     params: {
       page,
@@ -47,6 +50,7 @@ export async function listMatchRequests(params: MatchesListQuery = {}): Promise<
       ...(assessed != null && { assessed }),
       // One comma-separated value: Spring binds it to a set, where axios's `coverage[]=` would not.
       ...(coverage && coverage.length > 0 && { coverage: coverage.join(',') }),
+      ...(work && work.length > 0 && { work: work.join(',') }),
     },
   });
   return data;

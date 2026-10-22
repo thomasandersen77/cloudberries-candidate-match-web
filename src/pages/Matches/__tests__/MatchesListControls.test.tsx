@@ -117,4 +117,26 @@ describe('sortering og filtre på matchlisten', () => {
     expect(screen.getByRole('button', { name: 'AI-vurdert' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('combobox', { name: /Sortering/ })).toHaveTextContent('Færrest treff først');
   });
+
+  /** Plan C8: where the request is in the work, from its status and its deadline; the lights add up. */
+  it('filtrerer på arbeidsstatus, og nullstiller den med resten', async () => {
+    renderList();
+    await waitFor(() => expect(mockedList).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Frist passert' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lukket' }));
+
+    await waitFor(() => expect(lastQuery()).toMatchObject({ page: 0, work: ['DEADLINE_PASSED', 'CLOSED'] }));
+    expect(locationNow()).toContain('work=DEADLINE_PASSED%2CCLOSED');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nullstill' }));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ work: [], coverage: [], assessed: null }));
+  });
+
+  it('leser arbeidsstatus fra adressen', async () => {
+    renderList('/matches?work=ACTIVE,UKJENT');
+    await waitFor(() => expect(mockedList).toHaveBeenCalled());
+    expect(lastQuery()).toMatchObject({ work: ['ACTIVE'] });
+  });
 });
+

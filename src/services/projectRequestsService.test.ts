@@ -76,4 +76,28 @@ describe('projectRequestsService', () => {
     expect(dto?.mustRequirements?.map(r => r.appliesTo)).toEqual(['CONSULTANT']);
     expect(dto?.shouldRequirements?.map(r => r.appliesTo)).toEqual(['CONSULTANT']);
   });
+
+  /**
+   * The same rebuild dropped every field it did not name: the analysis status and its error, the
+   * request's status, the role and the period. The page then could not say that a document's
+   * requirements were never read, and the period line under «Avropet» never showed.
+   */
+  it('keeps every field the server sent, not only the ones the normaliser names', async () => {
+    mockedApiClient.get.mockResolvedValue({
+      data: {
+        id: 9011, customerName: 'NAV', title: 'Tech lead', status: 'OPEN', role: 'Tech lead',
+        startDate: '2026-11-01T00:00:00', endDate: '2027-10-31T00:00:00',
+        analysisStatus: 'FAILED', analysisError: 'Kravtolkingen feilet hos AI-tjenesten.',
+        mustRequirements: [], shouldRequirements: [],
+      }
+    } as never);
+
+    const dto = await getProjectRequestById(9011);
+
+    expect(dto).toMatchObject({
+      status: 'OPEN', role: 'Tech lead', startDate: '2026-11-01T00:00:00', endDate: '2027-10-31T00:00:00',
+      analysisStatus: 'FAILED', analysisError: 'Kravtolkingen feilet hos AI-tjenesten.',
+    });
+  });
 });
+

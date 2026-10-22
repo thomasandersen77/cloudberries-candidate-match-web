@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import AnalysisFailedAlert from '../../components/projectRequests/AnalysisFailedAlert';
 import { Link as RouterLink, useLocation, useParams } from 'react-router-dom';
 import { Alert, Box, Button, CircularProgress, Container, Link, Paper, Stack, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBackIosNew';
@@ -73,6 +74,8 @@ const RequestMatchPage: React.FC = () => {
   const backTo = listSearch ? `/matches?${listSearch}` : '/matches';
   const [item, setItem] = useState<MatchesListItemDto | null | undefined>(undefined);
   const [request, setRequest] = useState<ProjectRequestResponseDto | null>(null);
+  // Bumped after «Prøv igjen» succeeds, so the requirements and the coverage are read again.
+  const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
     if (!Number.isFinite(requestId)) return;
@@ -87,7 +90,7 @@ const RequestMatchPage: React.FC = () => {
       .then((found) => { if (current) setRequest(found); })
       .catch(() => { if (current) setRequest(null); });
     return () => { current = false; };
-  }, [requestId]);
+  }, [requestId, reloads]);
 
   return (
     <Container sx={{ py: { xs: 2, md: 4 } }}>
@@ -103,6 +106,9 @@ const RequestMatchPage: React.FC = () => {
       )}
 
       <Stack spacing={2}>
+        {request?.analysisStatus === 'FAILED' && (
+          <AnalysisFailedAlert requestId={requestId} error={request.analysisError} onAnalysed={() => setReloads((n) => n + 1)} />
+        )}
         {item && <RequestCard pr={item} fullCoverage />}
         {request && <RequestRequirements request={request} />}
         <HowMatchingWorks />

@@ -1,11 +1,11 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import RequestMatchPage from '../RequestMatchPage';
 import { getMatchRequest } from '../../../services/matchesRequestsService';
-import { getProjectRequestById } from '../../../services/projectRequestsService';
+import { getProjectRequestById, reanalyzeDocument } from '../../../services/projectRequestsService';
 
 vi.mock('../../../services/matchesRequestsService', () => ({
   getMatchRequest: vi.fn(),
@@ -13,6 +13,7 @@ vi.mock('../../../services/matchesRequestsService', () => ({
 }));
 vi.mock('../../../services/projectRequestsService', () => ({
   getProjectRequestById: vi.fn(),
+  reanalyzeDocument: vi.fn(),
 }));
 
 const panelProps = vi.hoisted(() => ({ last: null as Record<string, unknown> | null }));
@@ -128,4 +129,39 @@ describe('RequestMatchPage', () => {
 
     expect(await screen.findByRole('link', { name: 'Tilbake til matcher' })).toHaveAttribute('href', '/matches?assessed=true&page=1');
   });
+
+  /**
+   * A failed analysis left a request with an unknown customer and no requirements, looking like one
+   * that asks for nothing. The page says so, and «Prøv igjen» reads the stored document again.
+   */
+  it('says the requirements were not read, and reads them again on «Prøv igjen»', async () => {
+    vi.mocked(getMatchRequest).mockResolvedValue(item as never);
+    vi.mocked(getProjectRequestById).mockResolvedValueOnce({
+      ...request, customerName: 'Unknown Customer', mustRequirements: [], shouldRequirements: [],
+      analysisStatus: 'FAILED', analysisError: 'AI-tjenesten feilet under tolkingen.',
+    } as never);
+    vi.mocked(reanalyzeDocument).mockResolvedValue(undefined);
+    renderAt('/matches/9011');
+
+    expect(await screen.findByText(/kravtolkingen feilet, så avropet har ingen krav ennå/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Prøv igjen' }));
+
+    await waitFor(() => expect(reanalyzeDocument).toHaveBeenCalledWith(9011));
+    await waitFor(() => expect(screen.queryByText(/kravtolkingen feilet/)).not.toBeInTheDocument());
+    expect(getProjectRequestById).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the warning and says so when the second analysis fails too', async () => {
+    vi.mocked(getMatchRequest).mockResolvedValue(item as never);
+    vi.mocked(getProjectRequestById).mockResolvedValue({ ...request, analysisStatus: 'FAILED', analysisError: null } as never);
+    vi.mocked(reanalyzeDocument).mockRejectedValue({
+      response: { status: 502, data: { error: 'REQUEST_ANALYSIS_FAILED', message: 'Kravtolkingen feilet igjen for avrop 9011. Dokumentet er lagret; prøv igjen senere.' } },
+    });
+    renderAt('/matches/9011');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Prøv igjen' }));
+
+    expect(await screen.findByText(/Kravtolkingen feilet igjen for avrop 9011/)).toBeInTheDocument();
+  });
 });
+

@@ -71,7 +71,11 @@ function normalizeProjectRequestResponse(dto: LegacyProjectRequestDto): ProjectR
   const shouldFromApi = named(dto.shouldRequirements ?? []);
   const fromRequiredSkills = splitRequirements(dto.requiredSkills ?? []);
 
+  // Everything the server sent, and then the fields that need a fallback or a cleaning. Building
+  // the object from named fields only dropped whatever was added later: appliesTo once, then the
+  // analysis status, the request status, the role and the period.
   return {
+    ...(dto as unknown as ProjectRequestResponseDto),
     id: dto.id,
     customerName: dto.customerName ?? '',
     originalFilename: dto.originalFilename ?? '',
@@ -137,6 +141,14 @@ export async function createProjectRequest(body: CreateProjectRequestDto): Promi
 export async function closeProjectRequest(id: number): Promise<ProjectRequestDto> {
   const { data } = await apiClient.put<ProjectRequestDto>(`project-requests/${id}/close`);
   return data;
+}
+
+/**
+ * Reads the stored document's requirements again: «Prøv igjen» after a failed analysis, without
+ * uploading the file twice. 502 REQUEST_ANALYSIS_FAILED when it fails again.
+ */
+export async function reanalyzeDocument(id: number): Promise<void> {
+  await aiScoringClient.post(`project-requests/${encodeURIComponent(id)}/reanalyze-document`);
 }
 
 // New: permanently delete a project request (DELETE /project-requests/{id})

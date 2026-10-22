@@ -640,6 +640,8 @@ export interface paths {
                     assessed?: boolean;
                     /** @description Only requests with one of these coverage statuses. */
                     coverage?: components["schemas"]["CoverageStatus"][];
+                    /** @description Only requests with one of these work statuses. */
+                    work?: components["schemas"]["WorkStatus"][];
                 };
                 header?: never;
                 path?: never;
@@ -1450,6 +1452,13 @@ export interface paths {
                 };
                 /** @description The request has no stored document text to read */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description REQUEST_ANALYSIS_FAILED; the document stays stored and the request is marked FAILED. */
+                502: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3908,7 +3917,19 @@ export interface components {
             aiMatchCount?: number | null;
             /** Format: date-time */
             aiLastUpdated?: string | null;
+            workStatus?: components["schemas"]["WorkStatus"];
+            analysisStatus?: components["schemas"]["AnalysisStatus"];
         };
+        /**
+         * @description Where the request is in the work: CLOSED when someone closed it, DEADLINE_PASSED when the response deadline is before today, else ACTIVE. The deadline day itself is still ACTIVE.
+         * @enum {string}
+         */
+        WorkStatus: "ACTIVE" | "DEADLINE_PASSED" | "CLOSED";
+        /**
+         * @description FAILED means the document is stored but its requirements were not read; analyse it again.
+         * @enum {string}
+         */
+        AnalysisStatus: "OK" | "FAILED";
         /**
          * @description Traffic light over coverage.fullMatchCount, the consultants who hold a skill for every must (or every should, when the request has no must naming a technology). GREEN from 3, YELLOW for 1 or 2, RED for 0. NEUTRAL means no requirement named a technology the corpus knows, which is not the same as zero.
          * @enum {string}
@@ -4126,6 +4147,9 @@ export interface components {
             mustRequirements?: components["schemas"]["ProjectRequirementDto"][];
             shouldRequirements?: components["schemas"]["ProjectRequirementDto"][];
             aiSuggestions?: components["schemas"]["AISuggestionDto"][];
+            analysisStatus?: components["schemas"]["AnalysisStatus"];
+            /** @description Why the last analysis failed, in words a reader can act on. */
+            analysisError?: string | null;
         };
         PagedProjectRequestResponseDto: {
             content?: components["schemas"]["ProjectRequestResponseDto"][];

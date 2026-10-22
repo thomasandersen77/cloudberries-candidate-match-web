@@ -485,6 +485,14 @@ paths:
           schema:
             type: array
             items: { $ref: '#/components/schemas/CoverageStatus' }
+        - in: query
+          name: work
+          description: Only requests with one of these work statuses.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: '#/components/schemas/WorkStatus' }
       responses:
         '200':
           description: Paged project requests with coverage
@@ -903,6 +911,8 @@ paths:
           schema: { type: integer, format: int64 }
         - $ref: '#/components/parameters/UseHighestQualityModelParam'
       responses:
+        '502':
+          description: REQUEST_ANALYSIS_FAILED; the document stays stored and the request is marked FAILED.
         '200':
           description: What the re-analysis changed
           content:
@@ -2862,6 +2872,20 @@ components:
           nullable: true
           description: Stored AI assessments for this request. Null when none has been run; nothing is computed for the list.
         aiLastUpdated: { type: string, format: date-time, nullable: true }
+        workStatus: { $ref: '#/components/schemas/WorkStatus' }
+        analysisStatus: { $ref: '#/components/schemas/AnalysisStatus' }
+
+    WorkStatus:
+      type: string
+      description: >-
+        Where the request is in the work: CLOSED when someone closed it, DEADLINE_PASSED when the
+        response deadline is before today, else ACTIVE. The deadline day itself is still ACTIVE.
+      enum: [ ACTIVE, DEADLINE_PASSED, CLOSED ]
+
+    AnalysisStatus:
+      type: string
+      description: FAILED means the document is stored but its requirements were not read; analyse it again.
+      enum: [ OK, FAILED ]
 
     CoverageStatus:
       type: string
@@ -3161,6 +3185,11 @@ components:
         aiSuggestions:
           type: array
           items: { $ref: '#/components/schemas/AISuggestionDto' }
+        analysisStatus: { $ref: '#/components/schemas/AnalysisStatus' }
+        analysisError:
+          type: string
+          nullable: true
+          description: Why the last analysis failed, in words a reader can act on.
 
     PagedProjectRequestResponseDto:
       type: object

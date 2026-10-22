@@ -24,7 +24,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { listMatchRequests } from '../../services/matchesRequestsService';
-import type { CoverageStatus, MatchesListItemDto, PagedMatchesListDto } from '../../types/api';
+import type { CoverageStatus, MatchesListItemDto, PagedMatchesListDto, WorkStatus } from '../../types/api';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import PageIntro from '../../components/PageIntro';
 import { CoverageChips } from '../../components/matches/RequestCoverage';
@@ -186,6 +186,20 @@ export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCovera
               {meta}
             </Typography>
           )}
+          {/* In words, not colour alone: a passed deadline, a closed request, a document not read. */}
+          {(pr.workStatus === 'DEADLINE_PASSED' || pr.workStatus === 'CLOSED' || pr.analysisStatus === 'FAILED') && (
+            <Stack direction="row" spacing={1} sx={{ mt: 0.5 }} useFlexGap flexWrap="wrap">
+              {pr.workStatus === 'DEADLINE_PASSED' && (
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'warning.main' }}>Frist passert</Typography>
+              )}
+              {pr.workStatus === 'CLOSED' && (
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>Lukket</Typography>
+              )}
+              {pr.analysisStatus === 'FAILED' && (
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'error.main' }}>Kravtolking feilet</Typography>
+              )}
+            </Stack>
+          )}
         </Box>
 
         {/*
@@ -274,6 +288,14 @@ const PAGE_SIZES = [10, 20, 50] as const;
 const SORT_VALUES = SORT_OPTIONS.map((o) => o.value);
 const COVERAGE_VALUES = COVERAGE_FILTERS.map((f) => f.status);
 
+/** Where the request is in the work (plan C8), from its status and its response deadline. */
+const WORK_FILTERS: { status: WorkStatus; label: string }[] = [
+  { status: 'ACTIVE', label: 'Aktive' },
+  { status: 'DEADLINE_PASSED', label: 'Frist passert' },
+  { status: 'CLOSED', label: 'Lukket' },
+];
+const WORK_VALUES = WORK_FILTERS.map((f) => f.status);
+
 /**
  * The list's order, filters, page and page size live in the URL, not in component state.
  *
@@ -283,7 +305,7 @@ const COVERAGE_VALUES = COVERAGE_FILTERS.map((f) => f.status);
  * the list rather than stepping through its filters. Anything the URL holds that the page does
  * not understand falls back to the default rather than reaching the server.
  */
-type ListQuery = { sort: SortValue; assessed: boolean | null; coverage: CoverageStatus[]; pageIndex: number; pageSize: number };
+type ListQuery = { sort: SortValue; assessed: boolean | null; coverage: CoverageStatus[]; work: WorkStatus[]; pageIndex: number; pageSize: number };
 
 function readQuery(params: URLSearchParams): ListQuery {
   const sort = params.get('sort');
@@ -294,6 +316,7 @@ function readQuery(params: URLSearchParams): ListQuery {
     sort: (SORT_VALUES as string[]).includes(sort ?? '') ? (sort as SortValue) : 'date,desc',
     assessed: assessed === 'true' ? true : assessed === 'false' ? false : null,
     coverage: (params.get('coverage') ?? '').split(',').filter((c): c is CoverageStatus => (COVERAGE_VALUES as string[]).includes(c)),
+    work: (params.get('work') ?? '').split(',').filter((w): w is WorkStatus => (WORK_VALUES as string[]).includes(w)),
     pageIndex: Number.isInteger(pageIndex) && pageIndex > 0 ? pageIndex : 0,
     pageSize: (PAGE_SIZES as readonly number[]).includes(size) ? size : 20,
   };
@@ -305,6 +328,7 @@ function writeQuery(q: ListQuery): URLSearchParams {
   if (q.sort !== 'date,desc') params.set('sort', q.sort);
   if (q.assessed !== null) params.set('assessed', String(q.assessed));
   if (q.coverage.length > 0) params.set('coverage', q.coverage.join(','));
+  if (q.work.length > 0) params.set('work', q.work.join(','));
   if (q.pageIndex > 0) params.set('page', String(q.pageIndex));
   if (q.pageSize !== 20) params.set('size', String(q.pageSize));
   return params;
@@ -316,11 +340,11 @@ const MatchesPage: React.FC = () => {
   const requestIdParam = params.get('requestId');
   const requestId = requestIdParam ? Number(requestIdParam) : null;
   const query = useMemo(() => readQuery(params), [params]);
-  const { sort, assessed, coverage, pageIndex, pageSize } = query;
+  const { sort, assessed, coverage, work, pageIndex, pageSize } = query;
 
   const [page, setPage] = useState<PagedMatchesListDto | null>(null);
   const [loading, setLoading] = useState(true);
-  const filtering = assessed !== null || coverage.length > 0;
+  const filtering = assessed !== null || coverage.length > 0 || work.length > 0;
 
   // Any change to the order, the filters or the size starts over from the first page.
   const update = (change: Partial<ListQuery>) =>
@@ -330,18 +354,20 @@ const MatchesPage: React.FC = () => {
   const setPageSize = (value: number) => update({ pageSize: value });
   const toggleCoverage = (status: CoverageStatus) =>
     update({ coverage: coverage.includes(status) ? coverage.filter((s) => s !== status) : [...coverage, status] });
+  const toggleWork = (status: WorkStatus) =>
+    update({ work: work.includes(status) ? work.filter((s) => s !== status) : [...work, status] });
   const loadPage = (index: number) => update({ pageIndex: index });
 
   useEffect(() => {
     if (requestId) return;
     let current = true;
     setLoading(true);
-    listMatchRequests({ page: pageIndex, size: pageSize, sort, assessed, coverage })
+    listMatchRequests({ page: pageIndex, size: pageSize, sort, assessed, coverage, work })
       .then((p) => { if (current) setPage(p); })
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestId, pageIndex, pageSize, sort, assessed, coverage.join(',')]);
+  }, [requestId, pageIndex, pageSize, sort, assessed, coverage.join(','), work.join(',')]);
 
   const rows = useMemo(() => page?.content ?? [], [page]);
 
@@ -380,8 +406,12 @@ const MatchesPage: React.FC = () => {
             {COVERAGE_FILTERS.map((f) => (
               <FilterChip key={f.status} label={f.label} active={coverage.includes(f.status)} onClick={() => toggleCoverage(f.status)} />
             ))}
+            <Box sx={{ width: 1, borderLeft: 1, borderColor: 'divider', alignSelf: 'stretch', mx: 0.5 }} />
+            {WORK_FILTERS.map((f) => (
+              <FilterChip key={f.status} label={f.label} active={work.includes(f.status)} onClick={() => toggleWork(f.status)} />
+            ))}
             {filtering && (
-              <Button size="small" onClick={() => update({ assessed: null, coverage: [] })} sx={{ textTransform: 'none' }}>
+              <Button size="small" onClick={() => update({ assessed: null, coverage: [], work: [] })} sx={{ textTransform: 'none' }}>
                 Nullstill
               </Button>
             )}
