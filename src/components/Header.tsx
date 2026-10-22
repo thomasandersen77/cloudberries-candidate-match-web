@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { AppBar, IconButton, Toolbar, Typography, Menu, MenuItem, Divider, Tooltip, Box, Button, Stack } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Link as RouterLink } from 'react-router-dom';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import MenuIcon from '@mui/icons-material/Menu';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -12,16 +11,36 @@ import HealthCheckIndicator from './HealthCheckIndicator';
 import { palettes, useColorMode } from '../theme';
 import { BRANDING } from '../config/branding';
 import { setPageIntrosHidden, usePageIntrosHidden } from './pageIntroPreference';
+import { EVERYDAY_MODULES, SUPERUSER_MODULES } from '../pages/modules';
 
 // The assistant sits second, right after the dashboard: it was not in the top navigation at all,
 // so the only way in was a card halfway down the front page.
+//
+// `section` is the part of the app an item stands for, so the item is marked as where you are on
+// every page under it: «Matcher» on /matches/9011, «Avrop» on /project-requests/12.
 const topNavItems = [
-  { label: 'Dashboard', to: '/' },
-  { label: 'Assistent', to: '/chat' },
-  { label: 'Konsulenter', to: '/consultants' },
-  { label: 'CV-score', to: '/cv-score' },
-  { label: 'Matcher', to: '/matches' },
-  { label: 'Avrop', to: '/project-requests/upload' },
+  { label: 'Dashboard', to: '/', section: '/' },
+  { label: 'Assistent', to: '/chat', section: '/chat' },
+  { label: 'Konsulenter', to: '/consultants', section: '/consultants' },
+  { label: 'CV-score', to: '/cv-score', section: '/cv-score' },
+  { label: 'Matcher', to: '/matches', section: '/matches' },
+  { label: 'Avrop', to: '/project-requests/upload', section: '/project-requests' },
+];
+
+function isActive(pathname: string, section: string): boolean {
+  if (section === '/') return pathname === '/';
+  return pathname === section || pathname.startsWith(`${section}/`);
+}
+
+/**
+ * The menu's pages, from the same list the dashboard and the Superbruker page show, so a page has
+ * one name everywhere. The menu used to be a third hand-kept list: it said «Chat Analyze» for the
+ * assistant, «Systemstatus» where the dashboard said «Helse», and had no way to Ferdigheter,
+ * CV-scoregrunnlag or Superbruker. Two pages are not modules and stay as extras.
+ */
+const MENU_EXTRAS = [
+  { to: '/search/semantic', title: 'Semantisk søk' },
+  { to: '/project-requests/new', title: 'Registrer avrop manuelt' },
 ];
 
 const Header: React.FC = () => {
@@ -31,6 +50,7 @@ const Header: React.FC = () => {
   const brand = BRANDING[brandTheme] ?? BRANDING.cloudberries;
   const isSopraSteria = brandTheme === 'soprasteria';
   const introsHidden = usePageIntrosHidden();
+  const { pathname } = useLocation();
 
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setMenuAnchor(e.currentTarget);
   const handleMenuClose = () => setMenuAnchor(null);
@@ -164,29 +184,36 @@ const Header: React.FC = () => {
             border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.9)}`,
           }}
         >
-          {topNavItems.map((item) => (
-            <Button
-              key={item.to}
-              component={RouterLink}
-              to={item.to}
-              color="inherit"
-              size="small"
-              sx={{
-                flexShrink: 0,
-                whiteSpace: 'nowrap',
-                px: { xs: 1, lg: 1.5 },
-                py: 0.75,
-                borderRadius: 2,
-                color: 'text.secondary',
-                '&:hover': {
-                  color: 'text.primary',
-                  bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === 'light' ? 0.12 : 0.2),
-                },
-              }}
-            >
-              {item.label}
-            </Button>
-          ))}
+          {topNavItems.map((item) => {
+            const active = isActive(pathname, item.section);
+            return (
+              <Button
+                key={item.to}
+                component={RouterLink}
+                to={item.to}
+                color="inherit"
+                size="small"
+                aria-current={active ? 'page' : undefined}
+                sx={{
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
+                  px: { xs: 1, lg: 1.5 },
+                  py: 0.75,
+                  borderRadius: 2,
+                  // Said by weight and colour together, not colour alone.
+                  color: active ? 'text.primary' : 'text.secondary',
+                  fontWeight: active ? 700 : undefined,
+                  bgcolor: (theme) => (active ? alpha(theme.palette.primary.main, theme.palette.mode === 'light' ? 0.12 : 0.2) : undefined),
+                  '&:hover': {
+                    color: 'text.primary',
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === 'light' ? 0.12 : 0.2),
+                  },
+                }}
+              >
+                {item.label}
+              </Button>
+            );
+          })}
         </Stack>
 
         <Box
@@ -240,9 +267,6 @@ const Header: React.FC = () => {
               <PaletteOutlinedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <IconButton color="inherit" aria-label="profil" size="small">
-            <PersonOutlineIcon fontSize="small" />
-          </IconButton>
         </Box>
 
         <Menu
@@ -257,36 +281,23 @@ const Header: React.FC = () => {
           }}
         >
           <MenuItem component={RouterLink} to="/" onClick={handleMenuClose}>
-            Forside
+            Dashboard
           </MenuItem>
           <Divider sx={{ my: 0.5 }} />
-          <MenuItem component={RouterLink} to="/consultants" onClick={handleMenuClose}>
-            Konsulenter
+          {EVERYDAY_MODULES.map((m) => (
+            <MenuItem key={m.to} component={RouterLink} to={m.to} onClick={handleMenuClose} selected={isActive(pathname, m.to)}>
+              {m.title}
+            </MenuItem>
+          ))}
+          <Divider sx={{ my: 0.5 }} />
+          <MenuItem component={RouterLink} to="/superbruker" onClick={handleMenuClose} selected={isActive(pathname, '/superbruker')}>
+            Superbruker
           </MenuItem>
-          <MenuItem component={RouterLink} to="/cv-score" onClick={handleMenuClose}>
-            CV-Score
-          </MenuItem>
-          <MenuItem component={RouterLink} to="/matches" onClick={handleMenuClose}>
-            Matcher
-          </MenuItem>
-          <MenuItem component={RouterLink} to="/embeddings" onClick={handleMenuClose}>
-            Embeddings
-          </MenuItem>
-          <MenuItem component={RouterLink} to="/chat" onClick={handleMenuClose}>
-            Chat Analyze
-          </MenuItem>
-          <MenuItem component={RouterLink} to="/health" onClick={handleMenuClose}>
-            Systemstatus
-          </MenuItem>
-          <MenuItem component={RouterLink} to="/stats" onClick={handleMenuClose}>
-            Statistikk
-          </MenuItem>
-          <MenuItem component={RouterLink} to="/search" onClick={handleMenuClose}>
-            Søk
-          </MenuItem>
-          <MenuItem component={RouterLink} to="/search/semantic" onClick={handleMenuClose}>
-            Semantisk Søk
-          </MenuItem>
+          {[...SUPERUSER_MODULES, ...MENU_EXTRAS].map((m) => (
+            <MenuItem key={m.to} component={RouterLink} to={m.to} onClick={handleMenuClose} selected={pathname === m.to} sx={{ pl: 4 }}>
+              {m.title}
+            </MenuItem>
+          ))}
           <Divider sx={{ my: 0.5 }} />
           <MenuItem
             onClick={() => {
@@ -305,7 +316,7 @@ const Header: React.FC = () => {
             }}
             sx={{ display: 'flex', justifyContent: 'space-between' }}
           >
-            Sopra Steria look
+            Sopra Steria-utseende
             {brandTheme === 'soprasteria' ? <CheckIcon fontSize="small" /> : null}
           </MenuItem>
           <Divider sx={{ my: 0.5 }} />
@@ -323,13 +334,6 @@ const Header: React.FC = () => {
           >
             Vis sideforklaringer
             {introsHidden ? null : <CheckIcon fontSize="small" />}
-          </MenuItem>
-          <Divider sx={{ my: 0.5 }} />
-          <MenuItem component={RouterLink} to="/project-requests/upload" onClick={handleMenuClose}>
-            Last opp kundeforspørsel (PDF)
-          </MenuItem>
-          <MenuItem component={RouterLink} to="/project-requests/new" onClick={handleMenuClose}>
-            Ny kundeforspørsel
           </MenuItem>
         </Menu>
       </Toolbar>

@@ -2,6 +2,7 @@ import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { EVERYDAY_MODULES, SUPERUSER_MODULES } from '../../pages/modules';
 import Header from '../Header';
 import { ColorModeProvider } from '../../theme';
 
@@ -9,9 +10,9 @@ vi.mock('../../services/healthService', () => ({
   getHealthStatus: vi.fn().mockResolvedValue({ status: 'UP', details: {} }),
 }));
 
-const renderHeader = () => render(
+const renderHeader = (at = '/') => render(
   <ColorModeProvider>
-    <MemoryRouter><Header /></MemoryRouter>
+    <MemoryRouter initialEntries={[at]}><Header /></MemoryRouter>
   </ColorModeProvider>
 );
 
@@ -49,7 +50,7 @@ describe('Header', () => {
     renderHeader();
     fireEvent.click(screen.getByRole('button', { name: 'meny' }));
 
-    for (const name of ['Embeddings', 'Statistikk', 'Systemstatus', 'Søk', 'Semantisk Søk']) {
+    for (const name of ['Embeddings', 'Statistikk', 'Systemstatus', 'Søk', 'Semantisk søk']) {
       expect(screen.getByRole('menuitem', { name })).toBeInTheDocument();
     }
   });
@@ -77,5 +78,37 @@ describe('Header', () => {
 
     expect(menu.style.display).toBe('');
     expect(window.getComputedStyle(menu).display).not.toBe('none');
+  });
+
+  /**
+   * The menu was a third hand-kept list beside the top bar and the dashboard: «Chat Analyze» for
+   * the assistant, and no way to Ferdigheter, CV-scoregrunnlag or Superbruker. It reads the
+   * module lists now, so a page has one name everywhere.
+   */
+  it('lists every module under the name the dashboard gives it, and Superbruker', () => {
+    renderHeader();
+    fireEvent.click(screen.getByRole('button', { name: 'meny' }));
+
+    for (const m of [...EVERYDAY_MODULES, ...SUPERUSER_MODULES]) {
+      expect(screen.getByRole('menuitem', { name: m.title })).toHaveAttribute('href', m.to);
+    }
+    expect(screen.getByRole('menuitem', { name: 'Superbruker' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Chat Analyze' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/kundeforspørsel|look$/i)).not.toBeInTheDocument();
+  });
+
+  /** Where you are, said to the eye and to a screen reader, on every page under a section. */
+  it('marks the section you are in, also on a page under it', () => {
+    renderHeader('/matches/9011');
+
+    expect(screen.getByRole('link', { name: 'Matcher' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Konsulenter' })).not.toHaveAttribute('aria-current');
+  });
+
+  /** A button that did nothing is gone until there is a profile to show. */
+  it('has no profile button', () => {
+    renderHeader();
+    expect(screen.queryByRole('button', { name: 'profil' })).not.toBeInTheDocument();
   });
 });

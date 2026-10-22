@@ -68,7 +68,7 @@ describe('theme-color follows the brand', () => {
     switchTo('Cloudberries-utseende');
     expect(themeColor()).toBe(palettes.cloudberries.primary);
 
-    switchTo('Sopra Steria look');
+    switchTo('Sopra Steria-utseende');
     expect(themeColor()).toBe(palettes.soprasteria.primary);
   });
 

@@ -36,7 +36,7 @@ export const EVERYDAY_MODULES: ModuleLink[] = [
   { to: '/project-requests/upload', title: 'Last opp avrop', desc: 'PDF inn, krav ut, klar for matching' },
   { to: '/cv-score', title: 'CV-score', desc: 'Score og forbedringer per CV' },
   { to: '/stats', title: 'Statistikk', desc: 'Programmeringsspråk og roller' },
-  { to: '/health', title: 'Helse', desc: 'Systemstatus og tilgjengelighet' },
+  { to: '/health', title: 'Systemstatus', desc: 'Tjenester, modeller og tilgjengelighet' },
 ];
 
 /** The rest: batch jobs and the narrower ways into data the pages above already show. */
