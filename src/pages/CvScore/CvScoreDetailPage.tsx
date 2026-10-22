@@ -16,14 +16,17 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { getCvScore, recalculateScoreForCandidate } from '../../services/cvScoreService';
 import type { CvScoreDto } from '../../types/api';
 import CvScoreBadge from '../../components/CvScoreBadge';
+import { apiErrorCode, apiErrorMessage, isConflict } from '../../utils/apiError';
 
 const CvScoreDetailPage: React.FC = () => {
   const theme = useTheme();
   const { candidateId } = useParams();
   const [score, setScore] = useState<CvScoreDto | null>(null);
   const [running, setRunning] = useState(false);
+  /** The server's word that the CV and the prompt are unchanged; offers «Score likevel». */
+  const [unchanged, setUnchanged] = useState<string | null>(null);
   const [lastEvaluatedAt, setLastEvaluatedAt] = useState<string | null>(null);
-  const [snack, setSnack] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+  const [snack, setSnack] = useState<{ open: boolean; message: string; severity: 'success' | 'info' | 'error' }>({
     open: false,
     message: '',
     severity: 'success',
@@ -42,6 +45,32 @@ const CvScoreDetailPage: React.FC = () => {
   // The answer belongs to the candidate the page is on. The effect took whatever answer came
   // last, so opened from A to B, a slow A overwrote B; and it had no catch, so a failed load left
   // the heading and nothing else.
+  /**
+   * «Score på nytt», or «Score likevel» when the server said the CV and the prompt are unchanged:
+   * an unchanged CV is not paid for twice unless asked for on purpose.
+   */
+  const rescore = async (force: boolean) => {
+    if (!candidateId) return;
+    try {
+      setRunning(true);
+      setUnchanged(null);
+      const updated = await recalculateScoreForCandidate(candidateId, force ? { force: true } : undefined);
+      // A rescore takes most of a minute; the page may be on someone else by then.
+      if (updated.candidateId !== candidateId) return;
+      setScore(updated);
+      setLastEvaluatedAt(formatScoredAt(updated));
+      setSnack({ open: true, message: 'Scoring fullført', severity: 'success' });
+    } catch (e) {
+      if (apiErrorCode(e) === 'CV_SCORE_UNCHANGED') {
+        setUnchanged(apiErrorMessage(e) ?? 'CV-en og prompten er uendret siden forrige scoring.');
+      } else {
+        setSnack({ open: true, message: scoringErrorMessage(e), severity: isConflict(e) ? 'info' : 'error' });
+      }
+    } finally {
+      setRunning(false);
+    }
+  };
+
   useEffect(() => {
     if (!candidateId) return;
     let current = true;
@@ -121,24 +150,23 @@ const CvScoreDetailPage: React.FC = () => {
                 variant="contained"
                 disabled={running}
                 startIcon={running ? <CircularProgress size={16} color="inherit" /> : undefined}
-                onClick={async () => {
-                  try {
-                    setRunning(true);
-                    const updated = await recalculateScoreForCandidate(candidateId);
-                    // A rescore takes most of a minute; the page may be on someone else by then.
-                    if (updated.candidateId !== candidateId) return;
-                    setScore(updated);
-                    setLastEvaluatedAt(formatScoredAt(updated));
-                    setSnack({ open: true, message: 'Scoring fullført', severity: 'success' });
-                  } catch (e) {
-                    setSnack({ open: true, message: scoringErrorMessage(e), severity: 'error' });
-                  } finally {
-                    setRunning(false);
-                  }
-                }}
+                onClick={() => void rescore(false)}
               >
                 {running ? 'Kjører…' : 'Score på nytt'}
               </Button>
+              {unchanged && (
+                <Alert
+                  severity="info"
+                  sx={{ maxWidth: 480 }}
+                  action={
+                    <Button color="inherit" size="small" disabled={running} sx={{ whiteSpace: 'nowrap' }} onClick={() => void rescore(true)}>
+                      Score likevel
+                    </Button>
+                  }
+                >
+                  {unchanged}
+                </Alert>
+              )}
               </Stack>
             )}
           </Paper>

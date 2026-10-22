@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { listConsultantsWithCv, runConsultantSync } from '../../services/consultantsService';
+import { apiErrorMessage, isConflict } from '../../utils/apiError';
 import type { ConsultantWithCvDto } from '../../types/api';
 import SyncButton from '../../components/Sync/SyncButton';
 import PageIntro from '../../components/PageIntro';
@@ -256,6 +257,16 @@ const fetchData = async () => {
       // Refresh data after sync
       await fetchData();
     } catch (error) {
+      setShowScoringOverlay(false);
+      if (isConflict(error)) {
+        // Another sync, or a rebuild of the embeddings, is running; this one was not started.
+        setNotification({
+          type: 'info',
+          title: 'Synkronisering pågår',
+          message: apiErrorMessage(error) ?? 'En synkronisering pågår allerede. Prøv igjen når den er ferdig.',
+        });
+        return;
+      }
       console.error('Sync failed:', error);
       setNotification({
         type: 'error',

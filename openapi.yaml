@@ -311,6 +311,9 @@ paths:
             type: boolean
             default: false
       responses:
+        '409':
+          description: |
+            CONSULTANT_SYNC_IN_PROGRESS while a sync runs, EMBEDDINGS_IN_PROGRESS while embeddings are rebuilt.
         '200':
           description: Sync summary
           content:
@@ -401,6 +404,9 @@ paths:
             `limit`. DATABASE is the order of the first sync; OLDEST_FIRST takes missing vectors
             first, then the oldest.
       responses:
+        '409':
+          description: |
+            EMBEDDINGS_IN_PROGRESS while a rebuild or a sync refresh runs.
         '200':
           description: Chunk rebuild summary
           content:
@@ -836,6 +842,9 @@ paths:
           required: true
           schema: { type: integer, format: int64 }
       responses:
+        '409':
+          description: |
+            MATCHING_RUN_IN_PROGRESS while a matching run of the request is going.
         '204':
           description: Project request deleted successfully
         '404':
@@ -1181,7 +1190,13 @@ paths:
           required: false
           schema: { type: string }
         - $ref: '#/components/parameters/UseHighestQualityModelParam'
+        - $ref: '#/components/parameters/ForceRescoreParam'
       responses:
+        '409':
+          description: |
+            CV_SCORE_UNCHANGED when the CV and the prompt are as they were at the stored score (send
+            force=true to score anyway), CV_SCORE_IN_BATCH while the CV is in a running corpus batch,
+            CV_SCORE_IN_PROGRESS while another scoring of it runs.
         '200':
           description: Updated candidate CV score
           content:
@@ -1206,7 +1221,13 @@ paths:
           required: false
           schema: { type: string }
         - $ref: '#/components/parameters/UseHighestQualityModelParam'
+        - $ref: '#/components/parameters/ForceRescoreParam'
       responses:
+        '409':
+          description: |
+            CV_SCORE_UNCHANGED when the CV and the prompt are as they were at the stored score (send
+            force=true to score anyway), CV_SCORE_IN_BATCH while the CV is in a running corpus batch,
+            CV_SCORE_IN_PROGRESS while another scoring of it runs.
         '200':
           description: Updated candidate CV score
           content:
@@ -1231,7 +1252,13 @@ paths:
           required: false
           schema: { type: string }
         - $ref: '#/components/parameters/UseHighestQualityModelParam'
+        - $ref: '#/components/parameters/ForceRescoreParam'
       responses:
+        '409':
+          description: |
+            CV_SCORE_UNCHANGED when the CV and the prompt are as they were at the stored score (send
+            force=true to score anyway), CV_SCORE_IN_BATCH while the CV is in a running corpus batch,
+            CV_SCORE_IN_PROGRESS while another scoring of it runs.
         '200':
           description: Updated candidate CV score
           content:
@@ -1264,6 +1291,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/UseHighestQualityModelParam'
       responses:
+        '409':
+          description: |
+            CV_SCORE_ALL_IN_PROGRESS while a corpus batch or another start is running.
         '200':
           description: Scoring summary
           content:
@@ -1849,6 +1879,9 @@ paths:
             `limit`. DATABASE is the order of the first sync; OLDEST_FIRST takes missing vectors
             first, then the oldest.
       responses:
+        '409':
+          description: |
+            EMBEDDINGS_IN_PROGRESS while a rebuild or a sync refresh runs.
         '200':
           description: What the run did
           content:
@@ -2022,6 +2055,12 @@ components:
         items: { type: string }
       style: form
       explode: true
+    ForceRescoreParam:
+      in: query
+      name: force
+      required: false
+      description: Score even when the CV and the prompt are unchanged since the stored score.
+      schema: { type: boolean, default: false }
     UseHighestQualityModelParam:
       in: query
       name: useHighestQualityModel

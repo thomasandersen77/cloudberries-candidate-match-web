@@ -44,6 +44,8 @@ export type CvScoreRequestOptions = {
   aiProvider?: CvScoreAiProvider;
   /** When true, ask backend for the server-configured highest-quality AI model tier. */
   useHighestQualityModel?: boolean;
+  /** Score even when the CV and the prompt are unchanged; without it the server answers 409 CV_SCORE_UNCHANGED. */
+  force?: boolean;
 };
 
 function scoringParams(opts?: CvScoreRequestOptions): Record<string, string> | undefined {
@@ -51,6 +53,7 @@ function scoringParams(opts?: CvScoreRequestOptions): Record<string, string> | u
   if (opts?.aiProvider) params.aiProvider = opts.aiProvider;
   // Only send the flag when explicitly enabled; omit otherwise (default = false on backend).
   if (opts?.useHighestQualityModel) params.useHighestQualityModel = 'true';
+  if (opts?.force) params.force = 'true';
   return Object.keys(params).length > 0 ? params : undefined;
 }
 

@@ -443,6 +443,14 @@ export interface paths {
                         "application/json": components["schemas"]["ConsultantSyncResponse"];
                     };
                 };
+                /** @description CONSULTANT_SYNC_IN_PROGRESS while a sync runs, EMBEDDINGS_IN_PROGRESS while embeddings are rebuilt.
+                 *      */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
                 default: components["responses"]["ErrorResponse"];
             };
         };
@@ -1316,6 +1324,14 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description MATCHING_RUN_IN_PROGRESS while a matching run of the request is going.
+                 *      */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
                 default: components["responses"]["ErrorResponse"];
             };
         };
@@ -2029,6 +2045,14 @@ export interface paths {
                     content: {
                         "application/json": components["schemas"]["CvScoringRunResponse"];
                     };
+                };
+                /** @description CV_SCORE_ALL_IN_PROGRESS while a corpus batch or another start is running.
+                 *      */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 default: components["responses"]["ErrorResponse"];
             };
@@ -3108,6 +3132,14 @@ export interface paths {
                     content: {
                         "application/json": components["schemas"]["EmbeddingRebuildResult"];
                     };
+                };
+                /** @description EMBEDDINGS_IN_PROGRESS while a rebuild or a sync refresh runs.
+                 *      */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 default: components["responses"]["ErrorResponse"];
             };
@@ -4599,6 +4631,8 @@ export interface components {
         SizeParam: number;
         /** @description Sort field(s), e.g. `name,asc`. Repeat for multi-sort. */
         SortParam: string[];
+        /** @description Score even when the CV and the prompt are unchanged since the stored score. */
+        ForceRescoreParam: boolean;
         /** @description When true, backend requests the configured QUALITY model tier for this operation. The concrete model is configured server-side via ANTHROPIC_QUALITY_MODEL. If no quality model is configured, backend falls back to the default model.
          *      */
         UseHighestQualityModelParam: boolean;
@@ -4747,6 +4781,14 @@ export interface operations {
                     "application/json": components["schemas"]["ChunkRebuildResult"];
                 };
             };
+            /** @description EMBEDDINGS_IN_PROGRESS while a rebuild or a sync refresh runs.
+             *      */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     scoreCandidate: {
@@ -4756,6 +4798,8 @@ export interface operations {
                 /** @description When true, backend requests the configured QUALITY model tier for this operation. The concrete model is configured server-side via ANTHROPIC_QUALITY_MODEL. If no quality model is configured, backend falls back to the default model.
                  *      */
                 useHighestQualityModel?: components["parameters"]["UseHighestQualityModelParam"];
+                /** @description Score even when the CV and the prompt are unchanged since the stored score. */
+                force?: components["parameters"]["ForceRescoreParam"];
             };
             header?: never;
             path: {
@@ -4773,6 +4817,16 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CvScoreDto"];
                 };
+            };
+            /** @description CV_SCORE_UNCHANGED when the CV and the prompt are as they were at the stored score (send
+             *     force=true to score anyway), CV_SCORE_IN_BATCH while the CV is in a running corpus batch,
+             *     CV_SCORE_IN_PROGRESS while another scoring of it runs.
+             *      */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["ErrorResponse"];
         };
@@ -4784,6 +4838,8 @@ export interface operations {
                 /** @description When true, backend requests the configured QUALITY model tier for this operation. The concrete model is configured server-side via ANTHROPIC_QUALITY_MODEL. If no quality model is configured, backend falls back to the default model.
                  *      */
                 useHighestQualityModel?: components["parameters"]["UseHighestQualityModelParam"];
+                /** @description Score even when the CV and the prompt are unchanged since the stored score. */
+                force?: components["parameters"]["ForceRescoreParam"];
             };
             header?: never;
             path: {
@@ -4801,6 +4857,16 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CvScoreDto"];
                 };
+            };
+            /** @description CV_SCORE_UNCHANGED when the CV and the prompt are as they were at the stored score (send
+             *     force=true to score anyway), CV_SCORE_IN_BATCH while the CV is in a running corpus batch,
+             *     CV_SCORE_IN_PROGRESS while another scoring of it runs.
+             *      */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["ErrorResponse"];
         };
@@ -4812,6 +4878,8 @@ export interface operations {
                 /** @description When true, backend requests the configured QUALITY model tier for this operation. The concrete model is configured server-side via ANTHROPIC_QUALITY_MODEL. If no quality model is configured, backend falls back to the default model.
                  *      */
                 useHighestQualityModel?: components["parameters"]["UseHighestQualityModelParam"];
+                /** @description Score even when the CV and the prompt are unchanged since the stored score. */
+                force?: components["parameters"]["ForceRescoreParam"];
             };
             header?: never;
             path: {
@@ -4829,6 +4897,16 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CvScoreDto"];
                 };
+            };
+            /** @description CV_SCORE_UNCHANGED when the CV and the prompt are as they were at the stored score (send
+             *     force=true to score anyway), CV_SCORE_IN_BATCH while the CV is in a running corpus batch,
+             *     CV_SCORE_IN_PROGRESS while another scoring of it runs.
+             *      */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["ErrorResponse"];
         };

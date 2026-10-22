@@ -81,3 +81,39 @@ it('shows older scoring rules for an unchanged CV without automatically rescorin
   expect(screen.queryByText(/Skåren er ikke laget fra CV-en/)).not.toBeInTheDocument();
   expect(recalculateScoreForCandidate).not.toHaveBeenCalled();
 });
+
+/**
+ * An unchanged CV under the same prompt is not scored again for nothing: the server says so with
+ * 409 CV_SCORE_UNCHANGED, the page shows it, and «Score likevel» asks again with force.
+ */
+it('says when the CV and the prompt are unchanged, and scores anyway only when asked', async () => {
+  vi.mocked(getCvScore).mockResolvedValueOnce(scoreOf('u1', 'Kotlin-utvikler'));
+  vi.mocked(recalculateScoreForCandidate)
+    .mockRejectedValueOnce({ response: { status: 409, data: { error: 'CV_SCORE_UNCHANGED', message: 'CV-en til Kari er uendret siden forrige scoring.' } } })
+    .mockResolvedValueOnce(scoreOf('u1', 'Ny vurdering'));
+  renderAt('/cv-score/u1');
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Score på nytt' }));
+
+  expect(await screen.findByText('CV-en til Kari er uendret siden forrige scoring.')).toBeInTheDocument();
+  expect(recalculateScoreForCandidate).toHaveBeenLastCalledWith('u1', undefined);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Score likevel' }));
+
+  await waitFor(() => expect(recalculateScoreForCandidate).toHaveBeenLastCalledWith('u1', { force: true }));
+  expect(await screen.findByText('Ny vurdering')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Score likevel' })).not.toBeInTheDocument();
+});
+
+it('says another scoring of the CV is running, as information and not as a failure', async () => {
+  vi.mocked(getCvScore).mockResolvedValueOnce(scoreOf('u1', 'Kotlin-utvikler'));
+  vi.mocked(recalculateScoreForCandidate).mockRejectedValueOnce({
+    response: { status: 409, data: { error: 'CV_SCORE_IN_PROGRESS', message: 'Scoring av CV-en til Kari pågår allerede (manuell, startet 14:02).' } },
+  });
+  renderAt('/cv-score/u1');
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Score på nytt' }));
+
+  expect(await screen.findByText(/pågår allerede/)).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Score likevel' })).not.toBeInTheDocument();
+});

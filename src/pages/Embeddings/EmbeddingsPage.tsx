@@ -44,6 +44,7 @@ import type {
   RebuildOrder,
 } from '../../types/api';
 import PageIntro from '../../components/PageIntro';
+import { apiErrorMessage, isConflict } from '../../utils/apiError';
 import { STATE_COLOR, STATE_LABEL, formatEmbeddedAt, isTimeout } from './embeddingFreshnessText';
 
 type RebuildOutcome = { wholeCv?: EmbeddingRebuildResult; chunks?: ChunkRebuildResult };
@@ -114,7 +115,10 @@ const EmbeddingsPage: React.FC = () => {
       setNotice(
         isTimeout(e)
           ? { severity: 'info', text: 'Svaret tok for lang tid, men byggingen fortsetter på serveren. Oppdater status for å følge med.' }
-          : { severity: 'error', text: 'Byggingen feilet.' }
+          // Another rebuild, or a sync's refresh, is running: one at a time against the daily quota.
+          : isConflict(e)
+            ? { severity: 'info', text: apiErrorMessage(e) ?? 'En oppdatering av embeddings pågår allerede.' }
+            : { severity: 'error', text: 'Byggingen feilet.' }
       );
     } finally {
       setRunning(false);

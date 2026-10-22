@@ -81,4 +81,20 @@ describe('EmbeddingsPage', () => {
     expect(rebuildWholeCvEmbeddings).toHaveBeenCalledWith({ force: false, order: 'OLDEST_FIRST', limit: 10 });
     expect(await screen.findByText(/1 bygget, 2 uendret/)).toBeInTheDocument();
   });
+
+  /** One rebuild at a time against the daily quota: a second start is told what runs, not shown a failure. */
+  it('says a rebuild is already running instead of calling it a failure', async () => {
+    vi.mocked(rebuildWholeCvEmbeddings).mockRejectedValueOnce({
+      response: { status: 409, data: { error: 'EMBEDDINGS_IN_PROGRESS', message: 'Oppdatering av embeddings pågår allerede (nattlig, startet 02:00). Prøv igjen når den er ferdig.' } },
+    });
+    renderPage();
+    await screen.findByText('Cy Mangler');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bygg manglende og utdaterte' }));
+
+    expect(await screen.findByText(/Oppdatering av embeddings pågår allerede/)).toBeInTheDocument();
+    expect(screen.queryByText('Byggingen feilet.')).not.toBeInTheDocument();
+    expect(rebuildChunkEmbeddings).not.toHaveBeenCalled();
+  });
 });
+
