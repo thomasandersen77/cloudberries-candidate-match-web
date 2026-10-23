@@ -1,4 +1,4 @@
-import type { ProjectMatchStatusResponse } from '../../types/api';
+import type { ProjectMatchStatusResponse, ProjectRequirementDto } from '../../types/api';
 
 /**
  * Which of the request page's states the reader is in (plan C3; the sketch of four states
@@ -123,4 +123,31 @@ export function sectionOrderOf(state: RequestPageState): SectionKey[] {
 export function sectionOpenOf(state: RequestPageState, key: SectionKey): boolean {
   if (state === 'NEW' || state === 'BLOCKED') return true;
   return key === 'vurdering' || key === 'forslag';
+}
+
+type RequirementRows = { mustRequirements?: ProjectRequirementDto[] | null; shouldRequirements?: ProjectRequirementDto[] | null };
+
+/**
+ * The request's requirements by whose they are: the consultant's musts and shoulds, which the
+ * assessment scores against, and the supplier's, which nobody's CV is. One split, so the frame, the
+ * folded summary and the lists count the same thing; they did not, and a request with one
+ * consultant must and eight supplier musts read «1 må-krav» above a list headed «Må-krav (9)».
+ */
+export function splitRequirements(request: RequirementRows) {
+  const isSupplier = (r: ProjectRequirementDto) => r.appliesTo === 'SUPPLIER';
+  const musts = request.mustRequirements ?? [];
+  const shoulds = request.shouldRequirements ?? [];
+  const supplierMusts = musts.filter(isSupplier);
+  const supplierShoulds = shoulds.filter(isSupplier);
+  return {
+    must: musts.filter((r) => !isSupplier(r)),
+    should: shoulds.filter((r) => !isSupplier(r)),
+    supplier: [...supplierMusts, ...supplierShoulds],
+    supplierMarks: [...supplierMusts.map(() => 'Må'), ...supplierShoulds.map(() => 'Bør')],
+  };
+}
+
+/** «Må-krav (1) · Bør-krav (0) · Leverandørkrav (9)»: the folded part's heading and the frame use the same counts. */
+export function requirementCountsLabel(c: { must: number; should: number; supplier: number }): string {
+  return `Må-krav (${c.must}) · Bør-krav (${c.should})${c.supplier > 0 ? ` · Leverandørkrav (${c.supplier})` : ''}`;
 }

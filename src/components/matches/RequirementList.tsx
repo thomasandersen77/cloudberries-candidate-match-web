@@ -1,4 +1,5 @@
 import { Box, Chip, Paper, Stack, Typography, alpha } from '@mui/material';
+import type { Theme } from '@mui/material/styles';
 import type { ProjectRequirementDto } from '../../types/api';
 
 /**
@@ -19,22 +20,29 @@ import type { ProjectRequirementDto } from '../../types/api';
  * agreements, and a reader counting competence demands should not have to read all of them to find
  * out which is which. Marking only one side keeps the common case quiet.
  */
-export function RequirementList({ title, tone, rows }: {
+export function RequirementList({ title, tone, rows, marks }: {
   title: string;
   /**
    * Which palette entry colours the list. warning for må, info for bør: two hues that stay apart
    * in both brands and both colour modes, where primary and info do not — the blue brand's primary
    * is a blue, and the orange brand's is an orange.
    */
-  tone: 'warning' | 'info';
+  tone: 'warning' | 'info' | 'neutral';
   rows: ProjectRequirementDto[];
+  /**
+   * A mark per row, in place of «Leverandør»: the supplier's own list says «Må» or «Bør» on each,
+   * since being in that list already says whose they are.
+   */
+  marks?: (string | null)[];
 }) {
+  // Neutral is the supplier's list: requirements nobody's CV is assessed against.
+  const color = (theme: Theme) => (tone === 'neutral' ? theme.palette.text.secondary : theme.palette[tone].main);
   return (
     <Paper sx={{ p: 1.5, flex: 1, minWidth: 0, alignSelf: 'stretch' }}>
       <Typography
         variant="subtitle1"
         gutterBottom
-        sx={{ color: `${tone}.main`, fontWeight: 600 }}
+        sx={(theme) => ({ color: color(theme), fontWeight: 600 })}
       >
         {title}{rows.length > 0 && ` (${rows.length})`}
       </Typography>
@@ -52,11 +60,8 @@ export function RequirementList({ title, tone, rows }: {
                 // is harder to read the longer it gets. The bar on the left is what actually
                 // separates one requirement from the next.
                 borderLeft: 3,
-                borderColor: `${tone}.main`,
-                bgcolor: theme => alpha(
-                  theme.palette[tone].main,
-                  theme.palette.mode === 'dark' ? 0.16 : 0.08
-                )
+                borderColor: (theme) => color(theme),
+                bgcolor: (theme) => alpha(color(theme), theme.palette.mode === 'dark' ? 0.16 : 0.08)
               }}
             >
               <Typography
@@ -69,9 +74,9 @@ export function RequirementList({ title, tone, rows }: {
                 sx={{ overflowWrap: 'anywhere' }}
               >
                 {r.name}
-                {r.appliesTo === 'SUPPLIER' && (
+                {(marks ? marks[i] : r.appliesTo === 'SUPPLIER' ? 'Leverandør' : null) && (
                   <Chip
-                    label="Leverandør"
+                    label={marks ? marks[i] : 'Leverandør'}
                     size="small"
                     variant="outlined"
                     sx={{ ml: 0.75, height: 18, fontSize: '0.65rem' }}

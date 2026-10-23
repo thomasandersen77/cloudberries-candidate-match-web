@@ -388,10 +388,42 @@ describe('RequestMatchPanel', () => {
     expect(await screen.findByRole('button', { name: 'Vurder 3 valgte' })).toBeEnabled();
     expect(headings()).toEqual(['Dokument og krav', 'Kandidater', 'Vurdering', 'Forslag', 'Slik fungerer matchingen']);
     expect(screen.getByText('AI-vurdering · ikke kjørt')).toBeInTheDocument();
-    expect(screen.getByText('2 må-krav og 1 bør-krav tolket fra dokumentet.')).toBeInTheDocument();
+    expect(screen.getByText('2 må-krav og 1 bør-krav til konsulenten. 1 krav til leverandøren vurderes ikke.')).toBeInTheDocument();
     expect(screen.getByText('Periode 1.11.2026 – 31.10.2027')).toBeInTheDocument();
     expect(screen.getByText('Minst fem års erfaring')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'NAV' })).toBeInTheDocument();
+  });
+
+  /**
+   * Request 3 had one consultant must and eight supplier musts. The frame said «1 må-krav» over a
+   * list headed «Må-krav (9)». The frame, the folded heading and the lists now count the same.
+   */
+  it('counts the consultant\'s requirements alike everywhere, and lists the supplier\'s apart', async () => {
+    const supplierHeavy = {
+      ...pageRequest,
+      mustRequirements: [
+        { name: 'Kompetanse som KI-systemutvikler', details: null, appliesTo: 'CONSULTANT' },
+        ...['Tilbud leveres i KGV', 'Tilbudsfrist 07.10.2025', 'Vedlegg CV'].map((name) => ({ name, details: null, appliesTo: 'SUPPLIER' })),
+      ],
+      shouldRequirements: [{ name: 'Intervju gjennomføres ved behov', details: null, appliesTo: 'SUPPLIER' }],
+    };
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'COMPLETED', runId: 21, attempted: 2, done: 2, succeeded: 2, failed: 0, skipped: 0,
+    } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(defaultRun as never);
+    renderPage({ request: supplierHeavy as never });
+
+    expect(await screen.findByText('1 må-krav og 0 bør-krav til konsulenten. 4 krav til leverandøren vurderes ikke.')).toBeInTheDocument();
+    expect(screen.getByText('Må-krav (1) · Bør-krav (0) · Leverandørkrav (4)')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Dokument og krav (1 til konsulenten)' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Kandidater (3 valgt)' })).toBeInTheDocument();
+
+    await userEvent.click(within(document.getElementById('krav')!).getByRole('button', { name: 'Vis' }));
+    expect(screen.getByText('Må-krav (1)')).toBeInTheDocument();
+    expect(screen.getByText('Leverandørkrav (4)')).toBeInTheDocument();
+    expect(screen.queryByText('Må-krav (4)')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Bør')).toHaveLength(1);
   });
 
   /** C4: nobody ticked is nobody; the button says why it cannot start rather than choosing for the reader. */

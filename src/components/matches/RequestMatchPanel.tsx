@@ -71,6 +71,8 @@ import {
   actionHelpOf,
   pageStateOf,
   primaryActionOf,
+  requirementCountsLabel,
+  splitRequirements,
   sectionOpenOf,
   sectionOrderOf,
   type PageInputs,
@@ -1013,9 +1015,10 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
   );
 
   if (layout === 'page') {
-    const consultantRows = (rows: ProjectRequestResponseDto['mustRequirements']) => (rows ?? []).filter((r) => r.appliesTo !== 'SUPPLIER').length;
-    const must = consultantRows(request?.mustRequirements);
-    const should = consultantRows(request?.shouldRequirements);
+    const split = splitRequirements(request ?? {});
+    const must = split.must.length;
+    const should = split.should.length;
+    const supplier = split.supplier.length;
     const unclear = coverage?.requirements?.filter((r) => r.combination === 'UNCLEAR').length ?? 0;
     const cvChangedNames = aiMatches.filter((m) => m.cvChanged).map((m) => m.name);
     const analysisFailed = request?.analysisStatus === 'FAILED';
@@ -1074,7 +1077,9 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
         tone="neutral"
         Icon={ListAltOutlinedIcon}
         title="Krav"
-        label={request ? `${must} må-krav og ${should} bør-krav tolket fra dokumentet.${unclear > 0 ? ` ${unclear} uklart formulert.` : ''}` : 'Henter kravene…'}
+        label={request
+          ? `${must} må-krav og ${should} bør-krav til konsulenten.${unclear > 0 ? ` ${unclear} uklart formulert.` : ''}${supplier > 0 ? ` ${supplier} krav til leverandøren vurderes ikke.` : ''}`
+          : 'Henter kravene…'}
       />
     );
     const coverageTone: Record<string, [StatusTone, typeof CheckCircleOutlineIcon]> = {
@@ -1122,7 +1127,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
     })();
 
     const summaries: Record<SectionKey, string> = {
-      krav: `Må-krav (${must}) · Bør-krav (${should})`,
+      krav: requirementCountsLabel({ must, should, supplier }),
       kandidater: running ? `${selectedCount} valgt · låst mens vurderingen pågår` : `${selectedCount} valgt`,
       vurdering: hasAiResults ? `${aiMatches.length} vurdert` : 'Ikke vurdert ennå',
       forslag: 'Ingen forslag ennå',
@@ -1209,7 +1214,14 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
         {pageState === 'OUTDATED' && (
           <ChangesSinceCard at={assessedAt} changes={changes} requirementsChanged={Boolean(state.runStatus?.requirementsChanged)} cvChangedNames={cvChangedNames} />
         )}
-        <SectionNav order={order} counts={{ vurdering: hasAiResults ? String(aiMatches.length) : undefined }} />
+        <SectionNav
+          order={order}
+          counts={{
+            vurdering: hasAiResults ? String(aiMatches.length) : undefined,
+            kandidater: selectedCount > 0 ? `${selectedCount} valgt` : undefined,
+            krav: request ? `${must + should} til konsulenten` : undefined,
+          }}
+        />
         {order.map((key) => (
           <PageSection key={key} id={key} defaultOpen={sectionOpenOf(pageState, key)} summary={summaries[key]}>
             {content[key]}

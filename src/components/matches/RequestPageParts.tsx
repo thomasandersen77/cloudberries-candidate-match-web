@@ -13,10 +13,10 @@ import {
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import type { MatchesListItemDto, ProjectRequestResponseDto, ProjectRequirementDto, UnscoredCandidateDto, RequirementChangeDto } from '../../types/api';
+import type { MatchesListItemDto, ProjectRequestResponseDto, UnscoredCandidateDto, RequirementChangeDto } from '../../types/api';
 import RequirementList from './RequirementList';
 import { COARSE_POINTER, TOUCH_TARGET_PX } from '../../themeTokens';
-import { SECTION_TITLES, type SectionKey } from './requestPageState';
+import { SECTION_TITLES, splitRequirements, type SectionKey } from './requestPageState';
 
 const formatDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString('nb-NO') : null);
 
@@ -28,8 +28,7 @@ const formatDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLo
  */
 export const RequestRequirements: React.FC<{ request: ProjectRequestResponseDto }> = ({ request }) => {
   const period = [formatDate(request.startDate), formatDate(request.endDate)].filter(Boolean);
-  const consultantFirst = (rows: ProjectRequirementDto[] | undefined) =>
-    [...(rows ?? [])].sort((a, b) => Number(a.appliesTo === 'SUPPLIER') - Number(b.appliesTo === 'SUPPLIER'));
+  const { must, should, supplier, supplierMarks } = splitRequirements(request);
   return (
     <Box>
       {period.length > 0 && (
@@ -39,9 +38,18 @@ export const RequestRequirements: React.FC<{ request: ProjectRequestResponseDto 
         <Typography variant="body2" sx={{ whiteSpace: 'pre-line', mb: 1.5 }}>{request.summary}</Typography>
       )}
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems="stretch">
-        <RequirementList title="Må-krav" tone="warning" rows={consultantFirst(request.mustRequirements)} />
-        <RequirementList title="Bør-krav" tone="info" rows={consultantFirst(request.shouldRequirements)} />
+        <RequirementList title="Må-krav" tone="warning" rows={must} />
+        <RequirementList title="Bør-krav" tone="info" rows={should} />
       </Stack>
+      {/* The supplier's apart, as in the approved sketch: a list counted as «må-krav» read as competence demands. */}
+      {supplier.length > 0 && (
+        <Box sx={{ mt: 1.5 }}>
+          <RequirementList title="Leverandørkrav" tone="neutral" rows={supplier} marks={supplierMarks} />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            Krav til leverandøren, som frister og avtaler. Ingen CV vurderes mot dem.
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 };
