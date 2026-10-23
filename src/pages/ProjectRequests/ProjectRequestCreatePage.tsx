@@ -65,7 +65,7 @@ const ProjectRequestCreatePage: React.FC = () => {
       };
       const created: ProjectRequestDto = await createProjectRequest(body);
       if (created.id != null) {
-        navigate(`/project-requests/${created.id}`);
+        navigate(`/matches/${created.id}`);
       }
     } catch (e: unknown) {
       let msg: string = 'Feil ved opprettelse.';

@@ -25,6 +25,7 @@ import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { listMatchRequests } from '../../services/matchesRequestsService';
 import type { CoverageStatus, MatchesListItemDto, PagedMatchesListDto, WorkStatus } from '../../types/api';
+import StatusFrame, { type StatusTone } from '../../components/feedback/StatusFrame';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import PageIntro from '../../components/PageIntro';
 import { CoverageChips } from '../../components/matches/RequestCoverage';
@@ -46,50 +47,6 @@ const COVERAGE_STYLE: Record<CoverageStatus, { edge: string; tone: StatusTone; I
   RED: { edge: 'error.main', tone: 'error', Icon: ErrorOutlineIcon },
   NEUTRAL: { edge: 'divider', tone: 'neutral', Icon: HelpOutlineIcon },
 };
-
-type StatusTone = 'success' | 'warning' | 'error' | 'neutral';
-
-type StatusBoxProps = {
-  tone: StatusTone;
-  Icon: SvgIconComponent;
-  label: string;
-};
-
-/**
- * One status in a frame: a thin border and a tint in its colour, the words in the same colour.
- *
- * The coverage and the AI status are drawn with this alike, the same size and face, so the eye
- * reads them as two answers to two questions and compares them. The AI status used to be a grey
- * caption under a coverage chip, and whether the model had been run was the one thing the list
- * did not show at a glance.
- */
-const StatusBox: React.FC<StatusBoxProps> = ({ tone, Icon, label }) => (
-  <Box
-    sx={(theme) => {
-      const main = tone === 'neutral' ? theme.palette.text.secondary : theme.palette[tone].main;
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.75,
-        px: 1.25,
-        py: 0.625,
-        borderRadius: 2,
-        border: `1.5px solid ${alpha(main, tone === 'neutral' ? 0.5 : 0.7)}`,
-        backgroundColor: alpha(main, theme.palette.mode === 'dark' ? 0.12 : 0.06),
-        color: main,
-        fontWeight: 700,
-        fontSize: '0.875rem',
-        lineHeight: 1.3,
-        // One line where there is room; on a phone the label wraps, since «1 har treff på alle
-        // må-krav · 7 mangler ett» on one line pushed the card 60 px past a 390 px screen.
-        whiteSpace: { xs: 'normal', sm: 'nowrap' },
-      };
-    }}
-  >
-    <Icon sx={{ fontSize: 17, flexShrink: 0 }} />
-    <span>{label}</span>
-  </Box>
-);
 
 type RequestCardProps = {
   pr: MatchesListItemDto;
@@ -208,8 +165,8 @@ export const RequestCard: React.FC<RequestCardProps> = ({ pr, onOpen, fullCovera
         */}
         <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0, width: { xs: '100%', sm: 'auto' } }}>
           <Stack spacing={0.75} sx={{ minWidth: { xs: 0, sm: 236 }, flex: { xs: 1, sm: 'none' } }}>
-            <StatusBox tone={style.tone} Icon={style.Icon} label={pr.coverageLabel} />
-            <StatusBox
+            <StatusFrame tone={style.tone} Icon={style.Icon} label={pr.coverageLabel} />
+            <StatusFrame
               tone={pr.aiMatchCount ? 'success' : 'warning'}
               Icon={pr.aiMatchCount ? AutoAwesomeOutlinedIcon : HourglassEmptyOutlinedIcon}
               label={describeAiStatus(pr.aiMatchCount, pr.aiLastUpdated)}

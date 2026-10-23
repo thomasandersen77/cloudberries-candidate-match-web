@@ -11,7 +11,7 @@ import apiClient, { aiScoringClient } from './apiClient';
 import { runScoreForCandidate, recalculateScoreForCandidate, runScoreForAll } from './cvScoreService';
 import { reAnalyzeRequest, runRequestMatches } from './matchesRequestsService';
 import { recalculateMatches } from './newMatchesService';
-import { analyzeProjectRequest, uploadProjectRequest } from './projectRequestsService';
+import { uploadProjectRequest } from './projectRequestsService';
 
 const mockedAi = aiScoringClient as unknown as { post: ReturnType<typeof vi.fn> };
 const mockedApi = apiClient as unknown as { post: ReturnType<typeof vi.fn> };
@@ -111,18 +111,6 @@ describe('useHighestQualityModel parameter', () => {
 
     it('sends true when on', async () => {
       await recalculateMatches(1, { useHighestQualityModel: true });
-      expect(lastParams(mockedAi.post)).toMatchObject({ useHighestQualityModel: 'true' });
-    });
-  });
-
-  describe('project requests: analyze', () => {
-    it('omits the flag when off', async () => {
-      await analyzeProjectRequest(1, { useHighestQualityModel: false });
-      expect(lastParams(mockedAi.post)?.useHighestQualityModel).toBeUndefined();
-    });
-
-    it('sends true when on', async () => {
-      await analyzeProjectRequest(1, { useHighestQualityModel: true });
       expect(lastParams(mockedAi.post)).toMatchObject({ useHighestQualityModel: 'true' });
     });
   });

@@ -61,50 +61,39 @@ describe('RequestMatchPage', () => {
     vi.mocked(getProjectRequestById).mockResolvedValue(request as never);
   });
 
-  /** The assessment is the answer, so the page puts it first and explains the steps above it. */
-  it('shows the request, how the matching works, and the panel in page layout', async () => {
+  /** The page loads the request and its list row and hands both to the panel, which lays the page out (plan C1). */
+  it('hands the request and its list row to the panel in page layout', async () => {
     vi.mocked(getMatchRequest).mockResolvedValue(item as never);
     renderAt('/matches/9011');
 
-    expect(await screen.findByText('NAV')).toBeInTheDocument();
-    expect(screen.getByText('Slik fungerer matchingen')).toBeInTheDocument();
-    expect(screen.getByText('1. Forutvalg uten AI-vurdering')).toBeInTheDocument();
-    expect(screen.getByText('2. AI-vurdering')).toBeInTheDocument();
-    expect(screen.getByText('3. Rekkefølge og forslag')).toBeInTheDocument();
-    expect(screen.getByTestId('panel')).toBeInTheDocument();
-    expect(panelProps.last).toMatchObject({ requestId: 9011, layout: 'page' });
-    // Should-haves are on the page too, not only the musts the list card shows.
-    expect(screen.getByText('Grafana 25')).toBeInTheDocument();
+    await waitFor(() => expect(panelProps.last).toMatchObject({
+      requestId: 9011, layout: 'page', item: { customerName: 'NAV' }, request: { id: 9011, customerName: 'NAV' },
+    }));
     expect(screen.getByRole('link', { name: 'Tilbake til matcher' })).toHaveAttribute('href', '/matches');
   });
 
-  /** The must-haves the model scores against sit on the page, in the request's words, with their details. */
-  it('shows the request itself: period, summary, musts and shoulds with details', async () => {
-    vi.mocked(getMatchRequest).mockResolvedValue(item as never);
-    renderAt('/matches/9011');
-
-    expect(await screen.findByText('Avropet')).toBeInTheDocument();
-    expect(screen.getByText('Periode 1.11.2026 – 31.10.2027')).toBeInTheDocument();
-    expect(screen.getByText('Tech lead til team for ytelsesplattform.')).toBeInTheDocument();
-    expect(screen.getByText('Må-krav (2)')).toBeInTheDocument();
-    expect(screen.getByText('Bør-krav (1)')).toBeInTheDocument();
-    expect(screen.getByText('Minst fem års erfaring')).toBeInTheDocument();
-    expect(screen.getByText('Leverandør')).toBeInTheDocument();
-    // The consultant's requirement is listed before the supplier's, whatever order the request had.
-    const musts = screen.getByText('Må-krav (2)').parentElement!.querySelectorAll('li');
-    expect(musts[0]).toHaveTextContent('Kotlin');
-    expect(musts[1]).toHaveTextContent('Tilbud leveres i KGV');
-    expect(screen.getByRole('link', { name: 'Åpne avropet' })).toHaveAttribute('href', '/project-requests/9011');
-  });
-
-  it('leaves the request section out when the request cannot be read, and still assesses', async () => {
+  it('still assesses when the request itself cannot be read', async () => {
     vi.mocked(getMatchRequest).mockResolvedValue(item as never);
     vi.mocked(getProjectRequestById).mockRejectedValue(new Error('500'));
     renderAt('/matches/9011');
 
-    expect(await screen.findByText('NAV')).toBeInTheDocument();
-    expect(screen.queryByText('Avropet')).not.toBeInTheDocument();
+    await waitFor(() => expect(panelProps.last).toMatchObject({ requestId: 9011, item: { customerName: 'NAV' } }));
+    expect(panelProps.last?.request).toBeNull();
     expect(screen.getByTestId('panel')).toBeInTheDocument();
+  });
+
+  /** The request had two pages; old links and bookmarks to the second land on the one there is now. */
+  it('sends /project-requests/{id} to the request page', async () => {
+    const { default: RedirectToRequestPage } = await import('../../../routes/RedirectToRequestPage');
+    render(
+      <MemoryRouter initialEntries={['/project-requests/9011']}>
+        <Routes>
+          <Route path="/project-requests/:id" element={<RedirectToRequestPage />} />
+          <Route path="/matches/:id" element={<div data-testid="request-page">avrop</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(await screen.findByTestId('request-page')).toBeInTheDocument();
   });
 
   it('still offers the assessment when the request is not in the match list', async () => {

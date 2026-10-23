@@ -17,7 +17,7 @@ import ChatPage from '../pages/Chat/ChatPage';
 import HealthPage from '../pages/Health/HealthPage';
 import StatsPage from '../pages/Analytics/StatsPage';
 import ProjectRequestUploadPage from '../pages/ProjectRequests/ProjectRequestUploadPage';
-import ProjectRequestDetailPage from '../pages/ProjectRequests/ProjectRequestDetailPage';
+import RedirectToRequestPage from './RedirectToRequestPage';
 import ProjectRequestCreatePage from '../pages/ProjectRequests/ProjectRequestCreatePage';
 import ConsultantSearchPage from '../pages/Search/ConsultantSearchPage';
 import SemanticSearchPage from '../pages/Search/SemanticSearchPage';
@@ -43,7 +43,8 @@ const routes: RouteObject[] = [
       { path: '/stats', element: <StatsPage /> },
       { path: '/project-requests/upload', element: <ProjectRequestUploadPage /> },
       { path: '/project-requests/new', element: <ProjectRequestCreatePage /> },
-      { path: '/project-requests/:id', element: <ProjectRequestDetailPage /> },
+      // The request has one page (plan C1); old links and bookmarks land on it.
+      { path: '/project-requests/:id', element: <RedirectToRequestPage /> },
       { path: '/search', element: <ConsultantSearchPage /> },
       { path: '/search/semantic', element: <SemanticSearchPage /> },
       { path: '*', element: <div style={{ padding: 24 }}><a href="/">Gå til forsiden</a></div> },

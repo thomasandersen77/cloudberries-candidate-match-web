@@ -82,21 +82,33 @@ weighed with CV-score). Every `aria-label` is Norwegian; the document is `lang="
 
 ## Matching pages
 
-`/matches` is an overview: one card per request, which opens `/matches/{id}`, the request's own
-page. The page shows the request and its coverage, then «Avropet»: the request's own summary, period
-and every requirement with its details (`RequirementList`, shared with the request page; the
-consultant's before the supplier's here), then «Slik fungerer matchingen» (three steps, open
-and foldable), then `RequestMatchPanel` in `layout="page"`: the AI assessment first, the
-preselection under it with five rows until «Vis alle». The assessment is the answer; the
-preselection only chooses who is assessed, and its order predicts the model's poorly. An AI row
-opens on the score per requirement, must-haves first. The old `?requestId=` link redirects to the
-page.
+`/matches` is an overview: one card per request, which opens `/matches/{id}`, the request's one
+page (plan C1, decided 2026-10-23). `/project-requests/{id}` redirects there; the upload page
+(`/project-requests/upload`) stays and links each request to it. The page is `RequestMatchPanel`
+in `layout="page"`, laid out from `requestPageState.ts` (pure, tested per state):
+
+- The top (`RequestHeader`): customer, role, deadline, the one action scoped to the state with what
+  it costs under it, and three `StatusFrame`s (components/feedback): requirements, coverage,
+  assessment. «Lukk avropet» asks first; it cannot be undone yet.
+- The states: NEW (nothing assessed: «Dokument og krav» and «Kandidater» first, «Vurder N
+  valgte»), RUNNING («Avbryt vurderingen», progress polled every 3 s, the previous result kept,
+  the choice locked), PARTIAL (the result first, «Vurder de N som feilet», «Uten skår» with each
+  reason), OUTDATED (requirements or a CV changed: «Endret siden vurderingen» first, «Vurder N på
+  nytt mot dagens krav», no retry), ASSESSED (the result first), BLOCKED (analysis failed or no
+  consultant requirements: no action, and the reason). Nobody ticked disables the action; it is
+  never read as «choose for me».
+- The four parts («Dokument og krav», «Kandidater», «Vurdering», «Forslag») come in the state's
+  order, linked from a part navigation; the requirements and the choice fold once there is an
+  answer. «Slik fungerer matchingen» is open the first time a browser shows it, folded after.
+
+An AI row opens on the score per requirement, must-haves first. The old `?requestId=` link
+redirects to the page.
 
 A list card carries two framed statuses of one size at its right: the coverage in the status
 colour the server chose, and the AI status, green with count and date when the model has been
 run, orange «Ikke AI-vurdert» when not. Every other card is tinted.
 
-The panel's status chip and the line under it come from `GET …/matches/status`, which reports
+The card layout of the panel (tests, no route) keeps its status chip; the page's frames and the card's chip both come from `GET …/matches/status`, which reports
 the run itself: `RUNNING` with «7 av 20 ferdige», `PARTIAL` («Delvis fullført», warning colour)
 with «17 av 20 vurdert, 3 feilet», `COMPLETED`, `FAILED`, `CANCELLED`. A `409` on «Kjør
 AI-matching» means a run is already going for the request; the message names it. «Vurder de N som

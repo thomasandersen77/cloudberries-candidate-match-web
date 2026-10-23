@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Box,
+  LinearProgress,
   Button,
   Checkbox,
   Chip,
@@ -38,6 +39,8 @@ import {
 } from '../../api/matchingApi';
 import type {
   MatchCandidateDto,
+  MatchesListItemDto,
+  ProjectRequestResponseDto,
   MatchStatusDto,
   ProjectMatchPreviewResponse,
   ProjectMatchResults,
@@ -54,6 +57,26 @@ import {
 } from '../../utils/matchStatusAdapter';
 import { formatMatchScoreSuffix, formatPercentScore, formatQualityLabel } from '../../utils/matchUtils';
 import { getScoreColor } from '../../utils/scoreUtils';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
+import HourglassEmptyOutlinedIcon from '@mui/icons-material/HourglassEmptyOutlined';
+import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
+import StatusFrame, { type StatusTone } from '../feedback/StatusFrame';
+import HowMatchingWorks from './HowMatchingWorks';
+import { ChangesSinceCard, PageSection, RequestHeader, RequestRequirements, SectionNav, UnscoredList } from './RequestPageParts';
+import {
+  actionHelpOf,
+  pageStateOf,
+  primaryActionOf,
+  sectionOpenOf,
+  sectionOrderOf,
+  type PageInputs,
+  type SectionKey,
+} from './requestPageState';
+import { closeProjectRequest } from '../../services/projectRequestsService';
 
 // How many the preselection hands to the model. Its order predicts the model's poorly (on 9011
 // the model's second was fifteenth in the preselection), so the cut is wide: 20 by default, at
@@ -68,6 +91,8 @@ const DEFAULT_CV_WEIGHT_PERCENT = 20;
 const DETAIL_PREVIEW_LENGTH = 140;
 /** How many of the requirements that cannot be checked against skills are spelled out before "+N". */
 const OTHER_REQUIREMENTS_SHOWN = 4;
+/** How often the counters of a running assessment are read. */
+const STATUS_POLL_MS = 3000;
 
 /** A heading over one of the panel's three parts: the requirements, the candidates, the AI. */
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -105,6 +130,8 @@ type ExpandableConsultantRowProps = {
   /** Only the preview rows are selectable; the AI results are already scored. */
   selected?: boolean;
   onSelectedChange?: (selected: boolean) => void;
+  /** The choice is locked while an assessment of it is going. */
+  selectDisabled?: boolean;
 };
 
 const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
@@ -124,6 +151,7 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
   onToggle,
   selected,
   onSelectedChange,
+  selectDisabled,
 }) => {
   const isExpanded = expandedKey === rowKey;
   const hasDetail = Boolean(detail?.trim());
@@ -138,6 +166,7 @@ const ExpandableConsultantRow: React.FC<ExpandableConsultantRowProps> = ({
           <Checkbox
             size="small"
             checked={Boolean(selected)}
+            disabled={selectDisabled}
             onChange={(e) => onSelectedChange(e.target.checked)}
             inputProps={{ 'aria-label': `Ta med ${name} i AI-vurderingen` }}
             sx={{ mt: -0.5 }}
@@ -325,6 +354,12 @@ export type RequestMatchPanelProps = {
    * and the assessment is the answer, so it comes before the estimate that chose who to assess.
    */
   layout?: 'card' | 'page';
+  /** The request itself, for the page's header and requirements; page layout only. */
+  request?: ProjectRequestResponseDto | null;
+  /** The request as the list shows it: coverage, deadline, work status; page layout only. */
+  item?: MatchesListItemDto | null;
+  /** The request changed here (closed); the page reads it again. */
+  onRequestChanged?: () => void;
 };
 
 /**
@@ -334,7 +369,7 @@ export type RequestMatchPanelProps = {
  * mattered (who covers what) nowhere. The preview is free, so it loads by itself; the settings
  * sit behind one button; and the only paid action, the AI run, is last with its one sentence.
  */
-const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, coverage, layout = 'card' }) => {
+const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, coverage, layout = 'card', request, item, onRequestChanged }) => {
   const mountedRef = useRef(true);
   const [limit, setLimit] = useState<number>(DEFAULT_LIMIT);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -640,6 +675,21 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
     void executeRun();
   };
 
+  // While an assessment goes on, the counters follow it («7 av 20 ferdige»); one started elsewhere
+  // is read in full once it has finished, so the page does not keep showing the run before it.
+  const runningNow = (state.phase === 'RUNNING' && loadingRun) || state.runStatus?.status === 'RUNNING';
+  const foreignRunning = state.runStatus?.status === 'RUNNING' && !loadingRun;
+  const wasForeignRunning = useRef(false);
+  useEffect(() => {
+    if (!runningNow) return undefined;
+    const timer = window.setInterval(() => { void refreshStatus(); }, STATUS_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [runningNow, refreshStatus]);
+  useEffect(() => {
+    if (wasForeignRunning.current && !foreignRunning) void refreshPersisted();
+    wasForeignRunning.current = foreignRunning;
+  }, [foreignRunning, refreshPersisted]);
+
   if (loadingInitial) {
     return (
       <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 1 }}>
@@ -681,7 +731,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
             ) : (
               <Typography variant="body2" color="text.secondary">Kravene står i avropet.</Typography>
             )}
-            <MuiLink component={RouterLink} to={`/project-requests/${requestId}`} underline="hover" variant="body2" sx={{ display: 'inline-block', mt: 0.75 }}>
+            <MuiLink component={RouterLink} to={`/matches/${requestId}`} underline="hover" variant="body2" sx={{ display: 'inline-block', mt: 0.75 }}>
               Se hele avropet
             </MuiLink>
           </Box>
@@ -693,13 +743,13 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
           {/* 2. Who could be offered. Free, so already here; the operator picks who goes to the AI. */}
           <Box>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'baseline' }} justifyContent="space-between" sx={{ mb: 0.5 }}>
-              <SectionTitle>Kandidater</SectionTitle>
+              {layout === 'card' ? <SectionTitle>Kandidater</SectionTitle> : <span />}
               {previewCandidates.length > 0 && (
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography variant="caption" color="text.secondary">
                     {selectedCount} av {previewUserIds.length} valgt
                   </Typography>
-                  <Button size="small" variant="text" disabled={loadingRun} onClick={() => toggleAllCandidates(!allPreviewSelected)}>
+                  <Button size="small" variant="text" disabled={loadingRun || running} onClick={() => toggleAllCandidates(!allPreviewSelected)}>
                     {allPreviewSelected ? 'Fjern alle' : 'Velg alle'}
                   </Button>
                 </Stack>
@@ -746,6 +796,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
                         onToggle={toggleExpandedRow}
                         selected={c.userId ? selectedUserIds.includes(c.userId) : false}
                         onSelectedChange={c.userId ? (checked) => toggleCandidate(c.userId!, checked) : undefined}
+                        selectDisabled={running}
                       />
                     );
                   })}
@@ -771,6 +822,96 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               <Alert severity="warning" sx={{ py: 0.5 }}>Kunne ikke hente forhåndsvisningen: {state.previewError}</Alert>
             )}
           </Box>
+    </>
+  );
+
+  const confirmDialog = (
+      <Dialog open={confirmOpen} onClose={() => { if (!loadingRun) { setConfirmOpen(false); setPendingRun(null); } }}>
+        <DialogTitle>Bekreft høyeste kvalitet</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Dette kan bruke betydelig mer AI-kreditt. Vil du fortsette?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setConfirmOpen(false); setPendingRun(null); }} disabled={loadingRun}>Avbryt</Button>
+          <Button variant="contained" onClick={() => void executeRun()} disabled={loadingRun}>
+            {loadingRun ? 'Kjører…' : pendingRun === 'rerun' ? 'Kjør på nytt' : 'Kjør AI-matching'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+  );
+
+  const settingsBlock = (
+            <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
+              <Stack id={`match-settings-${requestId}`} direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
+                <Stack spacing={0.25}>
+                  <Typography variant="caption" color="text.secondary">Hvor mange vurderes</Typography>
+                  <ToggleButtonGroup size="small" exclusive value={limit} onChange={(_e, v) => { if (v != null) setLimit(v); }}>
+                    {LIMIT_OPTIONS.map((n) => (
+                      <ToggleButton key={n} value={n} disabled={loadingRun || loadingPreview}>{n}</ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                </Stack>
+                <Stack spacing={0.25}>
+                  <Typography variant="caption" color="text.secondary">CV-score teller</Typography>
+                  <ToggleButtonGroup size="small" exclusive value={cvWeightPercent} onChange={(_e, v) => { if (v != null) setCvWeightPercent(v); }}>
+                    {CV_WEIGHT_OPTIONS.map((w) => (
+                      <ToggleButton key={w} value={w} disabled={loadingRun}>{w}%</ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                  {/* Said here because it is the one place the number is turned into a weight. */}
+                  <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 420 }}>
+                    CV-score måler hvor godt CV-en følger gull-CV-standarden, vurdert av en modell. Den sier ikke noe
+                    om konsulentens kompetanse. Prosenten styrer rekkefølgen og kortlisten, ikke kravmatchen.
+                  </Typography>
+                </Stack>
+                <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={loadingRun} />
+              </Stack>
+            </Collapse>
+  );
+
+  const resultsBlock = (
+    <>
+            {hasAiResults && (
+              <Box sx={{ mt: 1.5 }}>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                  <Chip label={`${aiMatches.length} AI-vurdert`} size="small" color="primary" variant="outlined" />
+                  {state.results?.lastUpdated && (
+                    <Typography variant="caption" color="text.secondary">
+                      Sist oppdatert: {new Date(state.results.lastUpdated).toLocaleString('nb-NO')}
+                    </Typography>
+                  )}
+                </Stack>
+                <Stack spacing={0.75}>
+                  {/* Every scored row, in the backend's order: the match weighed against CV score
+                      (PresentedRanking). Sorting here again by the match alone would undo that and hide why
+                      somebody is where they are; cutting to the limit hid reviews that were paid for. */}
+                  {aiMatches
+                    .map((s: MatchCandidateDto) => {
+                      const rowKey = `ai-${s.userId ?? s.name}`;
+                      return (
+                        <ExpandableConsultantRow
+                          key={rowKey}
+                          rowKey={rowKey}
+                          name={s.name}
+                          scoreLabel={formatMatchScoreSuffix(s.score)}
+                          qualityLabel={formatQualityLabel(s)}
+                          qualityNote={s.qualityNote}
+                          passedOnQuality={Boolean(s.passedOnQuality)}
+                          cvChanged={Boolean(s.cvChanged)}
+                          requirements={s.requirements}
+                          detail={s.justification}
+                          skills={s.skills}
+                          userId={s.userId}
+                          expandedKey={expandedRowKey}
+                          onToggle={toggleExpandedRow}
+                        />
+                      );
+                    })}
+                </Stack>
+              </Box>
+            )}
     </>
   );
 
@@ -851,32 +992,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               Ett modellkall per valgt kandidat (anslått rundt 2 US-cent hver), og ingenting før du trykker. Uten avkryssing sender backend de 20 best rangerte.
             </Typography>
 
-            <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
-              <Stack id={`match-settings-${requestId}`} direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
-                <Stack spacing={0.25}>
-                  <Typography variant="caption" color="text.secondary">Hvor mange vurderes</Typography>
-                  <ToggleButtonGroup size="small" exclusive value={limit} onChange={(_e, v) => { if (v != null) setLimit(v); }}>
-                    {LIMIT_OPTIONS.map((n) => (
-                      <ToggleButton key={n} value={n} disabled={loadingRun || loadingPreview}>{n}</ToggleButton>
-                    ))}
-                  </ToggleButtonGroup>
-                </Stack>
-                <Stack spacing={0.25}>
-                  <Typography variant="caption" color="text.secondary">CV-score teller</Typography>
-                  <ToggleButtonGroup size="small" exclusive value={cvWeightPercent} onChange={(_e, v) => { if (v != null) setCvWeightPercent(v); }}>
-                    {CV_WEIGHT_OPTIONS.map((w) => (
-                      <ToggleButton key={w} value={w} disabled={loadingRun}>{w}%</ToggleButton>
-                    ))}
-                  </ToggleButtonGroup>
-                  {/* Said here because it is the one place the number is turned into a weight. */}
-                  <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 420 }}>
-                    CV-score måler hvor godt CV-en følger gull-CV-standarden, vurdert av en modell. Den sier ikke noe
-                    om konsulentens kompetanse. Prosenten styrer rekkefølgen og kortlisten, ikke kravmatchen.
-                  </Typography>
-                </Stack>
-                <HighQualityToggle checked={highQuality} onChange={setHighQuality} disabled={loadingRun} />
-              </Stack>
-            </Collapse>
+            {settingsBlock}
 
             {state.phase === 'RUNNING' && loadingRun && (
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
@@ -891,50 +1007,222 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
               </Stack>
             )}
 
-            {hasAiResults && (
-              <Box sx={{ mt: 1.5 }}>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                  <Chip label={`${aiMatches.length} AI-vurdert`} size="small" color="primary" variant="outlined" />
-                  {state.results?.lastUpdated && (
-                    <Typography variant="caption" color="text.secondary">
-                      Sist oppdatert: {new Date(state.results.lastUpdated).toLocaleString('nb-NO')}
-                    </Typography>
-                  )}
-                </Stack>
-                <Stack spacing={0.75}>
-                  {/* Every scored row, in the backend's order: the match weighed against CV score
-                      (PresentedRanking). Sorting here again by the match alone would undo that and hide why
-                      somebody is where they are; cutting to the limit hid reviews that were paid for. */}
-                  {aiMatches
-                    .map((s: MatchCandidateDto) => {
-                      const rowKey = `ai-${s.userId ?? s.name}`;
-                      return (
-                        <ExpandableConsultantRow
-                          key={rowKey}
-                          rowKey={rowKey}
-                          name={s.name}
-                          scoreLabel={formatMatchScoreSuffix(s.score)}
-                          qualityLabel={formatQualityLabel(s)}
-                          qualityNote={s.qualityNote}
-                          passedOnQuality={Boolean(s.passedOnQuality)}
-                          cvChanged={Boolean(s.cvChanged)}
-                          requirements={s.requirements}
-                          detail={s.justification}
-                          skills={s.skills}
-                          userId={s.userId}
-                          expandedKey={expandedRowKey}
-                          onToggle={toggleExpandedRow}
-                        />
-                      );
-                    })}
-                </Stack>
-              </Box>
-            )}
+            {resultsBlock}
           </Box>
     </>
   );
 
-  const sections = layout === 'page' ? [aiSection, candidatesSection] : [requirementsSection, candidatesSection, aiSection];
+  if (layout === 'page') {
+    const consultantRows = (rows: ProjectRequestResponseDto['mustRequirements']) => (rows ?? []).filter((r) => r.appliesTo !== 'SUPPLIER').length;
+    const must = consultantRows(request?.mustRequirements);
+    const should = consultantRows(request?.shouldRequirements);
+    const unclear = coverage?.requirements?.filter((r) => r.combination === 'UNCLEAR').length ?? 0;
+    const cvChangedNames = aiMatches.filter((m) => m.cvChanged).map((m) => m.name);
+    const analysisFailed = request?.analysisStatus === 'FAILED';
+    const inputs: PageInputs = {
+      status: state.runStatus,
+      running,
+      cancelPending,
+      hasResults: hasAiResults,
+      analysisFailed,
+      // Unknown until the request has loaded; not a reason to block.
+      consultantRequirements: request ? must + should : 1,
+      previewAvailable: state.previewAvailable && !(state.preview && previewCandidates.length === 0),
+      selectedCount,
+      cvChanged: cvChangedNames.length,
+    };
+    const pageState = pageStateOf(inputs);
+    const action = primaryActionOf(pageState, inputs);
+    const order = sectionOrderOf(pageState);
+    const assessedAt = state.runStatus?.completedAt ?? state.results?.lastUpdated ?? null;
+    const assessedOn = assessedAt ? new Date(assessedAt).toLocaleDateString('nb-NO') : null;
+    const progress = describeRunProgress(state.runStatus);
+    const changes = state.runStatus?.requirementChanges ?? [];
+    const unscored = state.runStatus?.unscored ?? [];
+
+    const actionDisabled = action.kind === 'none'
+      || (action.kind === 'cancel' ? action.pending
+        : loadingRun || ((action.kind === 'run' || action.kind === 'rerun') && (Boolean(action.disabledReason) || (!action.auto && loadingPreview))));
+    const actionButton = (
+      <Button
+        variant={action.kind === 'cancel' ? 'outlined' : 'contained'}
+        color={action.kind === 'cancel' ? 'error' : 'primary'}
+        disabled={actionDisabled}
+        onClick={() => {
+          if (action.kind === 'cancel') void executeCancel();
+          else if (action.kind === 'retry') void executeRetry();
+          else if (action.kind === 'run' || action.kind === 'rerun') requestRun(action.kind);
+        }}
+        sx={{ minHeight: TOUCH_TARGET_PX, fontSize: '0.95rem' }}
+      >
+        {action.kind === 'none' ? 'Vurder' : action.label}
+      </Button>
+    );
+    const help = (action.kind === 'run' || action.kind === 'rerun') && action.disabledReason ? action.disabledReason : actionHelpOf(action);
+
+    const kravFrame = analysisFailed ? (
+      <StatusFrame tone="error" Icon={ErrorOutlineIcon} title="Krav · tolking feilet" label="Dokumentet er lagret, men kravene er ikke lest." />
+    ) : state.runStatus?.requirementsChanged ? (
+      <StatusFrame
+        tone="warning"
+        Icon={ReportProblemOutlinedIcon}
+        title="Krav · endret etter vurderingen"
+        label={changes.length > 0 ? `${changes.length} ${changes.length === 1 ? 'endring' : 'endringer'} siden ${assessedOn ?? 'vurderingen'}.` : 'Endret siden vurderingen.'}
+      />
+    ) : (
+      <StatusFrame
+        tone="neutral"
+        Icon={ListAltOutlinedIcon}
+        title="Krav"
+        label={request ? `${must} må-krav og ${should} bør-krav tolket fra dokumentet.${unclear > 0 ? ` ${unclear} uklart formulert.` : ''}` : 'Henter kravene…'}
+      />
+    );
+    const coverageTone: Record<string, [StatusTone, typeof CheckCircleOutlineIcon]> = {
+      GREEN: ['success', CheckCircleOutlineIcon], YELLOW: ['warning', ReportProblemOutlinedIcon], RED: ['error', ErrorOutlineIcon], NEUTRAL: ['neutral', HelpOutlineIcon],
+    };
+    const [dekningTone, DekningIcon] = coverageTone[item?.coverageStatus ?? 'NEUTRAL'] ?? coverageTone.NEUTRAL;
+    const dekningFrame = <StatusFrame tone={dekningTone} Icon={DekningIcon} title="Dekning" label={item?.coverageLabel ?? 'Ukjent'} />;
+    const runStatusWord = state.runStatus?.status;
+    const aiFrame = (() => {
+      switch (pageState) {
+        case 'RUNNING': {
+          const attempted = state.runStatus?.attempted ?? 0;
+          const done = state.runStatus?.done ?? 0;
+          return (
+            <StatusFrame tone="info" Icon={HourglassEmptyOutlinedIcon} title="AI-vurdering · pågår" label={progress ?? 'Vurderer…'}>
+              <LinearProgress
+                variant={attempted > 0 ? 'determinate' : 'indeterminate'}
+                value={attempted > 0 ? (done / attempted) * 100 : undefined}
+                aria-label={progress ?? 'Vurderer'}
+                sx={{ mt: 0.75, borderRadius: 1 }}
+              />
+            </StatusFrame>
+          );
+        }
+        case 'PARTIAL':
+          return <StatusFrame tone="warning" Icon={ReportProblemOutlinedIcon} title="AI-vurdering · delvis" label={`${progress ?? 'Noen mangler skår'}${assessedOn ? ` · ${assessedOn}` : ''}`} />;
+        case 'OUTDATED':
+          return (
+            <StatusFrame
+              tone="warning"
+              Icon={ReportProblemOutlinedIcon}
+              title="AI-vurdering · eldre grunnlag"
+              label={`Vurdert ${assessedOn ?? ''} mot kravene slik de var da.${cvChangedNames.length > 0 ? ` ${cvChangedNames.length} CV-er er endret siden.` : ''}`}
+            />
+          );
+        case 'ASSESSED':
+          return <StatusFrame tone="success" Icon={AutoAwesomeOutlinedIcon} title="AI-vurdering · vurdert" label={`${progress ?? `${aiMatches.length} vurdert`}${assessedOn ? ` · ${assessedOn}` : ''}`} />;
+        case 'BLOCKED':
+          return <StatusFrame tone="neutral" Icon={HelpOutlineIcon} title="AI-vurdering · kan ikke kjøres" label="Venter på krav å vurdere mot." />;
+        default:
+          if (runStatusWord === 'FAILED') return <StatusFrame tone="error" Icon={ErrorOutlineIcon} title="AI-vurdering · feilet" label="Ingen fikk skår i forrige forsøk." />;
+          if (runStatusWord === 'CANCELLED') return <StatusFrame tone="neutral" Icon={HelpOutlineIcon} title="AI-vurdering · avbrutt" label="Forrige vurdering ble avbrutt før alle var spurt." />;
+          return <StatusFrame tone="neutral" Icon={HourglassEmptyOutlinedIcon} title="AI-vurdering · ikke kjørt" label="Ingen kandidater er vurdert mot dette avropet ennå." />;
+      }
+    })();
+
+    const summaries: Record<SectionKey, string> = {
+      krav: `Må-krav (${must}) · Bør-krav (${should})`,
+      kandidater: running ? `${selectedCount} valgt · låst mens vurderingen pågår` : `${selectedCount} valgt`,
+      vurdering: hasAiResults ? `${aiMatches.length} vurdert` : 'Ikke vurdert ennå',
+      forslag: 'Ingen forslag ennå',
+    };
+    const content: Record<SectionKey, React.ReactNode> = {
+      krav: (
+        <Stack spacing={2}>
+          {request ? <RequestRequirements request={request} /> : <Typography variant="body2" color="text.secondary">Henter kravene…</Typography>}
+          {coverage && (
+            <Box>
+              <Typography variant="subtitle2" component="h3">Hvem har teknologiene</Typography>
+              <Typography variant="body2" color="text.secondary">{describeCoverage(coverage)}</Typography>
+              {describeFullMatch(coverage) && <Typography variant="body2">{describeFullMatch(coverage)}</Typography>}
+              <Box sx={{ mt: 0.75 }}><CoverageChips coverage={coverage} /></Box>
+            </Box>
+          )}
+        </Stack>
+      ),
+      kandidater: candidatesSection,
+      vurdering: (
+        <Box>
+          {cancelNotice && (
+            <Alert severity="info" sx={{ mb: 1 }} onClose={() => setCancelNotice(null)}>{cancelNotice}</Alert>
+          )}
+          {running && hasAiResults && (
+            <Alert severity="info" sx={{ mb: 1 }}>
+              Forrige vurdering{assessedOn ? ` fra ${assessedOn}` : ''} står til den nye er ferdig.
+            </Alert>
+          )}
+          {running && !hasAiResults && (
+            <Stack direction="row" spacing={1} alignItems="center"><CircularProgress size={16} /><Typography variant="body2">{progress ?? 'Vurderer…'}</Typography></Stack>
+          )}
+          {!running && !hasAiResults && (
+            <Typography variant="body2" color="text.secondary">
+              Ikke vurdert ennå. Hver kandidat får en skår per krav og en kort begrunnelse; resultatet lagres og vises her neste gang.
+            </Typography>
+          )}
+          {resultsBlock}
+          {!running && unscored.length > 0 && <UnscoredList rows={unscored} />}
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }} useFlexGap flexWrap="wrap">
+            <Button size="small" variant="text" onClick={() => void refreshPersisted()} sx={{ minHeight: TOUCH_TARGET_PX }}>Oppdater status</Button>
+            {state.semanticReady === false && <Chip size="small" color="warning" variant="outlined" label="Semantisk søk mangler embeddings" />}
+          </Stack>
+        </Box>
+      ),
+      forslag: (
+        <Typography variant="body2" color="text.secondary">
+          Ingen forslag ennå. Forslag til tilbudstekst lages for én kandidat om gangen når vurderingen er klar, og lagres her.
+        </Typography>
+      ),
+    };
+
+    return (
+      <Stack spacing={2}>
+        {state.loadError && (
+          <Alert severity="warning" action={<Button size="small" color="inherit" onClick={() => void refreshPersisted()}>Hent på nytt</Button>}>
+            Kunne ikke hente vurderingen: {state.loadError}
+            {state.results ? ' Viser det som ble hentet sist.' : ' Om den er kjørt, er ukjent.'}
+          </Alert>
+        )}
+        {state.error && <Alert severity="error">{state.error}</Alert>}
+        <RequestHeader
+          item={item}
+          request={request}
+          requestId={requestId}
+          action={actionButton}
+          help={help}
+          extra={
+            <Button
+              size="small"
+              variant="text"
+              aria-expanded={settingsOpen}
+              aria-controls={`match-settings-${requestId}`}
+              onClick={() => setSettingsOpen((v) => !v)}
+              sx={{ alignSelf: { md: 'flex-end' }, textTransform: 'none' }}
+            >
+              {settingsOpen ? 'Skjul innstillinger' : 'Innstillinger for vurderingen'}
+            </Button>
+          }
+          frames={<>{kravFrame}{dekningFrame}{aiFrame}</>}
+          onClose={async () => { await closeProjectRequest(requestId); onRequestChanged?.(); }}
+        />
+        {settingsOpen && <Paper sx={{ p: 2 }}>{settingsBlock}</Paper>}
+        {pageState === 'OUTDATED' && (
+          <ChangesSinceCard at={assessedAt} changes={changes} requirementsChanged={Boolean(state.runStatus?.requirementsChanged)} cvChangedNames={cvChangedNames} />
+        )}
+        <SectionNav order={order} counts={{ vurdering: hasAiResults ? String(aiMatches.length) : undefined }} />
+        {order.map((key) => (
+          <PageSection key={key} id={key} defaultOpen={sectionOpenOf(pageState, key)} summary={summaries[key]}>
+            {content[key]}
+          </PageSection>
+        ))}
+        <HowMatchingWorks />
+        {confirmDialog}
+      </Stack>
+    );
+  }
+
+  // The card: requirements, candidates, the AI, in the order the work happens. The page is above.
+  const sections = [requirementsSection, candidatesSection, aiSection];
 
   return (
     <Stack spacing={2.5}>
@@ -951,20 +1239,7 @@ const RequestMatchPanel: React.FC<RequestMatchPanelProps> = ({ requestId, covera
 
       {sections.map((section, i) => <React.Fragment key={i}>{section}</React.Fragment>)}
 
-      <Dialog open={confirmOpen} onClose={() => { if (!loadingRun) { setConfirmOpen(false); setPendingRun(null); } }}>
-        <DialogTitle>Bekreft høyeste kvalitet</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Dette kan bruke betydelig mer AI-kreditt. Vil du fortsette?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => { setConfirmOpen(false); setPendingRun(null); }} disabled={loadingRun}>Avbryt</Button>
-          <Button variant="contained" onClick={() => void executeRun()} disabled={loadingRun}>
-            {loadingRun ? 'Kjører…' : pendingRun === 'rerun' ? 'Kjør på nytt' : 'Kjør AI-matching'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {confirmDialog}
     </Stack>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { Box, Button, Collapse, Paper, Stack, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -26,9 +26,23 @@ const HOW_MATCHING_WORKS = [
   },
 ] as const;
 
+/** Set once the help has been shown in this browser; there are no users to remember it for (plan C3). */
+export const HOW_MATCHING_WORKS_SEEN_KEY = 'cm.howMatchingWorks.seen';
+
+function seenBefore(): boolean {
+  try { return window.localStorage.getItem(HOW_MATCHING_WORKS_SEEN_KEY) === '1'; } catch { return false; }
+}
+
+/**
+ * Open the first time this browser shows it, folded after that: a reader who has seen how the
+ * numbers are made does not need it above every assessment. Folded or open, it can be toggled.
+ */
 const HowMatchingWorks: React.FC = () => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => !seenBefore());
   const id = useId();
+  useEffect(() => {
+    try { window.localStorage.setItem(HOW_MATCHING_WORKS_SEEN_KEY, '1'); } catch { /* private window: shown open each time */ }
+  }, []);
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">

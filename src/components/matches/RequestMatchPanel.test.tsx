@@ -57,6 +57,10 @@ vi.mock('../../services/consultantsService', () => ({
   getEmbeddingInfo: vi.fn(),
 }));
 
+vi.mock('../../services/projectRequestsService', () => ({
+  closeProjectRequest: vi.fn(),
+}));
+
 /**
  * The panel in the order the work happens: the requirements, the candidates, the AI. The preview
  * is free and loads by itself; the AI run is the one paid step and waits for a click; the settings
@@ -171,7 +175,7 @@ describe('RequestMatchPanel', () => {
     expect(await screen.findByText('Kotlin 16')).toBeInTheDocument();
     expect(screen.getByText('Kafka 10')).toBeInTheDocument();
     expect(screen.getByText(/Sjekkes ikke mot ferdigheter: Minimum 8 års relevant arbeidserfaring/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Se hele avropet' })).toHaveAttribute('href', '/project-requests/1');
+    expect(screen.getByRole('link', { name: 'Se hele avropet' })).toHaveAttribute('href', '/matches/1');
   });
 
   it('says per candidate which musts they cover and which they lack', async () => {
@@ -358,14 +362,130 @@ describe('RequestMatchPanel', () => {
   });
 
   /** On its own page the assessment is the answer: it comes first, and the requirements are in the header. */
-  it('in page layout puts the AI assessment before the candidates and leaves the requirements out', async () => {
-    renderPanel({ layout: 'page' });
-    await screen.findByText(/3 av 3 valgt/);
+  // ------------------------------------------------------------------ the request page (3c)
 
-    expect(screen.queryByRole('link', { name: 'Se hele avropet' })).not.toBeInTheDocument();
-    const ai = screen.getByRole('heading', { name: 'AI-vurdering' });
-    const candidates = screen.getByRole('heading', { name: 'Kandidater' });
-    expect(ai.compareDocumentPosition(candidates) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const pageRequest = {
+    id: 1, customerName: 'NAV', role: 'Tech lead', summary: 'Tech lead til team for ytelsesplattform.',
+    startDate: '2026-11-01T00:00:00', endDate: '2027-10-31T00:00:00', status: 'OPEN', analysisStatus: 'OK',
+    mustRequirements: [
+      { name: 'Tilbud leveres i KGV', details: null, appliesTo: 'SUPPLIER' },
+      { name: 'Kotlin', details: 'Minst fem års erfaring', appliesTo: 'CONSULTANT' },
+      { name: 'Kafka', details: null, appliesTo: 'CONSULTANT' },
+    ],
+    shouldRequirements: [{ name: 'Grafana', details: null, appliesTo: 'CONSULTANT' }],
+  };
+  const pageItem = {
+    id: 1, customerName: 'NAV', role: 'Tech lead', title: 'Avrop: tech lead', date: '2026-09-18T14:57:56', deadlineDate: '2026-10-02T00:00:00',
+    coverageStatus: 'GREEN', coverageLabel: '1 har treff på alle må-krav · 6 mangler ett', coverage, workStatus: 'ACTIVE', analysisStatus: 'OK',
+  };
+  const renderPage = (props: Partial<React.ComponentProps<typeof RequestMatchPanel>> = {}) =>
+    renderPanel({ layout: 'page', request: pageRequest as never, item: pageItem as never, ...props });
+  const headings = () => screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+
+  /** Nothing assessed: the work first, the requirements and the choice, with the one action scoped to it. */
+  it('on a new request puts the requirements and the candidates first, with «Vurder N valgte» at the top', async () => {
+    renderPage();
+    expect(await screen.findByRole('button', { name: 'Vurder 3 valgte' })).toBeEnabled();
+    expect(headings()).toEqual(['Dokument og krav', 'Kandidater', 'Vurdering', 'Forslag', 'Slik fungerer matchingen']);
+    expect(screen.getByText('AI-vurdering · ikke kjørt')).toBeInTheDocument();
+    expect(screen.getByText('2 må-krav og 1 bør-krav tolket fra dokumentet.')).toBeInTheDocument();
+    expect(screen.getByText('Periode 1.11.2026 – 31.10.2027')).toBeInTheDocument();
+    expect(screen.getByText('Minst fem års erfaring')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'NAV' })).toBeInTheDocument();
+  });
+
+  /** C4: nobody ticked is nobody; the button says why it cannot start rather than choosing for the reader. */
+  it('will not start with nobody chosen, and says why', async () => {
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Fjern alle' }));
+    expect(screen.getByRole('button', { name: 'Vurder valgte' })).toBeDisabled();
+    expect(screen.getByText('Velg minst én kandidat.')).toBeInTheDocument();
+  });
+
+  it('when assessed puts the result first and folds the candidate choice', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'COMPLETED', runId: 21, attempted: 2, done: 2, succeeded: 2, failed: 0, skipped: 0, completedAt: '2026-10-22T17:39:48',
+    } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(defaultRun as never);
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: 'Ny vurdering av 3 valgte' })).toBeInTheDocument();
+    expect(headings().slice(0, 4)).toEqual(['Vurdering', 'Forslag', 'Kandidater', 'Dokument og krav']);
+    expect(screen.getByText('3 valgt')).toBeInTheDocument();
+    expect(screen.getByText('AI-vurdering · vurdert')).toBeInTheDocument();
+  });
+
+  it('when partial offers to ask only those without a score, and says why each has none', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'PARTIAL', runId: 21, attempted: 3, done: 3, succeeded: 2, failed: 1, skipped: 0, requirementsChanged: false,
+      unscored: [{ userId: 'u3', name: 'Nina', outcome: 'INCOMPLETE', reason: 'Ufullstendig svar: mangler Kafka.' }],
+    } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(defaultRun as never);
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: 'Vurder de 1 som feilet' })).toBeInTheDocument();
+    expect(screen.getByText('Uten skår (1)')).toBeInTheDocument();
+    expect(screen.getByText('Ufullstendig svar: mangler Kafka.')).toBeInTheDocument();
+    expect(screen.getByText('AI-vurdering · delvis')).toBeInTheDocument();
+  });
+
+  /** A retry would mix two sets of requirements; the page says what changed and offers a new assessment. */
+  it('when outdated says what changed first and offers a new assessment, not a retry', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'PARTIAL', runId: 21, attempted: 3, done: 3, succeeded: 2, failed: 1, skipped: 0, requirementsChanged: true,
+      completedAt: '2026-10-22T17:39:48',
+      requirementChanges: [{ kind: 'ADDED', name: 'Kafka', after: 'MUST' }, { kind: 'PRIORITY', name: 'Scrum', before: 'MUST', after: 'SHOULD' }],
+    } as never);
+    vi.mocked(api.getProjectMatchResults).mockResolvedValue(defaultRun as never);
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: 'Vurder 3 på nytt mot dagens krav' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Endret siden vurderingen 22.10.2026' })).toBeInTheDocument();
+    expect(screen.getByText('Kafka · må-krav')).toBeInTheDocument();
+    expect(screen.getByText('Scrum · fra må-krav til bør-krav')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /som feilet/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Krav · endret etter vurderingen')).toBeInTheDocument();
+  });
+
+  /** A run started elsewhere: its progress at the top, «Avbryt», and the choice locked while it goes on. */
+  it('while a run goes on offers to cancel it and locks the candidate choice', async () => {
+    const api = await import('../../api/matchingApi');
+    vi.mocked(api.getProjectMatchStatus).mockResolvedValue({
+      projectRequestId: 1, status: 'RUNNING', runId: 22, attempted: 20, done: 7, succeeded: 7, failed: 0, skipped: 0,
+    } as never);
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: 'Avbryt vurderingen' })).toBeEnabled();
+    expect(screen.getByText('AI-vurdering · pågår')).toBeInTheDocument();
+    // Folded while the run goes on; opened, the boxes are there and locked.
+    await userEvent.click(within(document.getElementById('kandidater')!).getByRole('button', { name: 'Vis' }));
+    const boxes = screen.getAllByRole('checkbox', { name: /Ta med .* i AI-vurderingen/ });
+    expect(boxes.every((b) => (b as HTMLInputElement).disabled)).toBe(true);
+  });
+
+  it('when the requirements were not read cannot be started, and says why', async () => {
+    renderPage({ request: { ...pageRequest, analysisStatus: 'FAILED' } as never });
+    expect(await screen.findByText('Kan ikke vurdere: kravtolkingen feilet. Prøv tolkingen igjen først.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Vurder' })).toBeDisabled();
+    expect(screen.getByText('Krav · tolking feilet')).toBeInTheDocument();
+  });
+
+  /** Closing moved here from the old detail page; it cannot be undone yet, so it asks first. */
+  it('closes the request after asking, and lets the page read it again', async () => {
+    const service = await import('../../services/projectRequestsService');
+    vi.mocked(service.closeProjectRequest).mockResolvedValue({} as never);
+    const changed = vi.fn();
+    renderPage({ onRequestChanged: changed });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Lukk avropet' }));
+    expect(screen.getByText(/Det kan ikke åpnes igjen her ennå/)).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Lukk avropet' }));
+
+    await waitFor(() => expect(service.closeProjectRequest).toHaveBeenCalledWith(1));
+    expect(changed).toHaveBeenCalled();
   });
 
   /** The total alone says nothing about which requirement is weak; the row opens on the scores behind it. */

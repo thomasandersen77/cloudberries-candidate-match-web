@@ -441,6 +441,11 @@ function ProjectRequestDetails({
         <Typography variant="body2"><strong>Filnavn:</strong> {dto.originalFilename ?? '-'}</Typography>
         <Typography variant="body2"><strong>Kunde:</strong> {dto.customerName ?? '-'}</Typography>
         <Typography variant="body2"><strong>Tittel:</strong> {displayTitle}</Typography>
+        {dto.id != null && (
+          <Button component={RouterLink} to={`/matches/${dto.id}`} size="small" variant="outlined" sx={{ textTransform: 'none', ml: { md: 'auto' } }}>
+            Gå til avropets side
+          </Button>
+        )}
       </Stack>
       {dto.summary && (
         <Box sx={{ mb: 2 }}>

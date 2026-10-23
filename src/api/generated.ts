@@ -4064,7 +4064,7 @@ export interface components {
          *     person picking from the free preview generally has better information than the score.
          *      */
         RunMatchingRequest: {
-            /** @description Flowcase user ids from the preview. Absent or empty means use preselection. */
+            /** @description Flowcase user ids from the preview. Absent means use preselection; an empty list means nobody and is refused with 400. */
             consultantUserIds?: string[];
         };
         /** @description Full second-stage evaluation of one consultant against a project request. */
@@ -4120,6 +4120,26 @@ export interface components {
             cancelRequested?: boolean;
             /** @description Candidates the cancel left unasked. */
             cancelled?: number;
+            /** @description What the request asks for now that the run did not score against, matched on the requirement's name. Empty unless requirementsChanged. */
+            requirementChanges?: components["schemas"]["RequirementChangeDto"][];
+            /** @description Who a finished run has no score for, and why. The reason is safe to show; a provider's own words are never in it. */
+            unscored?: components["schemas"]["UnscoredCandidateDto"][];
+        };
+        RequirementChangeDto: {
+            /** @enum {string} */
+            kind: "ADDED" | "REMOVED" | "PRIORITY" | "DETAILS";
+            name: string;
+            /** @description Priority (MUST, SHOULD) or details before; null when added. */
+            before?: string | null;
+            /** @description The same after; null when removed. */
+            after?: string | null;
+        };
+        UnscoredCandidateDto: {
+            userId: string;
+            name: string;
+            /** @enum {string} */
+            outcome: "FAILED" | "INCOMPLETE" | "PENDING" | "CANCELLED";
+            reason: string;
         };
         /**
          * @description PARTIAL means some candidates have a score and some do not; the list shows the ones that do.

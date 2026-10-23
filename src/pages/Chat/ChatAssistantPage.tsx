@@ -379,7 +379,7 @@ const RequestFitTable: React.FC<{ rows: RequestFit[] }> = ({ rows }) => (
               {row.projectRequestId > 0 && (
                 <MuiLink
                   component={RouterLink}
-                  to={`/project-requests/${row.projectRequestId}`}
+                  to={`/matches/${row.projectRequestId}`}
                   variant="caption"
                 >
                   Se avrop

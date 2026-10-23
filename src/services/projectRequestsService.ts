@@ -5,7 +5,6 @@ import type {
   CreateProjectRequestDto,
   ProjectRequestDto,
   ProjectRequirementDto,
-  AISuggestionDto,
 } from '../types/api';
 
 type LegacyProjectRequestDto = ProjectRequestDto & {
@@ -156,23 +155,4 @@ export async function deleteProjectRequest(id: number): Promise<void> {
   await apiClient.delete(`project-requests/${encodeURIComponent(id)}`);
 }
 
-export type AiQualityOptions = {
-  /** When true, ask backend for the server-configured highest-quality AI model tier. */
-  useHighestQualityModel?: boolean;
-};
 
-// New: trigger AI analysis
-export async function analyzeProjectRequest(id: number, opts?: AiQualityOptions): Promise<ProjectRequestDto> {
-  const { data } = await aiScoringClient.post<ProjectRequestDto>(
-    `project-requests/${id}/analyze`,
-    null,
-    { params: opts?.useHighestQualityModel ? { useHighestQualityModel: 'true' } : undefined }
-  );
-  return data;
-}
-
-// New: get AI suggestions
-export async function getProjectRequestSuggestions(id: number): Promise<AISuggestionDto[]> {
-  const { data } = await apiClient.get<AISuggestionDto[]>(`project-requests/${id}/suggestions`);
-  return data;
-}

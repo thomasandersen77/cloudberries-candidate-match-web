@@ -114,6 +114,8 @@ export type ModelTier = 'FAST' | 'DEFAULT' | 'QUALITY';
 
 export type CoverageStatus = components['schemas']['CoverageStatus'];
 export type WorkStatus = components['schemas']['WorkStatus'];
+export type RequirementChangeDto = components['schemas']['RequirementChangeDto'];
+export type UnscoredCandidateDto = components['schemas']['UnscoredCandidateDto'];
 export type AnalysisStatus = components['schemas']['AnalysisStatus'];
 export type MatchesListItemDto = components['schemas']['MatchesListItemDto'];
 export type PagedMatchesListDto = components['schemas']['PagedMatchesListDto'];

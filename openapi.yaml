@@ -3084,7 +3084,7 @@ components:
       properties:
         consultantUserIds:
           type: array
-          description: Flowcase user ids from the preview. Absent or empty means use preselection.
+          description: Flowcase user ids from the preview. Absent means use preselection; an empty list means nobody and is refused with 400.
           items: { type: string }
 
     CandidateMatchEvaluation:
@@ -3153,6 +3153,32 @@ components:
         cancelled:
           type: integer
           description: Candidates the cancel left unasked.
+        requirementChanges:
+          type: array
+          description: What the request asks for now that the run did not score against, matched on the requirement's name. Empty unless requirementsChanged.
+          items: { $ref: '#/components/schemas/RequirementChangeDto' }
+        unscored:
+          type: array
+          description: Who a finished run has no score for, and why. The reason is safe to show; a provider's own words are never in it.
+          items: { $ref: '#/components/schemas/UnscoredCandidateDto' }
+
+    RequirementChangeDto:
+      type: object
+      required: [ kind, name ]
+      properties:
+        kind: { type: string, enum: [ ADDED, REMOVED, PRIORITY, DETAILS ] }
+        name: { type: string }
+        before: { type: string, nullable: true, description: "Priority (MUST, SHOULD) or details before; null when added." }
+        after: { type: string, nullable: true, description: "The same after; null when removed." }
+
+    UnscoredCandidateDto:
+      type: object
+      required: [ userId, name, outcome, reason ]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        outcome: { type: string, enum: [ FAILED, INCOMPLETE, PENDING, CANCELLED ] }
+        reason: { type: string }
 
     MatchingStatus:
       type: string
